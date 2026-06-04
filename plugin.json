@@ -1,0 +1,10 @@
+{
+  "name": "director-studio",
+  "version": "1.0.0",
+  "description": "AI电影导演工作室 — 整合导演/剧本医生/美术指导/后期总监四大智能体，支持剧本创作、分镜设计、剧本诊断、视觉概念、后期方案",
+  "author": "holo-cat",
+  "license": "MIT",
+  "skills": [
+    "./skills/director-studio"
+  ]
+}
