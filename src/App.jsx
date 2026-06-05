@@ -18,7 +18,7 @@ const AGENTS = [
   { id: "doctor",   name: "剧本医生", desc: "四层诊断 · 逐句修改" },
   { id: "designer", name: "美术指导", desc: "视觉概念 · 色彩体系 · 场景服装" },
   { id: "post",     name: "后期总监", desc: "剪辑策略 · 调色方案 · 声音设计" },
-  { id: "seedance", name: "文戏提示词", desc: "Seedance 2.0 情绪表演提示词生成" },
+  { id: "seedance", name: "剧幕文戏分析", desc: "逐幕逐拍情绪动作拆解 · Seedance/Kling/Runway 表演提示词" },
   { id: "character", name: "人物造型", desc: "高精度角色设计 · 七层专业框架" },
   { id: "scene", name: "场景设计", desc: "十维场景生成 · 全风格全氛围覆盖" },
   { id: "lens", name: "视觉解析师", desc: "反向提示词工程 · 视觉元素拆解 · 多平台适配" },
