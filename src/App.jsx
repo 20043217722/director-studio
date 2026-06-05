@@ -319,7 +319,8 @@ export default function App() {
       }
       if (docText) {
         const imgPrefix = imageBase64s.length > 0 ? `[图片 x ${imageBase64s.length}]\n\n` : "";
-        displayText = imgPrefix + docText + (text ? `\n\n---\n📋 ${text}` : "");
+        const docPrefix = "📄 以下是从用户上传文档中提取的文本内容，请基于此内容中的视觉元素分析并生成专业提示词：\n\n---\n";
+        displayText = imgPrefix + docPrefix + docText + (text ? `\n\n---\n📋 用户补充说明：${text}` : "");
       }
     }
 
