@@ -32,6 +32,51 @@ export function fileToBase64(file) {
   });
 }
 
+// 压缩图片后转 base64（避免超出模型上下文限制）
+const MAX_DIM = 1568; // 最大宽高，约 2.5MP，适合视觉模型
+const JPEG_QUALITY = 0.85;
+
+export function fileToBase64Resized(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width: w, height: h } = img;
+      // 小图不缩放
+      if (w <= MAX_DIM && h <= MAX_DIM) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result;
+          const mime = dataUrl.match(/^data:(.+?);/)?.[1] || file.type || "image/jpeg";
+          resolve({ base64: dataUrl.split(",")[1], mime });
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+        return;
+      }
+      // 等比缩放到 MAX_DIM 以内
+      const ratio = Math.min(MAX_DIM / w, MAX_DIM / h);
+      w = Math.round(w * ratio);
+      h = Math.round(h * ratio);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob((blob) => {
+        if (!blob) { reject(new Error("图片压缩失败")); return; }
+        const reader = new FileReader();
+        reader.onload = () => resolve({ base64: reader.result.split(",")[1], mime: "image/jpeg" });
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      }, "image/jpeg", JPEG_QUALITY);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("图片加载失败")); };
+    img.src = url;
+  });
+}
+
 // ---- Image → object URL for display ----
 export function fileToObjectURL(file) {
   return URL.createObjectURL(file);

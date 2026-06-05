@@ -31,7 +31,7 @@ function renderMarkdown(text) {
       const cells = line.split("|").filter(c => c.trim());
       if (cells.every(c => /^[-:]+$/.test(c.trim()))) continue; // separator
       if (!inTable) { result.push("<table>"); inTable = true; }
-      result.push(`<tr>${cells.map(c => `<td>${escapeHtml(c.trim())}</td>`).join("")}</tr>`);
+      result.push(`<tr>${cells.map(c => `<td>${c.trim()}</td>`).join("")}</tr>`);
     } else {
       if (inTable) { result.push("</table>"); inTable = false; }
       result.push(line);
@@ -46,8 +46,10 @@ function renderMarkdown(text) {
   html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
 
   // Restore code blocks
-  html = html.replace(/%%CODEBLOCK_(\d+)%%/g, (_, i) =>
-    `<pre><code>${codeBlocks[parseInt(i)]}</code></pre>`);
+  html = html.replace(/%%CODEBLOCK_(\d+)%%/g, (_, i) => {
+    const idx = parseInt(i);
+    return idx < codeBlocks.length ? `<pre><code>${codeBlocks[idx]}</code></pre>` : `%%CODEBLOCK_${idx}%%`;
+  });
 
   // Paragraphs
   html = html.replace(/\n\n/g, "</p><p>");
@@ -68,6 +70,7 @@ const WELCOME = {
   seedance:  { title: "文戏提示词", desc: "Seedance 2.0 情绪表演提示词生成", tips: ["上传剧本，生成逐场文戏提示词", "为母女和解场景写Seedance提示词", "把这段小说对话转为AI表演提示词"] },
   character: { title: "人物造型", desc: "高精度角色设计 · 七层专业框架", tips: ["设计一个废土世界的机械师角色", "为古装剧女主做完整造型方案", "上传剧本，提取所有人物做造型设计"] },
   scene:     { title: "场景设计", desc: "十维场景生成 · 全风格全氛围覆盖", tips: ["设计赛博朋克雨夜街景", "为仙侠剧做三组场景方案", "上传剧本，提取所有场景逐一设计"] },
+  lens:      { title: "视觉解析师", desc: "反向提示词工程 · 支持Midjourney/ChatGPT/Gemini/Seedream/Seedance/Kling/Runway", tips: ["📸 上传参考图 → 拆解为Midjourney生图提示词", "🎬 上传电影截图 → 转化为Seedance视频提示词", "🖼️ 上传2-3张同风格图 → 提取共同视觉DNA"] },
 };
 
 function formatTime() {
@@ -133,14 +136,16 @@ export default function ChatArea({ mode, messages, loading, onUndo, onRegenerate
                   <button onClick={() => onRegenerate(m.id)} className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/70" title="重新生成">🔄</button>
                 )}
                 {m.role === "assistant" && m.error && onRetry && (
-                  <button onClick={() => onRetry(m.retryText || "", m.retryFile || null)} className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/30" title="重试">🔁 重试</button>
+                  <button onClick={() => onRetry(m.retryText || "", m.retryFiles || m.retryFile || null)} className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/30" title="重试">🔁 重试</button>
                 )}
               </div>
             )}
             <div className={`px-4 py-3 text-sm leading-relaxed msg-content ${
               m.role === "user" ? "msg-user" : m.error ? "msg-error" : "msg-assistant"
             } ${m.streaming ? "opacity-90" : ""}`}>
-              {m.imgUrl && <img src={m.imgUrl} alt="用户上传" className="max-w-xs rounded-lg mb-2" loading="lazy" />}
+              {m.imgUrls?.length > 0
+                ? m.imgUrls.map((url, i) => <img key={i} src={url} alt="用户上传" className="max-w-[200px] rounded-lg mb-1" loading="lazy" />)
+                : m.imgUrl && <img src={m.imgUrl} alt="用户上传" className="max-w-xs rounded-lg mb-2" loading="lazy" />}
               {m.partial && <div className="text-[10px] text-yellow-500/60 mb-1">⚠️ 响应可能不完整</div>}
               <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) + (m.streaming ? '<span class="loading-dot inline-block ml-0.5 align-middle" style="animation-delay:0ms"></span>' : "") }} />
             </div>

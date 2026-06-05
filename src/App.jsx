@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { loadKeys, watchNetwork, callAgentStream, MODEL_PRESETS } from "./lib/api";
-import { parseFile, fileToBase64, fileToObjectURL, isImage } from "./lib/fileParser";
+import { parseFile, fileToBase64, fileToBase64Resized, fileToObjectURL, isImage } from "./lib/fileParser";
 import Sidebar from "./components/Sidebar";
 import ChatArea from "./components/ChatArea";
 import InputBar from "./components/InputBar";
@@ -21,6 +21,7 @@ const AGENTS = [
   { id: "seedance", name: "文戏提示词", desc: "Seedance 2.0 情绪表演提示词生成" },
   { id: "character", name: "人物造型", desc: "高精度角色设计 · 七层专业框架" },
   { id: "scene", name: "场景设计", desc: "十维场景生成 · 全风格全氛围覆盖" },
+  { id: "lens", name: "视觉解析师", desc: "反向提示词工程 · 视觉元素拆解 · 多平台适配" },
 ];
 
 const HISTORY_PREFIX = "director_studio_history_";
@@ -162,8 +163,11 @@ export default function App() {
       if (idx < 0) return prev;
       // 清理图片 URL 防止内存泄漏
       const msg = prev[idx];
-      if (msg.imgUrl?.startsWith("blob:")) URL.revokeObjectURL(msg.imgUrl);
-      return prev.filter((_, i) => i !== idx);
+      if (msg.imgUrls) msg.imgUrls.forEach(u => { if (u?.startsWith("blob:")) URL.revokeObjectURL(u); });
+      else if (msg.imgUrl?.startsWith("blob:")) URL.revokeObjectURL(msg.imgUrl);
+      // 同时删除用户消息及其后续 AI 回复
+      const endIdx = (idx + 1 < prev.length && prev[idx + 1].role === "assistant") ? idx + 2 : idx + 1;
+      return prev.filter((_, i) => i < idx || i >= endIdx);
     });
   }
 
@@ -176,8 +180,9 @@ export default function App() {
     if (userMsg.role !== "user") return;
     // Remove from AI message onward
     setMessages((prev) => prev.slice(0, idx));
-    // Re-send
-    handleSend(userMsg.text, null);
+    // Re-send with original files from the AI message's retryFiles
+    const aiMsg = msgs[idx];
+    handleSend(userMsg.text, aiMsg.retryFiles || null);
   }
 
   useEffect(() => {
@@ -216,8 +221,9 @@ export default function App() {
 
   const abortRef = useRef(null);
 
-  const handleSend = useCallback(async (text, file) => {
-    if (!text.trim() && !file) return;
+  const handleSend = useCallback(async (text, fileArray) => {
+    const files = Array.isArray(fileArray) ? fileArray : (fileArray ? [fileArray] : []);
+    if (!text.trim() && files.length === 0) return;
     // 防止重复发送
     if (sendingRef.current) return;
     sendingRef.current = true;
@@ -237,68 +243,104 @@ export default function App() {
       return;
     }
 
-    let docText = ""; let imageBase64; let imageMime; let imgUrl; let displayText = text;
+    let docText = ""; let displayText = text;
+    const imageBase64s = []; const imageMimes = []; const imgUrls = [];
+    const imgFiles = files.filter(f => isImage(f));
+    const docFiles = files.filter(f => !isImage(f));
 
-    if (file) {
-      if (isImage(file)) {
-
-        // 检查当前模型是否支持视觉
-        const visionModels = new Set(["openai", "claude", "qwen", "qwen-vl", "glm"]);
-        if (!visionModels.has(provider) && provider !== "custom") {
-          const msg = { id: ++msgIdRef.current, role: "assistant",
-            text: `⚠️ **${MODEL_PRESETS[provider]?.name || provider}** 不支持图片识别\n\n当前模型是纯文本模型，无法处理图片。请切换到支持视觉的模型：\n- **Claude Opus 4** (推荐)\n- **GPT-4o**\n- **通义千问 Max**\n- **GLM-4 Plus**\n\n点击右上角 ⚙ 设置切换。`,
-            error: true };
-          setMessages((prev) => [...prev, msg]);
-          sendingRef.current = false;
-          return;
-        }
-
-        imgUrl = fileToObjectURL(file);
-        try {
-          const parsed = await fileToBase64(file);
-          imageBase64 = parsed.base64;
-          imageMime = parsed.mime;
-        } catch (e) {
-          console.error("[handleSend] 图片转base64失败:", e);
-          const msg = { id: ++msgIdRef.current, role: "assistant", text: `图片读取失败: ${e instanceof Error ? e.message : String(e)}`, error: true };
-          setMessages((prev) => [...prev, msg]);
-          sendingRef.current = false;
-          return;
-        }
-        displayText = text || "[图片]";
-      } else {
-        // 大文件解析提示
-        if (file.size > 1024 * 1024) showToast("正在解析文件...", "info");
-        try {
-          const result = await parseFile(file);
-          docText = result.text || "";
-          displayText = docText + (text ? `\n\n---\n📋 ${text}` : "");
-          if (file.size > 1024 * 1024) setToast(null);
-        } catch (e) {
-          docText = `(读取失败: ${e.message})`;
-          displayText = docText;
-        }
+    // 视觉模型检查
+    if (imgFiles.length > 0) {
+      const visionModels = new Set(["openai", "claude", "qwen", "qwen-vl", "glm"]);
+      if (!visionModels.has(provider) && provider !== "custom") {
+        const msg = { id: ++msgIdRef.current, role: "assistant",
+          text: `⚠️ **${MODEL_PRESETS[provider]?.name || provider}** 不支持图片识别\n\n当前模型是纯文本模型，无法处理图片。请切换到支持视觉的模型：\n- **Claude Opus 4** (推荐)\n- **GPT-4o**\n- **通义千问 Max**\n- **GLM-4 Plus**\n\n点击右上角 ⚙ 设置切换。`,
+          error: true };
+        setMessages((prev) => [...prev, msg]);
+        sendingRef.current = false;
+        return;
       }
     }
 
-    const userMsg = { id: ++msgIdRef.current, role: "user", text: displayText, imgUrl, time: Date.now() };
+    // Lens 模式无图片时给提示（不阻断，用户可能在问文字问题）
+    if (mode === "lens" && imgFiles.length === 0 && docFiles.length === 0) {
+      showToast("💡 上传参考图可获得最佳分析效果", "info");
+    }
+
+    // 处理图片文件
+    if (imgFiles.length > 0) {
+      for (let i = 0; i < imgFiles.length; i++) {
+        const imgFile = imgFiles[i];
+        // 多图时显示进度
+        if (imgFiles.length > 1) showToast(`正在处理图片 ${i + 1}/${imgFiles.length}...`, "info");
+        imgUrls.push(fileToObjectURL(imgFile));
+        try {
+          const parsed = await fileToBase64Resized(imgFile);
+          imageBase64s.push(parsed.base64);
+          imageMimes.push(parsed.mime);
+        } catch (e) {
+          console.error("[handleSend] 图片转base64失败:", e);
+          // 部分失败不中断：跳过失败图，继续处理其他图
+          imgUrls.pop(); // 移除失败图的 ObjectURL
+          continue;
+        }
+        if (imgFiles.length > 1) setToast(null);
+      }
+      // 如果所有图都失败了
+      if (imageBase64s.length === 0) {
+        const msg = { id: ++msgIdRef.current, role: "assistant", text: "所有图片读取失败，请检查文件格式后重试", error: true };
+        setMessages((prev) => [...prev, msg]);
+        sendingRef.current = false;
+        return;
+      }
+      // 检查总大小 (base64 编码后约 1.33x 原文件大小)
+      const totalB64 = imageBase64s.reduce((sum, b) => sum + b.length, 0);
+      if (totalB64 > 40 * 1024 * 1024) {
+        showToast("图片总大小较大，发送可能较慢", "info");
+      }
+      if (!text) {
+        displayText = imgFiles.length === 1 ? "[图片]" : `[图片 x ${imageBase64s.length}]`;
+      }
+      // 清除进度 toast（防止最后一张图失败时残留）
+      if (imgFiles.length > 1) setToast(null);
+    }
+
+    // 处理文档文件
+    if (docFiles.length > 0) {
+      for (const docFile of docFiles) {
+        if (docFile.size > 1024 * 1024) showToast("正在解析文件...", "info");
+        try {
+          const result = await parseFile(docFile);
+          const fileText = result.text || "";
+          if (fileText) docText += (docText ? "\n\n---\n" : "") + fileText;
+          if (docFile.size > 1024 * 1024) setToast(null);
+        } catch (e) {
+          docText += `\n(读取失败: ${e.message})`;
+        }
+      }
+      if (docText) {
+        const imgPrefix = imageBase64s.length > 0 ? `[图片 x ${imageBase64s.length}]\n\n` : "";
+        displayText = imgPrefix + docText + (text ? `\n\n---\n📋 ${text}` : "");
+      }
+    }
+
+    const userMsg = { id: ++msgIdRef.current, role: "user", text: displayText, imgUrls: imgUrls.length > 0 ? imgUrls : undefined, time: Date.now() };
     const aiMsg = { id: ++msgIdRef.current, role: "assistant", text: "", streaming: true, time: Date.now() };
     setMessages((prev) => [...prev, userMsg, aiMsg]);
     setLoading(true);
 
     try {
       const cfg = JSON.parse(localStorage.getItem("custom_cfg") || "{}");
-      // 去除HTML/markdown减少token浪费
       const stripMarkdown = (t) => t.replace(/<[^>]+>/g, "").replace(/\n{3,}/g, "\n\n").trim();
-      const history = messagesRef.current.map((m) => ({ role: m.role, text: stripMarkdown(m.text) })).slice(-20);
-      // Stream response
+      // 有图片时减少历史消息，避免超出模型上下文限制
+      const histLimit = imageBase64s.length > 0 ? 6 : 20;
+      const history = messagesRef.current.map((m) => ({ role: m.role, text: stripMarkdown(m.text) })).slice(-histLimit);
       const stream = new AbortController();
       abortRef.current = stream;
       let replyText = "";
       let lastUpdate = 0;
-      const THROTTLE_MS = 60; // 每60ms最多更新一次UI，减轻渲染压力
+      const THROTTLE_MS = 60;
       for await (const chunk of callAgentStream(displayText || "请分析附件", mode, {
-        apiKey: keys[provider], provider, imageBase64, imageMime, history,
+        apiKey: keys[provider], provider, imageBase64s, imageMimes, history,
         customEndpoint: cfg.endpoint || "", customModel: cfg.model || "",
         signal: stream.signal,
       })) {
@@ -310,12 +352,11 @@ export default function App() {
           setMessages((prev) => prev.map((m) => m.id === aiMsg.id ? { ...m, text: replyText } : m));
         }
       }
-      // 最后一次确保完整更新
+      if (!replyText) replyText = "(对方未返回内容，请重试)";
       setMessages((prev) => prev.map((m) => m.id === aiMsg.id ? { ...m, text: replyText, streaming: false } : m));
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : String(e);
       const partial = aiMsg.text?.length > 0;
-      // 用户主动停止 — 保留部分内容,不显示错误
       if (errMsg === "ABORTED" || abortRef.current?.signal?.aborted) {
         setMessages((prev) => prev.map((m) => m.id === aiMsg.id ? {
           ...m,
@@ -323,7 +364,7 @@ export default function App() {
           error: false,
           streaming: false,
           retryText: text,
-          retryFile: file,
+          retryFiles: files,
         } : m));
       } else {
         setMessages((prev) => prev.map((m) => m.id === aiMsg.id ? {
@@ -333,7 +374,7 @@ export default function App() {
           partial,
           streaming: false,
           retryText: text,
-          retryFile: file,
+          retryFiles: files,
         } : m));
       }
     } finally {

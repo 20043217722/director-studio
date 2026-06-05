@@ -83,7 +83,7 @@ export const MODEL_PRESETS = {
 };
 
 // ========== 流式调用（实时逐字输出）==========
-export async function* callAgentStream(prompt, mode, { apiKey, provider = "deepseek", imageBase64, imageMime, history = [], customEndpoint = "", customModel = "", signal } = {}) {
+export async function* callAgentStream(prompt, mode, { apiKey, provider = "deepseek", imageBase64, imageMime, imageBase64s, imageMimes, history = [], customEndpoint = "", customModel = "", signal } = {}) {
   const preset = MODEL_PRESETS[provider] || MODEL_PRESETS.deepseek;
   const key = apiKey || getKeyForProvider(provider);
   if (!key) throw new Error(`请先填入 ${preset.provider} API Key`);
@@ -93,27 +93,43 @@ export async function* callAgentStream(prompt, mode, { apiKey, provider = "deeps
   const sys = getSystemPrompt(mode);
   const messages = history.map((h) => ({ role: h.role, content: h.text }));
 
-  // 检测图片MIME类型 — 优先使用传入的 imageMime, 其次检测base64魔数
-  const guessMime = (b64) => b64.startsWith("/9j/") ? "image/jpeg" : b64.startsWith("iVBOR") ? "image/png" : b64.startsWith("R0lG") ? "image/gif" : b64.startsWith("UklGR") ? "image/webp" : "image/jpeg";
-  const imgMime = imageMime || (imageBase64 ? guessMime(imageBase64) : "image/jpeg");
+  // 归一化图片参数（兼容旧的单值调用）
+  const imgB64s = imageBase64s || (imageBase64 ? [imageBase64] : []);
+  const imgMimes = imageMimes || (imageMime ? [imageMime] : []);
 
-  const userContent = imageBase64 && preset.protocol === "anthropic"
-    ? [{ type: "text", text: prompt }, { type: "image", source: { type: "base64", media_type: imgMime, data: imageBase64 } }]
-    : imageBase64
-    ? [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: `data:${imgMime};base64,${imageBase64}` } }]
-    : prompt;
+  // 检测图片MIME类型
+  const guessMime = (b64) => b64.startsWith("/9j/") ? "image/jpeg" : b64.startsWith("iVBOR") ? "image/png" : b64.startsWith("R0lG") ? "image/gif" : b64.startsWith("UklGR") ? "image/webp" : "image/jpeg";
+
+  let userContent;
+  if (imgB64s.length > 0) {
+    const blocks = [{ type: "text", text: prompt }];
+    for (let i = 0; i < imgB64s.length; i++) {
+      const m = imgMimes[i] || guessMime(imgB64s[i]) || "image/jpeg";
+      if (preset.protocol === "anthropic") {
+        blocks.push({ type: "image", source: { type: "base64", media_type: m, data: imgB64s[i] } });
+      } else {
+        blocks.push({ type: "image_url", image_url: { url: `data:${m};base64,${imgB64s[i]}` } });
+      }
+    }
+    userContent = blocks;
+  } else {
+    userContent = prompt;
+  }
   messages.push({ role: "user", content: userContent });
 
-  const maxTokens = ["director", "doctor", "designer", "post", "character", "scene", "seedance"].includes(mode) ? 80000 : 4000;
-  const temps = { director: 0.4, doctor: 0.3, character: 0.3, scene: 0.4, seedance: 0.8 };
+  const maxTokens = ["director", "doctor", "designer", "post", "character", "scene", "seedance", "lens"].includes(mode) ? 80000 : 4000;
+  // 小上下文模型（Qwen-VL、GLM等）限制输出令牌数，避免超上下文
+  const smallCtxModels = new Set(["qwen-vl-max", "qwen-max", "qwen-plus"]);
+  const outputTokens = smallCtxModels.has(model) ? 4096 : maxTokens;
+  const temps = { director: 0.4, doctor: 0.3, character: 0.3, scene: 0.4, seedance: 0.8, lens: 0.35 };
   const temperature = temps[mode] ?? 0.7;
 
   let reqBody, reqHeaders;
   if (preset.protocol === "anthropic") {
-    reqBody = JSON.stringify({ model, max_tokens: maxTokens, temperature, system: sys, messages, stream: true });
+    reqBody = JSON.stringify({ model, max_tokens: outputTokens, temperature, system: sys, messages, stream: true });
     reqHeaders = { "Content-Type": "application/json", "anthropic-version": "2023-06-01" };
   } else {
-    reqBody = JSON.stringify({ model, max_tokens: maxTokens, temperature, messages: [{ role: "system", content: sys }, ...messages], stream: true });
+    reqBody = JSON.stringify({ model, max_tokens: outputTokens, temperature, messages: [{ role: "system", content: sys }, ...messages], stream: true });
     reqHeaders = { "Content-Type": "application/json" };
   }
   reqHeaders[preset.authHeader] = preset.authPrefix + key;
@@ -195,16 +211,19 @@ function categorizeError(status, body, provider) {
     return new Error(`⏳ ${provider} 请求频率超限，请稍候重试`);
   }
   if (status === 413 || msg.includes("too large") || msg.includes("exceed")) {
-    return new Error(`📦 内容过大，请缩减文本或压缩图片后重试`);
+    return new Error(`📦 图片过大，请尝试：\n• 压缩图片后再上传\n• 减少同时上传的图片数量\n• 降低图片分辨率`);
   }
   if (status >= 500) {
-    return new Error(`🖥️ ${provider} 服务器故障 (${status})，请稍候重试`);
+    return new Error(`🖥️ ${MODEL_PRESETS[provider]?.name || provider} 服务器繁忙 (${status})，请稍候重试`);
   }
   if (msg.includes("context length") || msg.includes("token") || msg.includes("max_tokens")) {
-    return new Error(`📏 内容超过模型上下文限制，请减少文本长度或清空历史记录后重试`);
+    return new Error(`📏 上下文超限。请尝试：\n• 点击右上角 🗑 清空对话历史\n• 减少同时分析的图片数量\n• 切换到长上下文模型 (Claude/DeepSeek)`);
   }
   if (msg.includes("content") && msg.includes("image")) {
-    return new Error(`🖼️ ${provider} 不支持图片输入，请切换到支持视觉的模型`);
+    return new Error(`🖼️ ${MODEL_PRESETS[provider]?.name || provider} 不支持图片。请切换到支持视觉的模型：\n• Claude Opus 4（推荐）\n• GPT-4o\n• 通义千问 VL Max\n• GLM-4 Plus`);
+  }
+  if (msg.includes("image") && (msg.includes("format") || msg.includes("type") || msg.includes("invalid"))) {
+    return new Error(`🖼️ 图片格式不被 ${MODEL_PRESETS[provider]?.name || provider} 支持，请使用 JPEG/PNG/WebP 格式`);
   }
   return new Error(`API ${status}: ${msg.slice(0, 200)}`);
 }
@@ -645,6 +664,76 @@ Seedance 2.0 prompt：(摄影机(焦段mm+光圈f)+空间(建筑风格+面积m²
 - 标注不确定项为【待确认：xxx】而非"可根据实际情况调整"
 - 拒绝"电影感""高级感""好看"等空洞评价词——用具体的光线/色彩/材质参数替代
 - 如用户上传了剧本/小说文档，先输出场景信息总表再逐场景展开`,
+
+    lens: `你是顶级视觉解析师与反向提示词工程师，用专业影视术语从图片/视频帧中提取可直接输入AI影像工具（视频生成 & 图片生成）的提示词。面向导演、摄影师、美术指导、AI短剧创作者和AI生图用户。
+
+## 核心原则
+- **提示词优先**：输出以可直接copy使用的提示词为主，分析为辅
+- **极简分析**：每个维度1-2行，拒绝长篇展开
+- **专业术语**：景别用ECU/BCU/CU/MCU/MS/MLS/LS/ELS；构图用三分法/引导线/框架式/荷兰角；光质用硬光/柔光/蝴蝶光/伦勃朗/派拉蒙
+- **拒绝空洞形容词**："电影感""高级感""好看"一律替换为具体参数(焦段/色温/光比/材质)
+
+## 输出结构（严格简洁）
+
+### 🎯 视觉DNA（1行）
+例：85mm f/1.4 逆光暖金调 青橙LUT 赛博朋克雨夜街景
+
+### 📐 五维速览（每维≤2行）
+- **风格**：流派标签+参照影片(导演·年份)+媒介质感
+- **光影**：主光方向°+色温K+光比+光质+阴影特征
+- **色彩**：主:辅:强调=HEX比例 + 饱和度+调色倾向
+- **构图**：景别+构图法+焦段mm[估]+视角+画幅比
+- **氛围**：3个可视觉化关键词+叙事暗示
+
+（多图时追加：🔒共同DNA / ✏️逐图差异，一行一个）
+
+### 🔄 提示词
+
+根据用户指定平台输出对应格式。未指定时默认输出通用精炼+Midjourney v7。
+
+**通用精炼（一行浓缩，适配所有平台）**
+[主体·动作]+[焦段mm f/光圈]+[场景·材质]+[光:方向°K]+[色彩:主HEX]+[调色倾向]+[氛围]+[画幅比]
+
+**Midjourney v7**
+[主体·动作·微表情], [场景·材质·环境], [光:类型 方向° 色温K], [色彩:主HEX 辅HEX], [构图·焦段mm], [氛围·情绪], [时代·风格] --ar [画幅比] --style [风格标签] --v 7
+
+**ChatGPT Image / DALL·E**
+A [景别] shot of [主体·动作·微表情] in [场景·材质], [光:类型 方向° 色温K 光质], [色彩:调色倾向 主色], [构图·焦段mm], [氛围], [时代锚点]. [画幅比] aspect ratio. Professional cinematography, photorealistic, high detail.
+
+**Gemini (Banana)**
+Generate an image: [主体·动作] in [场景·材质·环境]. Lighting: [类型 方向° 色温K 光比]. Color palette: [主HEX]+[辅HEX], [饱和度] saturation. Composition: [构图法], [焦段mm] lens, [视角]. Mood: [氛围关键词]. Aspect ratio: [画幅比]. Style: [风格标签]. Photorealistic, cinematic quality.
+
+**Seedream 5.0**
+[主体·动作·微表情]，[场景·材质·空间]，光线[类型·方向°·色温K·光比]，色彩[主HEX+辅HEX+调色倾向]，[构图·焦段mm·视角]，[氛围·情绪关键词]，[画幅比]，[风格标签]，电影级画质，高细节
+
+**Seedance 2.0（视频）**
+第1组 / [≤15s]：
+Seedance 2.0 prompt：[焦段mm f/光圈] [主体·微表情] [场景·材质] [光:方向° 色温K 光比] [色彩:主HEX+辅HEX] [氛围] [时代·季节·时刻] [时长]
+锚点：(3-5个跨帧锁定特征)
+负向：模糊/变形/五官移位/多指/材质漂移/帧闪烁/色彩漂移
+
+**Kling/可灵（视频）**（如用户指定）
+[焦段mm f/光圈] [主体·服饰材质·动作] [场景·空间·材质] [光:方向° 色温K 光比] [色彩:主HEX] [氛围] [画幅比] --negative 模糊,变形,多指,肢体断裂,五官移位
+
+**Runway Gen-3（视频）**（如用户指定）
+[风格锚点] [焦段mm f/光圈] [主体·微表情] [场景] [光:类型 方向° K] [色彩:调色] [画幅比] --no deformations, extra limbs, bad anatomy, blur
+
+## 平台智能识别
+用户说"生图""图片""image""MJ""Midjourney""DALL-E""ChatGPT生图""Banana""Gemini生图""Seedream""即梦"→ 输出图片生成平台格式
+用户说"视频""动画""Seedance""Kling""Runway""短片" → 输出视频生成平台格式
+未明确时 → 同时输出通用精炼+Midjourney v7（图片）和Seedance 2.0（视频）
+
+## 质量闸门
+- 精准：能用数值不用形容词。色温给K值，焦段给mm，色彩给HEX
+- 可执行：输出的提示词可直接粘贴到对应AI工具
+- 忠实：一切基于画面可见事实，推测标注[估]
+- 简洁：总回复控制在可一屏看完的长度
+
+## 反幻觉协议
+- 仅描述画面可见内容，不可见标注[不可见]，不确定标注[估]
+- 影片参照需真实存在，不确定标注[待确认]
+- 图文不一致时标注[图文差异]`,
+
   };
 
   const qualityFramework = `## 理解与萃取协议
@@ -678,7 +767,7 @@ Seedance 2.0 prompt：(摄影机(焦段mm+光圈f)+空间(建筑风格+面积m²
 - 用户输入中的原文信息用【原文："..."】格式引用，便于用户验证准确性`;
 
   // character 和 scene 主 prompt 已包含质量闸门和文档解析，不再重复注入
-  if (mode === "character" || mode === "scene") {
+  if (mode === "character" || mode === "scene" || mode === "lens") {
     return prompts[mode];
   }
   return qualityFramework + "\n\n---\n\n" + (prompts[mode] || prompts.director);

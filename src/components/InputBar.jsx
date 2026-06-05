@@ -6,7 +6,7 @@ export default function InputBar({ onSend, onStop, loading, network }) {
   const [text, setText] = useState(() => {
     try { return localStorage.getItem(DRAFT_KEY) || ""; } catch (_) { return ""; }
   });
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const fileRef = useRef(null);
   const taRef = useRef(null);
 
@@ -15,18 +15,28 @@ export default function InputBar({ onSend, onStop, loading, network }) {
     try { localStorage.setItem(DRAFT_KEY, text); } catch (_) {}
   }, [text]);
 
+  function removeFile(idx) {
+    setFiles((prev) => {
+      const dt = new DataTransfer();
+      prev.forEach((f, i) => { if (i !== idx) dt.items.add(f); });
+      if (fileRef.current) fileRef.current.files = dt.files;
+      return prev.filter((_, i) => i !== idx);
+    });
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (loading) { onStop?.(); return; }
     try {
-      await onSend(text, file);
+      await onSend(text, files);
+      setText("");
+      setFiles([]);
+      try { localStorage.removeItem(DRAFT_KEY); } catch (_) {}
+      if (fileRef.current) fileRef.current.value = "";
     } catch (e) {
       console.error("发送失败:", e);
+      // 保留输入内容让用户重试，不清空
     }
-    setText("");
-    setFile(null);
-    try { localStorage.removeItem(DRAFT_KEY); } catch (_) {}
-    if (fileRef.current) fileRef.current.value = "";
   }
 
   function handleKeyDown(e) {
@@ -58,8 +68,8 @@ export default function InputBar({ onSend, onStop, loading, network }) {
           className="p-2 rounded-lg opacity-35 hover:opacity-70 transition-opacity text-base shrink-0" title="上传文件">
           📎
         </button>
-        <input ref={fileRef} type="file" accept="image/*,.docx,.pdf,.txt,.csv,.xlsx,.pptx"
-          onChange={(e) => setFile(e.target.files[0])} className="hidden" />
+        <input ref={fileRef} type="file" multiple accept="image/*,.docx,.pdf,.txt,.csv,.xlsx,.pptx"
+          onChange={(e) => setFiles(Array.from(e.target.files || []))} className="hidden" />
 
         <textarea
           ref={taRef}
@@ -73,16 +83,25 @@ export default function InputBar({ onSend, onStop, loading, network }) {
           style={{ minHeight: "40px" }}
         />
 
-        {file && (
-          <span className="text-xs px-2 py-1 rounded-md shrink-0 max-w-[120px] truncate flex items-center gap-1"
+        {files.length > 0 && (
+          <span className="text-xs px-2 py-1 rounded-md shrink-0 max-w-[180px] truncate flex items-center gap-1 flex-wrap"
             style={{ background: "rgba(212,175,55,0.08)", border: "1px solid rgba(212,175,55,0.15)", color: "var(--gold)" }}>
-            <span className="truncate">{file.name}</span>
-            <button type="button" onClick={() => { setFile(null); if (fileRef.current) fileRef.current.value = ""; }}
-              className="text-[10px] opacity-50 hover:opacity-100 shrink-0" title="移除文件">✕</button>
+            {files.length <= 2 ? files.map((f, i) => (
+              <span key={i} className="flex items-center gap-1 truncate">
+                <span className="truncate max-w-[80px]">{f.name}</span>
+                <button type="button" onClick={() => removeFile(i)} className="text-[10px] opacity-50 hover:opacity-100 shrink-0">✕</button>
+              </span>
+            )) : (
+              <span className="flex items-center gap-1">
+                <span>{files.length} 个文件</span>
+                <button type="button" onClick={() => { setFiles([]); if (fileRef.current) fileRef.current.value = ""; }}
+                  className="text-[10px] opacity-50 hover:opacity-100 shrink-0">✕</button>
+              </span>
+            )}
           </span>
         )}
 
-        <button type="submit" disabled={!loading && !text.trim() && !file}
+        <button type="submit" disabled={!loading && !text.trim() && files.length === 0}
           className={`touch-ripple px-5 py-2.5 text-sm shrink-0 ${loading ? "btn-stop" : "btn-send"}`}
           style={{ "--ripple-x": "50%", "--ripple-y": "50%" }}>
           {loading ? "■ 停止" : "发送"}
