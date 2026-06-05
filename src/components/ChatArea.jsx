@@ -70,7 +70,7 @@ const WELCOME = {
   seedance:  { title: "剧幕文戏分析", desc: "逐幕逐拍情绪动作拆解 · 多平台表演提示词", tips: ["📝 上传剧本 → 逐拍拆解情绪·动作·台词", "🎭 描述场景 → 输出精确微表情+语音参数", "📺 支持 Seedance / Kling / Runway 三平台"] },
   character: { title: "人物造型", desc: "高精度角色设计 · 七层专业框架", tips: ["设计一个废土世界的机械师角色", "为古装剧女主做完整造型方案", "上传剧本，提取所有人物做造型设计"] },
   scene:     { title: "场景设计", desc: "十维场景生成 · 全风格全氛围覆盖", tips: ["设计赛博朋克雨夜街景", "为仙侠剧做三组场景方案", "上传剧本，提取所有场景逐一设计"] },
-  lens:      { title: "视觉解析师", desc: "反向提示词工程 · 支持Midjourney/ChatGPT/Gemini/Seedream/Seedance/Kling/Runway", tips: ["📸 上传参考图 → 拆解为Midjourney生图提示词", "🎬 上传电影截图 → 转化为Seedance视频提示词", "🖼️ 上传2-3张同风格图 → 提取共同视觉DNA"] },
+  lens:      { title: "视觉解析师", desc: "图片/文档 → 视觉DNA提取 · 8平台提示词生成", tips: ["📸 上传参考图 → 拆解为各平台生图提示词", "📄 上传剧本/小说/策划案 → 提取视觉元素生成提示词", "🖼️+📄 图片+文档混合 → 图文一致性与融合提示词"] },
 };
 
 function formatTime() {
