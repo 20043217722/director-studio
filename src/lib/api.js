@@ -75,12 +75,32 @@ export const MODEL_PRESETS = {
     name: "小米 MiMo Pro",
     provider: "小米 (ModelsLab)",
     endpoint: "https://modelslab.com/api/v7/llm/chat/completions",
-    model: "xiaomi-mimo-v2.5-pro",
+    model: "xiaomi-mimo-v2.5-pro-asr",
     authHeader: "key",
     authPrefix: "",
     protocol: "openai",
     keyInBody: true,  // ModelsLab 密钥在请求体中
     vision: true,     // MiMo 原生多模态
+  },
+  "minimax": {
+    name: "MiniMax M2.7",
+    provider: "MiniMax（国内）",
+    endpoint: "https://api.minimaxi.com/v1/chat/completions",
+    model: "MiniMax-M2.7",
+    authHeader: "Authorization",
+    authPrefix: "Bearer ",
+    protocol: "openai",
+    vision: false,
+  },
+  "minimax-en": {
+    name: "MiniMax M2.7 (国际)",
+    provider: "MiniMax（国际）",
+    endpoint: "https://api.minimax.io/v1/chat/completions",
+    model: "MiniMax-M2.7",
+    authHeader: "Authorization",
+    authPrefix: "Bearer ",
+    protocol: "openai",
+    vision: false,
   },
   "custom": {
     name: "自定义",
