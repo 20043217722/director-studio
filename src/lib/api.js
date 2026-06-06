@@ -71,6 +71,17 @@ export const MODEL_PRESETS = {
     authPrefix: "Bearer ",
     protocol: "openai",
   },
+  "xiaomi": {
+    name: "小米 MiMo Pro",
+    provider: "小米 (ModelsLab)",
+    endpoint: "https://modelslab.com/api/v7/llm/chat/completions",
+    model: "xiaomi-mimo-v2.5-pro",
+    authHeader: "key",
+    authPrefix: "",
+    protocol: "openai",
+    keyInBody: true,  // ModelsLab 密钥在请求体中
+    vision: true,     // MiMo 原生多模态
+  },
   "custom": {
     name: "自定义",
     provider: "Custom",
@@ -129,10 +140,15 @@ export async function* callAgentStream(prompt, mode, { apiKey, provider = "deeps
     reqBody = JSON.stringify({ model, max_tokens: outputTokens, temperature, system: sys, messages, stream: true });
     reqHeaders = { "Content-Type": "application/json", "anthropic-version": "2023-06-01" };
   } else {
-    reqBody = JSON.stringify({ model, max_tokens: outputTokens, temperature, messages: [{ role: "system", content: sys }, ...messages], stream: true });
+    const bodyObj = { model, max_tokens: outputTokens, temperature, messages: [{ role: "system", content: sys }, ...messages], stream: true };
+    // 某些平台（如 ModelsLab）要求密钥在请求体中
+    if (preset.keyInBody) bodyObj[preset.authHeader] = key;
+    reqBody = JSON.stringify(bodyObj);
     reqHeaders = { "Content-Type": "application/json" };
   }
-  reqHeaders[preset.authHeader] = preset.authPrefix + key;
+  if (!preset.keyInBody) {
+    reqHeaders[preset.authHeader] = preset.authPrefix + key;
+  }
 
   // 带重试的流式请求
   const res = await fetchWithRetry(endpoint, { method: "POST", headers: reqHeaders, body: reqBody, signal }, preset.protocol, 2, true);
