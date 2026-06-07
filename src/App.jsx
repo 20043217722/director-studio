@@ -21,6 +21,7 @@ const AGENTS = [
   { id: "seedance", name: "剧幕文戏分析", desc: "逐幕逐拍情绪动作拆解 · Seedance/Kling/Runway 表演提示词" },
   { id: "character", name: "人物造型", desc: "高精度角色设计 · 七层专业框架" },
   { id: "scene", name: "场景设计", desc: "十维场景生成 · 全风格全氛围覆盖" },
+  { id: "slides", name: "幻灯片大师", desc: "杂志风/瑞士风 HTML 幻灯片 · 一键生成精美演示" },
   { id: "lens", name: "视觉解析师", desc: "反向提示词工程 · 视觉元素拆解 · 多平台适配" },
 ];
 
