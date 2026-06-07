@@ -33,15 +33,22 @@ export default function SettingsModal({ activeProvider, onSave, onClose }) {
       const endpoint = provider === "custom" ? customEp : preset.endpoint;
       const model = provider === "custom" ? customModel : preset.model;
       const headers = { "Content-Type": "application/json" };
-      headers[preset.authHeader] = preset.authPrefix + key;
+      // keyInBody: 密钥放在请求体（如 ModelsLab/MiMo Pro）
+      if (!preset.keyInBody) {
+        headers[preset.authHeader] = preset.authPrefix + key;
+      }
 
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 10000);
 
       // 发送最小请求测试连通性
-      const body = preset.protocol === "anthropic"
-        ? JSON.stringify({ model, max_tokens: 1, messages: [{ role: "user", content: "hi" }] })
-        : JSON.stringify({ model, max_tokens: 1, messages: [{ role: "user", content: "hi" }] });
+      const isAnthropic = preset.protocol === "anthropic";
+      let bodyObj = isAnthropic
+        ? { model, max_tokens: 1, messages: [{ role: "user", content: "hi" }] }
+        : { model, max_tokens: 1, messages: [{ role: "user", content: "hi" }] };
+      // 某些平台（如 ModelsLab）要求密钥在请求体中
+      if (preset.keyInBody) bodyObj[preset.authHeader] = key;
+      const body = JSON.stringify(bodyObj);
 
       const res = await fetch(endpoint, { method: "POST", headers, body, signal: ctrl.signal });
       clearTimeout(timer);
@@ -50,9 +57,13 @@ export default function SettingsModal({ activeProvider, onSave, onClose }) {
         setTestResult({ ok: false, msg: "API Key 无效" });
       } else if (res.status === 429) {
         setTestResult({ ok: true, msg: "连接正常（频率限制中）" });
-      } else if (res.ok || res.status === 400) {
-        // 400 means the request was received (model may reject "hi" but connection works)
+      } else if (res.ok) {
         setTestResult({ ok: true, msg: "连接成功" });
+      } else if (res.status === 400) {
+        // 400: 请求格式可能有问题，读取错误详情
+        const errText = await res.text().catch(() => "");
+        const short = errText.slice(0, 120);
+        setTestResult({ ok: false, msg: `请求被拒绝 (400): ${short || "请检查模型名称和端点"}` });
       } else {
         const errText = await res.text().catch(() => "");
         setTestResult({ ok: false, msg: `连接失败 (${res.status}): ${errText.slice(0, 80)}` });

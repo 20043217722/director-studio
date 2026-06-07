@@ -298,7 +298,7 @@ async function fetchWithRetry(url, options, protocol, retries = 2, streaming = f
       }
       if (!res.ok) {
         const errText = await res.text().catch(() => "");
-        throw categorizeError(res.status, errText, "");
+        throw categorizeError(res.status, errText, model || "");
       }
 
       if (streaming) return res;
