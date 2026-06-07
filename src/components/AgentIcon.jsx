@@ -45,14 +45,6 @@ const ICONS = {
     {tag:"circle",cx:"17",cy:"7",r:"1"},
     {tag:"line",x1:"17",y1:"6",x2:"17",y2:"8"},
   ]},
-  slides: { viewBox: "0 0 24 24", elements: [
-    {tag:"rect",x:"3",y:"4",width:"18",height:"13",rx:"1"},
-    {tag:"line",x1:"3",y1:"8",x2:"21",y2:"8"},
-    {tag:"line",x1:"12",y1:"8",x2:"12",y2:"17"},
-    {tag:"line",x1:"3",y1:"19",x2:"21",y2:"19"},
-    {tag:"rect",x:"7",y:"10",width:"4",height:"2",rx:".3"},
-    {tag:"rect",x:"14",y:"10",width:"3",height:"2",rx:".3"},
-  ]},
   lens: { viewBox: "0 0 24 24", elements: [
     // 放大镜外框
     {tag:"circle",cx:"10",cy:"10",r:"7.5"},
