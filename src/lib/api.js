@@ -171,7 +171,7 @@ export async function* callAgentStream(prompt, mode, { apiKey, provider = "deeps
   }
 
   // 带重试的流式请求
-  const res = await fetchWithRetry(endpoint, { method: "POST", headers: reqHeaders, body: reqBody, signal }, preset.protocol, 2, true);
+  const res = await fetchWithRetry(endpoint, { method: "POST", headers: reqHeaders, body: reqBody, signal }, preset.protocol, 2, true, model);
   if (!res.ok) {
     const e = await res.text().catch(() => "");
     throw categorizeError(res.status, e, preset.provider);
@@ -265,7 +265,7 @@ function categorizeError(status, body, provider) {
 }
 
 // ========== 网络重试 + 指数退避 + 超时 ==========
-async function fetchWithRetry(url, options, protocol, retries = 2, streaming = false) {
+async function fetchWithRetry(url, options, protocol, retries = 2, streaming = false, modelName = "") {
   const deadline = Date.now() + 60000;
   const externalSignal = options.signal;
   delete options.signal; // 从 options 中移除，单独处理
@@ -298,7 +298,7 @@ async function fetchWithRetry(url, options, protocol, retries = 2, streaming = f
       }
       if (!res.ok) {
         const errText = await res.text().catch(() => "");
-        throw categorizeError(res.status, errText, model || "");
+        throw categorizeError(res.status, errText, modelName || "");
       }
 
       if (streaming) return res;
