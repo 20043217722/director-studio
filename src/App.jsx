@@ -197,6 +197,16 @@ export default function App() {
     return cleanup;
   }, []);
 
+  // Cleanup blob URLs on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      messagesRef.current.forEach(m => {
+        if (m.imgUrls) m.imgUrls.forEach(u => { if (u?.startsWith("blob:")) URL.revokeObjectURL(u); });
+        if (m.imgUrl?.startsWith("blob:")) URL.revokeObjectURL(m.imgUrl);
+      });
+    };
+  }, []);
+
   // PWA install prompt (with cleanup)
   useEffect(() => {
     const handler = (e) => { e.preventDefault(); window._pwaInstall = e; setUpdateMsg("安装桌面应用"); };
@@ -250,7 +260,7 @@ export default function App() {
 
     // 视觉模型检查
     if (imgFiles.length > 0) {
-      const visionModels = new Set(["openai", "claude", "qwen", "qwen-vl", "glm", "xiaomi"]);
+      const visionModels = new Set(["openai", "claude", "qwen", "qwen-vl", "glm", "xiaomi", "minimax", "minimax-en"]);
       if (!visionModels.has(provider) && provider !== "custom") {
         const msg = { id: ++msgIdRef.current, role: "assistant",
           text: `⚠️ **${MODEL_PRESETS[provider]?.name || provider}** 不支持图片识别\n\n当前模型是纯文本模型，无法处理图片。请切换到支持视觉的模型：\n- **Claude Opus 4** (推荐)\n- **GPT-4o**\n- **通义千问 Max**\n- **GLM-4 Plus**\n\n点击右上角 ⚙ 设置切换。`,
