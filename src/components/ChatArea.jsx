@@ -78,7 +78,7 @@ function formatTime() {
   return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
 }
 
-export default function ChatArea({ mode, messages, loading, onUndo, onRegenerate, onRetry }) {
+export default function ChatArea({ mode, messages, loading, onUndo, onRegenerate, onRetry, onToggleLike }) {
   const w = WELCOME[mode] || WELCOME.director;
 
   const empty = useMemo(() => (
@@ -128,6 +128,17 @@ export default function ChatArea({ mode, messages, loading, onUndo, onRegenerate
               <div className="absolute -top-2 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
                 {m.role === "user" && onUndo && (
                   <button onClick={() => onUndo(m.id)} className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30" title="撤回">撤回</button>
+                )}
+                {m.role === "assistant" && !m.error && onToggleLike && (
+                  <button onClick={() => onToggleLike(m.id)}
+                    className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
+                      m.liked
+                        ? "bg-amber-500/20 text-amber-400 border-amber-500/30 hover:bg-amber-500/30 like-btn-active"
+                        : "bg-white/5 text-white/40 border-white/10 hover:bg-white/10 hover:text-white/70"
+                    }`}
+                    title={m.liked ? "取消点赞" : "点赞收藏"}>
+                    👍
+                  </button>
                 )}
                 {m.role === "assistant" && !m.error && (
                   <button onClick={() => copyText(m.text)} className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/70" title="复制">📋</button>

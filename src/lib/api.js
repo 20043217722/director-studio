@@ -1,4 +1,5 @@
 // ========== 多模型 API 客户端 ==========
+import { getPreferenceInjection } from "./preferences";
 
 // 预设模型配置
 export const MODEL_PRESETS = {
@@ -1004,7 +1005,12 @@ Generate an image: [主体·动作] in [场景·材质·环境]. Facial expressi
 11. 开场仅1句锚定诉求(≤30字)，跳过寒暄
 12. 追问时只补充前次遗漏，不重复已输出`;
   if (mode === "character" || mode === "scene" || mode === "lens" || mode === "seedance") {
-    return slimProtocol + "\n\n---\n\n" + prompts[mode];
+    // 偏好注入（仅 seedance/character/scene）
+    let prefsInjection = "";
+    if (["seedance", "character", "scene"].includes(mode)) {
+      try { prefsInjection = getPreferenceInjection(mode) || ""; } catch (_) {}
+    }
+    return slimProtocol + (prefsInjection ? "\n\n" + prefsInjection : "") + "\n\n---\n\n" + prompts[mode];
   }
   return qualityFramework + "\n\n---\n\n" + (prompts[mode] || prompts.director);
 }

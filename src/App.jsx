@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { loadKeys, watchNetwork, callAgentStream, MODEL_PRESETS } from "./lib/api";
 import { parseFile, fileToBase64, fileToBase64Resized, fileToObjectURL, isImage } from "./lib/fileParser";
+import { updatePreferences, getLikedMessages, getPreferenceInjection } from "./lib/preferences";
 import Sidebar from "./components/Sidebar";
 import ChatArea from "./components/ChatArea";
 import InputBar from "./components/InputBar";
@@ -39,7 +40,7 @@ function loadHistory(mode) {
 function saveHistory(mode, msgs) {
   try {
     // 只保存关键字段，减少体积
-    let slim = msgs.slice(-MAX_HISTORY).map(({ id, role, text, error, time }) => ({ id, role, text, error, time }));
+    let slim = msgs.slice(-MAX_HISTORY).map(({ id, role, text, error, time, liked }) => ({ id, role, text, error, time, liked: liked || false }));
     let json = JSON.stringify(slim);
     // 超容时持续裁剪到一半
     while (json.length > MAX_HISTORY_SIZE && slim.length > 10) {
@@ -168,6 +169,16 @@ export default function App() {
       // 同时删除用户消息及其后续 AI 回复
       const endIdx = (idx + 1 < prev.length && prev[idx + 1].role === "assistant") ? idx + 2 : idx + 1;
       return prev.filter((_, i) => i < idx || i >= endIdx);
+    });
+  }
+
+  function toggleLike(msgId) {
+    setMessages((prev) => {
+      const updated = prev.map((m) => m.id === msgId ? { ...m, liked: !m.liked } : m);
+      // 更新偏好
+      const likedMsgs = updated.filter(m => m.role === "assistant" && m.liked && !m.error);
+      updatePreferences(mode, likedMsgs);
+      return updated;
     });
   }
 
@@ -335,7 +346,7 @@ export default function App() {
     }
 
     const userMsg = { id: ++msgIdRef.current, role: "user", text: displayText, imgUrls: imgUrls.length > 0 ? imgUrls : undefined, time: Date.now() };
-    const aiMsg = { id: ++msgIdRef.current, role: "assistant", text: "", streaming: true, time: Date.now() };
+    const aiMsg = { id: ++msgIdRef.current, role: "assistant", text: "", streaming: true, time: Date.now(), liked: false };
     setMessages((prev) => [...prev, userMsg, aiMsg]);
     setLoading(true);
 
@@ -508,7 +519,7 @@ export default function App() {
         </header>
         <div className="flex-1 overflow-y-auto relative" ref={chatContainerRef} onScroll={handleChatScroll}>
           {loading && <div className="typing-progress sticky top-0 z-10 w-full" />}
-          <ChatArea mode={mode} messages={messages} loading={loading} onUndo={undoMessage} onRegenerate={regenerate} onRetry={handleSend} />
+          <ChatArea mode={mode} messages={messages} loading={loading} onUndo={undoMessage} onRegenerate={regenerate} onRetry={handleSend} onToggleLike={toggleLike} />
           <div ref={messagesEnd} />
           {userScrolledUp && (
             <button onClick={() => { userScrollRef.current = false; scrollToBottom(true); }}

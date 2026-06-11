@@ -913,3 +913,16 @@ button, .agent-card, .mobile-tab, .update-badge, .provider-grid-btn,
   25% { transform: translateX(-4px); }
   75% { transform: translateX(4px); }
 }
+
+/* ============================================
+   LIKE BUTTON — 点赞按钮动画
+   ============================================ */
+.like-btn-active {
+  animation: likePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes likePop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.4); }
+  60% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
