@@ -57,10 +57,12 @@ function renderMarkdown(text) {
   html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
   html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
 
-  // Restore code blocks
+  // Restore code blocks with copy button
   html = html.replace(/%%CODEBLOCK_(\d+)%%/g, (_, i) => {
     const idx = parseInt(i);
-    return idx < codeBlocks.length ? `<pre><code>${codeBlocks[idx]}</code></pre>` : `%%CODEBLOCK_${idx}%%`;
+    if (idx >= codeBlocks.length) return `%%CODEBLOCK_${idx}%%`;
+    const code = codeBlocks[idx].replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    return `<div class="code-block-wrap"><pre><code>${codeBlocks[idx]}</code></pre><button class="copy-code-btn" onclick="(function(b){var t=b.parentElement.querySelector('code').textContent;navigator.clipboard.writeText(t).then(function(){b.textContent='✓ 已复制';setTimeout(function(){b.textContent='📋 复制'},1500)})})(this)" title="一键复制">📋 复制</button></div>`;
   });
 
   // Paragraphs
@@ -119,7 +121,7 @@ export default function ChatArea({ mode, messages, loading, onUndo, onRegenerate
   if (messages.length === 0 && !loading) return empty;
 
   return (
-    <div className="max-w-3xl mx-auto px-5 py-5 space-y-3">
+    <div className="max-w-3xl mx-auto px-5 py-5 space-y-5">
       {messages.map((m, i) => {
         // 检测是否需要显示时间分隔（距上一条超过5分钟）
         const prev = messages[i - 1];

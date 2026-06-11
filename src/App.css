@@ -275,6 +275,51 @@ body {
   background: var(--bg-input); border: 1px solid var(--border);
   border-radius: var(--radius-sm); padding: 14px 16px; overflow-x: auto;
   margin: 0.8em 0; font-size: 0.82rem; line-height: 1.65;
+  white-space: pre-wrap; word-break: break-word;
+}
+
+/* 代码块容器 + 复制按钮 */
+.code-block-wrap {
+  position: relative;
+  margin: 0.8em 0;
+}
+.code-block-wrap pre {
+  margin: 0;
+  padding-right: 72px;
+}
+.copy-code-btn {
+  position: absolute;
+  top: 8px; right: 8px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.copy-code-btn:hover {
+  border-color: var(--primary-soft);
+  color: var(--primary-soft);
+  background: var(--bg-hover);
+  box-shadow: 0 2px 8px var(--border-glow);
+}
+.copy-code-btn:active {
+  transform: scale(0.92);
+  transition: transform 0.08s ease;
+}
+
+/* 消息气泡层次增强 */
+.msg-user {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px var(--border-glow);
+}
+.msg-assistant {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 0 0 1px var(--border);
+}
+.msg-user, .msg-assistant {
+  transition: box-shadow 0.4s ease, border-color 0.4s ease, transform 0.2s ease;
 }
 .msg-content del { opacity: 0.4; text-decoration: line-through; }
 .msg-content blockquote {
