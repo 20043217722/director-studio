@@ -589,17 +589,27 @@ button, .agent-card, .mobile-tab, .update-badge, .provider-grid-btn,
   transition: transform 0.08s ease;
 }
 
-/* -- Chat bubble action buttons: better hover -- */
+/* -- Chat bubble action buttons: always visible on desktop, hover reveal on mobile -- */
 .msg-content .group-hover\:opacity-100 {
-  transition: opacity 0.15s ease, transform 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  opacity: 1 !important; /* Always visible */
 }
-.group:hover .group-hover\:opacity-100 button {
-  transition: transform 0.15s ease, background 0.2s ease;
+@media (hover: none) {
+  .msg-content .group-hover\:opacity-100 {
+    opacity: 0.4 !important; /* Subtle on touch */
+  }
+  .group:active .group-hover\:opacity-100 {
+    opacity: 1 !important;
+  }
 }
-.group:hover .group-hover\:opacity-100 button:hover {
-  transform: translateY(-1px);
+.group .group-hover\:opacity-100 button {
+  transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
-.group:hover .group-hover\:opacity-100 button:active {
+.group .group-hover\:opacity-100 button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.group .group-hover\:opacity-100 button:active {
   transform: translateY(1px) scale(0.95);
 }
 
@@ -785,4 +795,121 @@ button, .agent-card, .mobile-tab, .update-badge, .provider-grid-btn,
   }
   .agent-card:hover { transform: none; }
   .btn-send:hover:not(:disabled) { transform: none; }
+}
+
+/* ============================================
+   QUICK-START CARDS — 欢迎页增强
+   ============================================ */
+.quick-start-card {
+  animation: cardIn 0.4s cubic-bezier(0.2, 0, 0, 1) both;
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1),
+              border-color 0.2s ease,
+              box-shadow 0.2s ease,
+              background 0.2s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.quick-start-card::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), var(--border-glow) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.quick-start-card:hover::before { opacity: 1; }
+.quick-start-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--primary-soft) !important;
+  box-shadow: 0 8px 24px var(--border-glow);
+}
+.quick-start-card:active {
+  transform: scale(0.96) !important;
+  transition: transform 0.08s ease;
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.quick-start-card:nth-child(1) { animation-delay: 0.05s; }
+.quick-start-card:nth-child(2) { animation-delay: 0.1s; }
+.quick-start-card:nth-child(3) { animation-delay: 0.15s; }
+.quick-start-card:nth-child(4) { animation-delay: 0.2s; }
+
+/* ============================================
+   KEYBOARD SHORTCUT PANEL — 快捷键面板
+   ============================================ */
+.shortcut-panel {
+  animation: modalIn 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.shortcut-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.shortcut-row:last-child { border-bottom: none; }
+.shortcut-key {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-family: monospace;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--primary-soft);
+  min-width: 24px;
+  text-align: center;
+}
+
+/* ============================================
+   TYPING PROGRESS BAR — 生成进度条
+   ============================================ */
+.typing-progress {
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary), var(--primary-soft), var(--brand));
+  background-size: 200% 100%;
+  animation: progressShimmer 2s ease-in-out infinite;
+  border-radius: 0 0 0 2px;
+  transition: width 0.3s ease;
+}
+@keyframes progressShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================
+   SETTINGS TEST BUTTON — 连接测试
+   ============================================ */
+.test-connection-btn {
+  transition: all 0.2s ease;
+}
+.test-connection-btn.testing {
+  animation: testPulse 0.8s ease-in-out infinite;
+  pointer-events: none;
+  opacity: 0.6;
+}
+@keyframes testPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(0.96); }
+}
+.test-connection-btn.success {
+  background: var(--success) !important;
+  color: #fff !important;
+  border-color: var(--success) !important;
+  transition: all 0.3s ease;
+}
+.test-connection-btn.failed {
+  background: var(--danger) !important;
+  color: #fff !important;
+  border-color: var(--danger) !important;
+  animation: shake 0.4s ease;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
 }

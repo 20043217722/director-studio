@@ -456,6 +456,32 @@ export default function App() {
     }
   }
 
+  const [shortcutOpen, setShortcutOpen] = useState(false);
+
+  // Keyboard shortcut: ? to show shortcuts
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      if (e.key === "?" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setShortcutOpen(v => !v);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  const SHORTCUTS = [
+    { key: "Enter", desc: "发送消息" },
+    { key: "Shift+Enter", desc: "换行" },
+    { key: "Space", desc: "暂停/继续生成" },
+    { key: "Ctrl+N", desc: "新建会话" },
+    { key: "Ctrl+1-8", desc: "切换智能体 1-8" },
+    { key: "Ctrl+E", desc: "导出" },
+    { key: "Ctrl+,", desc: "打开设置" },
+    { key: "?", desc: "显示/隐藏此面板" },
+  ];
+
   const currentAgent = AGENTS.find((a) => a.id === mode);
   const preset = MODEL_PRESETS[provider];
 
@@ -481,6 +507,7 @@ export default function App() {
           <button onClick={() => setSettingsOpen(true)} className="p-1.5 rounded-lg opacity-40 hover:opacity-80 transition-opacity text-sm" title="设置">⚙</button>
         </header>
         <div className="flex-1 overflow-y-auto relative" ref={chatContainerRef} onScroll={handleChatScroll}>
+          {loading && <div className="typing-progress sticky top-0 z-10 w-full" />}
           <ChatArea mode={mode} messages={messages} loading={loading} onUndo={undoMessage} onRegenerate={regenerate} onRetry={handleSend} />
           <div ref={messagesEnd} />
           {userScrolledUp && (
@@ -497,6 +524,28 @@ export default function App() {
         <InputBar onSend={handleSend} onStop={() => abortRef.current?.abort()} loading={loading} network={network} />
       </div>
       {settingsOpen && <SettingsModal activeProvider={provider} onSave={handleSettingsSave} onClose={() => setSettingsOpen(false)} />}
+      {/* 快捷键面板 */}
+      {shortcutOpen && (
+        <>
+          <div className="modal-overlay fixed inset-0 z-40" onClick={() => setShortcutOpen(false)} />
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ pointerEvents: "none" }}>
+            <div className="shortcut-panel modal-card p-5 w-full max-w-sm" style={{ pointerEvents: "auto" }}>
+              <h3 className="text-sm font-semibold mb-3" style={{ color: "var(--brand)" }}>⌨️ 快捷键</h3>
+              {SHORTCUTS.map(s => (
+                <div key={s.key} className="shortcut-row">
+                  <span className="text-xs" style={{ color: "var(--text)" }}>{s.desc}</span>
+                  <span className="shortcut-key">{s.key}</span>
+                </div>
+              ))}
+              <button onClick={() => setShortcutOpen(false)}
+                className="w-full mt-3 py-1.5 rounded-lg text-xs border transition-all opacity-40 hover:opacity-80"
+                style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}>
+                关闭
+              </button>
+            </div>
+          </div>
+        </>
+      )}
       {/* Toast 通知 */}
       {toast && (
         <div className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm shadow-lg pointer-events-none transition-all animate-fade-in ${
