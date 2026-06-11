@@ -204,7 +204,11 @@ export async function* callAgentStream(prompt, mode, { apiKey, provider = "deeps
     } catch (e) {
       if (e.message === "STREAM_TIMEOUT") {
         reader.cancel().catch(() => {});
-        if (buffer.trim()) yield "\n\n[⚠️ 响应中断：超时未收到数据，以上为已生成的部分内容]";
+        if (buffer.trim()) {
+          yield `\n\n---\n⚠️ 流中断：120s 无新数据，以上为已生成内容。\n💡 可点击 🔄 重新生成，或缩短输入/减少文件`;
+        } else {
+          yield "\n\n❌ 流超时：未收到任何数据。请检查网络或代理，点击 🔄 重试";
+        }
         return;
       }
       throw e;
@@ -275,14 +279,87 @@ function categorizeError(status, body, provider) {
   return new Error(`API ${status}: ${msg.slice(0, 200)}`);
 }
 
-// ========== 网络重试 + 指数退避 + 超时 ==========
+// ========== 预检健康检查 ==========
+const healthCache = new Map(); // endpoint → { ok, time }
+
+async function preflightCheck(endpoint) {
+  const now = Date.now();
+  const cached = healthCache.get(endpoint);
+  // 30 秒内复用缓存结果
+  if (cached && now - cached.time < 30_000) return cached.ok;
+
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000); // 5s 超时
+    const res = await fetch(endpoint, {
+      method: "HEAD",
+      signal: ctrl.signal,
+      mode: "no-cors", // 避免 CORS 预检失败
+    });
+    clearTimeout(timer);
+    healthCache.set(endpoint, { ok: true, time: now });
+    return true;
+  } catch {
+    healthCache.set(endpoint, { ok: false, time: now });
+    return false;
+  }
+}
+
+// ========== 熔断器 ==========
+const circuitBreakers = new Map(); // endpoint → { failures, openUntil }
+
+function checkCircuitBreaker(endpoint) {
+  const cb = circuitBreakers.get(endpoint);
+  if (!cb) return true; // 没有记录，放行
+  if (cb.openUntil > Date.now()) return false; // 熔断中
+  // 熔断过期, 重置
+  circuitBreakers.delete(endpoint);
+  return true;
+}
+
+function recordFailure(endpoint) {
+  const cb = circuitBreakers.get(endpoint) || { failures: 0, openUntil: 0 };
+  cb.failures++;
+  if (cb.failures >= 3) {
+    cb.openUntil = Date.now() + 30_000; // 熔断 30 秒
+    console.warn(`[CircuitBreaker] ${endpoint} 熔断 30s (连续 ${cb.failures} 次失败)`);
+  }
+  circuitBreakers.set(endpoint, cb);
+}
+
+function recordSuccess(endpoint) {
+  circuitBreakers.delete(endpoint); // 成功则清除熔断
+}
+
+// ========== 网络重试 + 指数退避 + 超时 (+ 熔断保护) ==========
 async function fetchWithRetry(url, options, protocol, retries = 3, streaming = false, modelName = "") {
   const deadline = Date.now() + 120000;
   const externalSignal = options.signal;
-  delete options.signal; // 从 options 中移除，单独处理
-  let lastError;
+  delete options.signal;
 
-  for (let attempt = 0; attempt < retries; attempt++) {
+  // 预检：先 ping 端点
+  const reachable = await preflightCheck(url);
+  if (!reachable) {
+    // 网络不可达，提示用户检查代理/VPN
+    throw new Error("🌐 无法连接 API 服务器\n请检查:\n• 网络连接是否正常\n• 是否需要配置代理地址\n• 防火墙/VPN 设置");
+  }
+
+  // 熔断检查
+  if (!checkCircuitBreaker(url)) {
+    throw new Error("⏸️ API 暂时熔断（连续失败过多），请 30 秒后重试\n建议检查 API Key 或切换模型");
+  }
+
+  let lastError;
+  // 网络错误多试几次（6次），认证/业务错误少试（3次）
+  const isNetworkError = (e) => {
+    const m = e?.message || "";
+    return m === "Failed to fetch" || m.includes("NetworkError") ||
+           m.includes("连接") || m.includes("超时") || m.includes("timeout") ||
+           (e?.name === "TypeError");
+  };
+  let effectiveRetries = retries;
+
+  for (let attempt = 0; attempt < effectiveRetries; attempt++) {
     // 外部取消信号优先
     if (externalSignal?.aborted) throw new Error("ABORTED");
 
@@ -318,9 +395,10 @@ async function fetchWithRetry(url, options, protocol, retries = 3, streaming = f
         throw categorizeError(res.status, errText, modelName || "");
       }
 
-      if (streaming) return res;
+      if (streaming) { recordSuccess(url); return res; }
 
       const data = await res.json();
+      recordSuccess(url);
       if (protocol === "anthropic") {
         for (const b of data.content || []) if (b.type === "text") return b.text;
         return "无响应内容";
@@ -337,9 +415,16 @@ async function fetchWithRetry(url, options, protocol, retries = 3, streaming = f
       if (e.message?.startsWith("🔑")) throw e;
       // 不重试图片不支持错误
       if (e.message?.startsWith("🖼️")) throw e;
+
       lastError = e;
-      if (attempt < retries - 1 && e.name !== "AbortError") {
-        const wait = Math.pow(2, attempt) * 1000;
+      // 网络错误 → 增加重试次数并记录熔断
+      if (isNetworkError(e)) {
+        effectiveRetries = Math.max(effectiveRetries, 6);
+        recordFailure(url);
+      }
+
+      if (attempt < effectiveRetries - 1 && e.name !== "AbortError") {
+        const wait = Math.pow(2, attempt) * 800; // 800ms / 1.6s / 3.2s / 6.4s / 12.8s / 25.6s
         await new Promise((r) => setTimeout(r, wait));
       }
     }
