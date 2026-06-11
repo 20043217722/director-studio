@@ -228,6 +228,45 @@ body {
 .msg-content h3 { font-size: 0.95rem; }
 .msg-content p { margin: 0.5em 0; }
 .msg-content strong { color: var(--primary-soft); font-weight: 600; }
+.msg-content .text-accent { color: var(--primary-soft); font-weight: 700; }
+
+/* 关键参数自动高亮 */
+.msg-content .param-hex {
+  display: inline-block;
+  background: var(--bg-input);
+  color: var(--primary);
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border-glow);
+}
+.msg-content .param-lens {
+  color: var(--brand);
+  font-weight: 600;
+}
+.msg-content .param-temp {
+  color: #f59e0b;
+  font-weight: 600;
+}
+.msg-content .param-ratio {
+  color: var(--primary-soft);
+  font-weight: 600;
+}
+.msg-content .param-angle {
+  color: var(--accent-light, #14B8A6);
+  font-weight: 600;
+}
+/* 自定义高亮标记 !!text!! */
+.msg-content .key-highlight {
+  background: linear-gradient(120deg, rgba(212,175,55,0.25) 0%, rgba(212,175,55,0.08) 100%);
+  color: var(--brand);
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border-left: 3px solid var(--brand);
+  display: inline-block;
+  margin: 1px 0;
+}
 .msg-content code {
   background: var(--bg-input); padding: 0.2em 0.5em; border-radius: 4px;
   font-size: 0.85em; color: var(--primary-soft); border: 1px solid var(--border);

@@ -17,10 +17,22 @@ function renderMarkdown(text) {
   // Inline code
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
 
-  // Bold / Italic / Strikethrough
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // !! 醒目高亮 (自定义语法: !!text!!)
+  html = html.replace(/!!(.+?)!!/g, '<mark class="key-highlight">$1</mark>');
+
+  // Bold → 醒目彩色
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong class="text-accent">$1</strong>');
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
   html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+  // 自动高亮技术参数: HEX颜色 #XXXXXX, f/XX, XXmm, XXXXK
+  html = html.replace(/(#[0-9A-Fa-f]{6}\b)/g, '<code class="param-hex">$1</code>');
+  html = html.replace(/\b(f\/\d+\.?\d*)\b/g, '<code class="param-lens">$1</code>');
+  html = html.replace(/\b(\d{2,4}mm)\b/g, '<code class="param-lens">$1</code>');
+  html = html.replace(/\b(\d{4}K)\b/g, '<code class="param-temp">$1</code>');
+  html = html.replace(/\b(\d+[:：]\d+(\.\d+)?)\b(?!["'<>])/g, '<code class="param-ratio">$1</code>');
+  // 角度
+  html = html.replace(/\b(\d{1,2}°)\b/g, '<code class="param-angle">$1</code>');
 
   // Tables — only if line contains pipe (outside code blocks)
   const lines = html.split("\n");
