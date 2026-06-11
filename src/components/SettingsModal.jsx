@@ -6,6 +6,7 @@ export default function SettingsModal({ activeProvider, onSave, onClose }) {
   const [provider, setProvider] = useState(activeProvider || "deepseek");
   const [customEp, setCustomEp] = useState("");
   const [customModel, setCustomModel] = useState("");
+  const [proxyUrl, setProxyUrl] = useState(() => { try { return localStorage.getItem("api_proxy_url") || ""; } catch (_) { return ""; } });
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null); // { ok: true } | { ok: false, msg }
   const modalRef = useRef(null);
@@ -30,7 +31,7 @@ export default function SettingsModal({ activeProvider, onSave, onClose }) {
     setTestResult(null);
     try {
       const preset = MODEL_PRESETS[provider] || MODEL_PRESETS.deepseek;
-      const endpoint = provider === "custom" ? customEp : preset.endpoint;
+      const endpoint = proxyUrl || (provider === "custom" ? customEp : preset.endpoint);
       const model = provider === "custom" ? customModel : preset.model;
       const headers = { "Content-Type": "application/json" };
       // keyInBody: 密钥放在请求体（如 ModelsLab/MiMo Pro）
@@ -84,7 +85,8 @@ export default function SettingsModal({ activeProvider, onSave, onClose }) {
     }
     // Also save active provider pref
     localStorage.setItem("active_provider", provider);
-    onSave({ provider, keys, customEp, customModel });
+    try { localStorage.setItem("api_proxy_url", proxyUrl); } catch (_) {}
+    onSave({ provider, keys, customEp, customModel, proxyUrl });
   }
 
   const preset = MODEL_PRESETS[provider];
@@ -135,6 +137,15 @@ export default function SettingsModal({ activeProvider, onSave, onClose }) {
                 style={{ background: "rgba(0,0,0,0.3)", border: "1px solid var(--border-subtle)", outline: "none" }} />
             </div>
           )}
+
+          {/* 代理地址（国内用户必需） */}
+          <label className="block text-xs mb-1.5 opacity-50 uppercase tracking-wider">
+            🌐 代理地址（国内访问海外 API 时使用）
+          </label>
+          <input value={proxyUrl} onChange={(e) => setProxyUrl(e.target.value)}
+            placeholder="留空直连 / 填入代理地址 (如 https://your-proxy.com/v1)"
+            className="w-full px-3 py-2.5 rounded-lg text-xs mb-4"
+            style={{ background: "rgba(0,0,0,0.3)", border: "1px solid var(--border-subtle)", outline: "none" }} />
 
           {/* API Key */}
           <label className="block text-xs mb-1.5 opacity-50 uppercase tracking-wider">

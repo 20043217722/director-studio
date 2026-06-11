@@ -120,8 +120,13 @@ export async function* callAgentStream(prompt, mode, { apiKey, provider = "deeps
   const key = apiKey || getKeyForProvider(provider);
   if (!key) throw new Error(`请先填入 ${preset.provider} API Key`);
 
-  const endpoint = provider === "custom" ? customEndpoint : preset.endpoint;
+  const rawEndpoint = provider === "custom" ? customEndpoint : preset.endpoint;
   const model = provider === "custom" ? customModel : preset.model;
+
+  // 代理地址：国内用户可通过代理访问海外 API
+  let proxyUrl = "";
+  try { proxyUrl = localStorage.getItem("api_proxy_url") || ""; } catch (_) {}
+  const endpoint = proxyUrl ? proxyUrl : rawEndpoint;
   const sys = getSystemPrompt(mode);
   const messages = history.map((h) => ({ role: h.role, content: h.text }));
 
@@ -339,7 +344,21 @@ async function fetchWithRetry(url, options, protocol, retries = 3, streaming = f
       }
     }
   }
-  throw lastError || new Error("🌐 网络连接失败，请检查网络后重试");
+  // 最后一招：区分网络错误类型，给出具体建议
+  if (!lastError) throw new Error("🌐 网络连接失败");
+  const msg = lastError.message || "";
+  // 浏览器无法连接服务器（DNS/防火墙/VPN 导致）
+  if (msg === "Failed to fetch" || lastError.name === "TypeError") {
+    const hints = [];
+    const endpoint = url || options?.url || "";
+    if (endpoint.includes("openai.com")) hints.push("OpenAI API 需科学上网");
+    if (endpoint.includes("anthropic.com")) hints.push("Anthropic API 需科学上网");
+    if (endpoint.includes("deepseek.com")) hints.push("检查 api.deepseek.com 是否可访问，或尝试更换网络");
+    hints.push("尝试在设置中配置代理地址");
+    hints.push("检查防火墙/VPN 设置");
+    throw new Error(`🌐 无法连接 API 服务器\n${hints.join("\n")}\n原始错误: ${msg}`);
+  }
+  throw lastError;
 }
 
 // ========== API Key 存储（按 provider） ==========
