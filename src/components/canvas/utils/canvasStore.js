@@ -1,10 +1,11 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { applyNodeChanges, applyEdgeChanges } from '@xyflow/react'
-import { nodeDefaults } from './nodeDefaults'
+import { nodeDefaults, validConnections } from './nodeDefaults'
 
 const STORAGE_KEY = 'director_studio_canvas'
 const MAX_UNDO = 50
+const MAX_NODES = 100
 
 export const useCanvasStore = create(
   persist(
@@ -15,39 +16,32 @@ export const useCanvasStore = create(
       undoStack: [],
       redoStack: [],
 
+      _snapshot: () => JSON.stringify({ nodes: get().nodes, edges: get().edges }),
       _pushUndo: () => {
-        const { nodes, edges, undoStack } = get()
-        const snapshot = JSON.stringify({ nodes, edges })
-        if (undoStack.length && undoStack[undoStack.length - 1] === snapshot) return
-        set({ undoStack: [...undoStack.slice(-MAX_UNDO), snapshot], redoStack: [] })
+        const { undoStack } = get()
+        const snap = get()._snapshot()
+        if (undoStack.length && undoStack[undoStack.length - 1] === snap) return
+        set({ undoStack: [...undoStack.slice(-MAX_UNDO), snap], redoStack: [] })
       },
 
       undo: () => {
-        const { undoStack, redoStack, nodes, edges } = get()
+        const { undoStack, redoStack } = get()
         if (!undoStack.length) return
-        const current = JSON.stringify({ nodes, edges })
-        const prev = undoStack[undoStack.length - 1]
-        const restored = JSON.parse(prev)
-        set({
-          nodes: restored.nodes, edges: restored.edges,
-          undoStack: undoStack.slice(0, -1),
-          redoStack: [...redoStack, current],
-          selectedNodeId: null,
-        })
+        const current = get()._snapshot()
+        const restored = JSON.parse(undoStack[undoStack.length - 1])
+        set({ nodes: restored.nodes, edges: restored.edges,
+          undoStack: undoStack.slice(0, -1), redoStack: [...redoStack, current],
+          selectedNodeId: null })
       },
 
       redo: () => {
-        const { redoStack, undoStack, nodes, edges } = get()
+        const { redoStack, undoStack } = get()
         if (!redoStack.length) return
-        const current = JSON.stringify({ nodes, edges })
-        const next = redoStack[redoStack.length - 1]
-        const restored = JSON.parse(next)
-        set({
-          nodes: restored.nodes, edges: restored.edges,
-          redoStack: redoStack.slice(0, -1),
-          undoStack: [...undoStack, current],
-          selectedNodeId: null,
-        })
+        const current = get()._snapshot()
+        const restored = JSON.parse(redoStack[redoStack.length - 1])
+        set({ nodes: restored.nodes, edges: restored.edges,
+          redoStack: redoStack.slice(0, -1), undoStack: [...undoStack, current],
+          selectedNodeId: null })
       },
 
       onNodesChange: (changes) => {
@@ -63,44 +57,54 @@ export const useCanvasStore = create(
       onConnect: (connection) => {
         const { source, target } = connection
         if (source === target) return
+
+        // Validate connection: sourceType -> targetType
+        const sourceNode = get().nodes.find((n) => n.id === source)
+        const targetNode = get().nodes.find((n) => n.id === target)
+        if (sourceNode && targetNode) {
+          const allowed = validConnections[sourceNode.type]
+          if (!allowed || !allowed[targetNode.type]) {
+            return // Invalid connection — silently reject
+          }
+        }
+
         get()._pushUndo()
-        set({
-          edges: [
-            ...get().edges,
-            {
-              ...connection,
-              id: `e_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-              type: 'smoothstep',
-              animated: true,
-              style: { stroke: 'var(--accent)', strokeWidth: 2 },
-            },
-          ],
-        })
+        set({ edges: [...get().edges, {
+          ...connection,
+          id: `e_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          type: 'smoothstep', animated: true,
+          style: { stroke: 'var(--accent)', strokeWidth: 2 },
+        }]})
       },
 
       addNode: (type, position = { x: 250, y: 200 }) => {
+        if (get().nodes.length >= MAX_NODES) return
         get()._pushUndo()
         const id = `n_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
-        const defaults = nodeDefaults[type] || nodeDefaults.textPrompt
-        set({
-          nodes: [...get().nodes, { id, type, position, data: { ...defaults } }],
-        })
+        set({ nodes: [...get().nodes, { id, type, position, data: { ...nodeDefaults[type] } }] })
+      },
+
+      duplicateNode: (nodeId) => {
+        const node = get().nodes.find((n) => n.id === nodeId)
+        if (!node || get().nodes.length >= MAX_NODES) return
+        get()._pushUndo()
+        const id = `n_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+        const pos = { x: node.position.x + 40, y: node.position.y + 40 }
+        set({ nodes: [...get().nodes, {
+          id, type: node.type, position: pos,
+          data: { ...nodeDefaults[node.type], ...node.data, generatedImages: [], generatedVideo: null, status: 'idle', response: '' },
+        }]})
       },
 
       updateNodeData: (nodeId, data) =>
-        set({
-          nodes: get().nodes.map((n) =>
-            n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n
-          ),
-        }),
+        set({ nodes: get().nodes.map((n) =>
+          n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n) }),
 
       deleteNode: (nodeId) => {
         get()._pushUndo()
-        set({
-          nodes: get().nodes.filter((n) => n.id !== nodeId),
+        set({ nodes: get().nodes.filter((n) => n.id !== nodeId),
           edges: get().edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
-          selectedNodeId: get().selectedNodeId === nodeId ? null : get().selectedNodeId,
-        })
+          selectedNodeId: get().selectedNodeId === nodeId ? null : get().selectedNodeId })
       },
 
       deleteEdge: (edgeId) => {
@@ -112,24 +116,18 @@ export const useCanvasStore = create(
       deselectNode: () => set({ selectedNodeId: null }),
 
       clearCanvas: () => {
-        if (get().nodes.length === 0) return
+        if (!get().nodes.length) return
         get()._pushUndo()
         set({ nodes: [], edges: [], selectedNodeId: null })
       },
 
       autoLayout: () => {
-        if (get().nodes.length === 0) return
+        if (!get().nodes.length) return
         get()._pushUndo()
-        const cols = 3
-        const spacing = { x: 320, y: 280 }
-        const updated = get().nodes.map((n, i) => ({
-          ...n,
-          position: {
-            x: 80 + (i % cols) * spacing.x,
-            y: 80 + Math.floor(i / cols) * spacing.y,
-          },
-        }))
-        set({ nodes: updated })
+        const cols = 3, sx = 320, sy = 280
+        set({ nodes: get().nodes.map((n, i) => ({
+          ...n, position: { x: 80 + (i % cols) * sx, y: 80 + Math.floor(i / cols) * sy },
+        }))})
       },
 
       exportCanvas: () => ({
@@ -140,17 +138,14 @@ export const useCanvasStore = create(
       }),
 
       importCanvas: (state) => {
-        if (!state || !state.nodes) return
+        if (!state?.nodes) return
         get()._pushUndo()
         set({
-          nodes: state.nodes.map((n) => ({
-            ...n,
-            data: { ...(nodeDefaults[n.type] || {}), ...n.data },
+          nodes: state.nodes.slice(0, MAX_NODES).map((n) => ({
+            ...n, data: { ...(nodeDefaults[n.type] || {}), ...n.data },
           })),
           edges: (state.edges || []).map((e) => ({
-            ...e,
-            type: e.type || 'smoothstep',
-            animated: true,
+            ...e, type: e.type || 'smoothstep', animated: true,
             style: e.style || { stroke: 'var(--accent)', strokeWidth: 2 },
           })),
           selectedNodeId: null,
@@ -160,6 +155,14 @@ export const useCanvasStore = create(
     {
       name: STORAGE_KEY,
       partialize: (state) => ({ nodes: state.nodes, edges: state.edges }),
+      version: 1,
+      onRehydrateStorage: () => (state) => {
+        // Validate stored state on load
+        if (state && !Array.isArray(state.nodes)) {
+          state.nodes = []
+          state.edges = []
+        }
+      },
     }
   )
 )

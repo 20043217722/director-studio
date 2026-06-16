@@ -1126,12 +1126,66 @@ button, .agent-card, .mobile-tab, .update-badge, .provider-grid-btn,
 
 /* React Flow overrides for theme */
 .react-flow__node { font-size: 12px !important; }
+.react-flow__node.selected .canvas-node {
+  box-shadow: 0 0 0 2px var(--accent), var(--shadow-glow) !important;
+  border-color: var(--accent) !important;
+}
+.react-flow__handle {
+  transition: transform 0.15s, opacity 0.15s;
+  opacity: 0.7;
+}
+.react-flow__handle:hover {
+  transform: scale(1.5);
+  opacity: 1;
+}
+.react-flow__handle-connecting {
+  background: var(--accent) !important;
+}
+.react-flow__handle-valid {
+  background: var(--accent) !important;
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+.react-flow__connection-line {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 6 3;
+  animation: dash-flow 0.5s linear infinite;
+}
+@keyframes dash-flow {
+  to { stroke-dashoffset: -18; }
+}
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--accent) !important;
+  stroke-width: 3 !important;
+}
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: var(--accent) !important;
+  stroke-width: 2.5 !important;
+  cursor: pointer;
+}
 .react-flow__controls button {
   background: var(--bg-surface) !important;
   border-color: var(--border) !important;
   color: var(--text) !important;
   fill: var(--text) !important;
 }
+.react-flow__controls button:hover {
+  background: var(--bg-elevated) !important;
+}
 .react-flow__minimap {
   background: var(--bg-surface) !important;
+}
+.react-flow__background {
+  transition: all 0.3s;
+}
+
+/* Drag ghost */
+.react-flow__drag-overlay {
+  opacity: 0.8;
+}
+
+/* Selection box */
+.react-flow__selection {
+  background: rgba(var(--accent-rgb, 14, 165, 233), 0.06) !important;
+  border: 1px dashed var(--accent) !important;
 }

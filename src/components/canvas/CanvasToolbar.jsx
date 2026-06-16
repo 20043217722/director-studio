@@ -77,15 +77,27 @@ export function CanvasToolbar({ undo, redo, fitView }) {
             boxShadow: 'var(--shadow-panel)', zIndex: 20,
           }}>
             {NODE_TYPES.map((nt) => (
-              <button key={nt.type} onClick={() => { addNode(nt.type); setShowAdd(false) }}
-                style={{
-                  display: 'block', width: '100%', textAlign: 'left',
-                  padding: '7px 10px', fontSize: 12, border: 'none', borderRadius: 5,
-                  background: 'transparent', color: 'var(--text)', cursor: 'pointer',
+              <button key={nt.type}
+                onClick={() => { addNode(nt.type); setShowAdd(false) }}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('application/reactflow-type', nt.type)
+                  e.dataTransfer.effectAllowed = 'move'
+                  setShowAdd(false)
                 }}
-                onMouseEnter={(e) => e.target.style.background = 'var(--bg-root)'}
-                onMouseLeave={(e) => e.target.style.background = 'transparent'}
-              >{nt.label}</button>
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  width: '100%', textAlign: 'left',
+                  padding: '7px 10px', fontSize: 12, border: 'none', borderRadius: 5,
+                  background: 'transparent', color: 'var(--text)', cursor: 'grab',
+                  userSelect: 'none',
+                }}
+                onMouseEnter={(e) => { e.target.style.background = 'var(--bg-root)'; e.target.style.cursor = 'grab' }}
+                onMouseLeave={(e) => { e.target.style.background = 'transparent'; e.target.style.cursor = 'pointer' }}
+              >
+                <span style={{ fontSize: 16 }}>{nt.label.slice(0, 2)}</span>
+                <span>{nt.label.slice(3)}</span>
+              </button>
             ))}
           </div>
         )}
