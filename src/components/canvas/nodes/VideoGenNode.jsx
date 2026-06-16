@@ -1,11 +1,21 @@
-import { memo, useState } from 'react'
+import { memo, useState, useMemo } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { useCanvasStore } from '../utils/canvasStore'
 import { VIDEO_MODELS } from '../utils/nodeDefaults'
 
+function useModelKeys() {
+  return useMemo(() => {
+    try {
+      const keys = JSON.parse(localStorage.getItem('api_keys') || '{}')
+      return new Set(Object.keys(keys))
+    } catch { return new Set() }
+  }, [])
+}
+
 export const VideoGenNode = memo(({ id, data }) => {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData)
   const [genLoading, setGenLoading] = useState(false)
+  const userKeys = useModelKeys()
 
   const handleGenerate = async () => {
     if (!data.prompt && !data.sourceImage) return
@@ -45,7 +55,10 @@ export const VideoGenNode = memo(({ id, data }) => {
       <div className="node-body" style={{ gap: 8 }}>
         <select value={data.modelProvider} onChange={(e) => updateNodeData(id, { modelProvider: e.target.value })}
           className="node-select">
-          {VIDEO_MODELS.map((m) => (<option key={m.id} value={m.id}>{m.name}</option>))}
+          {VIDEO_MODELS.map((m) => {
+            const hasKey = m.keyReuse ? userKeys.has(m.keyReuse) : false
+            return (<option key={m.id} value={m.id}>{hasKey ? '✅ ' : '🔑 '}{m.name}</option>)
+          })}
         </select>
 
         {/* Duration slider 3-15s */}

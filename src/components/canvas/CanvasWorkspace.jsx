@@ -1,6 +1,6 @@
 import { useCallback, useState, useEffect, useRef } from 'react'
 import {
-  ReactFlow, Background, Controls, MiniMap,
+  ReactFlow, ReactFlowProvider, Background, Controls, MiniMap,
   useReactFlow,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
@@ -29,6 +29,14 @@ const NODE_COLORS = {
 }
 
 export default function CanvasWorkspace() {
+  return (
+    <ReactFlowProvider>
+      <CanvasInner />
+    </ReactFlowProvider>
+  )
+}
+
+function CanvasInner() {
   const {
     nodes, edges, onNodesChange, onEdgesChange, onConnect,
     selectedNodeId, deselectNode, deleteEdge, deleteNode,

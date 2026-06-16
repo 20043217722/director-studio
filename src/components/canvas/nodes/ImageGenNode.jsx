@@ -1,11 +1,21 @@
-import { memo, useState } from 'react'
+import { memo, useState, useMemo } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { useCanvasStore } from '../utils/canvasStore'
 import { IMAGE_MODELS } from '../utils/nodeDefaults'
 
+function useModelKeys() {
+  return useMemo(() => {
+    try {
+      const keys = JSON.parse(localStorage.getItem('api_keys') || '{}')
+      return new Set(Object.keys(keys))
+    } catch { return new Set() }
+  }, [])
+}
+
 export const ImageGenNode = memo(({ id, data }) => {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData)
   const [genLoading, setGenLoading] = useState(false)
+  const userKeys = useModelKeys()
 
   const handleGenerate = async () => {
     if (!data.prompt) return
@@ -47,9 +57,14 @@ export const ImageGenNode = memo(({ id, data }) => {
           onChange={(e) => updateNodeData(id, { modelProvider: e.target.value })}
           className="node-select"
         >
-          {IMAGE_MODELS.map((m) => (
-            <option key={m.id} value={m.id}>{m.name}</option>
-          ))}
+          {IMAGE_MODELS.map((m) => {
+            const hasKey = m.keyReuse ? userKeys.has(m.keyReuse) : false
+            return (
+              <option key={m.id} value={m.id}>
+                {hasKey ? '✅ ' : '🔑 '}{m.name}
+              </option>
+            )
+          })}
         </select>
 
         {/* Aspect ratio */}

@@ -35,32 +35,33 @@ export const validConnections = {
   agent: { preview: ['input'] },
 }
 
-// ===== 图片生成模型 =====
+// ===== 图片生成模型 (keyReuse = 复用已有聊天 Key) =====
 export const IMAGE_MODELS = [
-  { id: 'openai', name: 'DALL·E 3 (OpenAI)', sizes: ['1024x1024', '1792x1024', '1024x1792'] },
-  { id: 'stability', name: 'Stable Diffusion 3.5', sizes: ['1024x1024', '1344x768', '768x1344'] },
-  { id: 'seedream', name: 'Seedream 5.0 (字节)', sizes: ['1024x1024', '2048x2048'] },
-  { id: 'midjourney', name: 'Midjourney V7', sizes: ['1024x1024', '2048x2048'] },
-  { id: 'flux', name: 'Flux.1 Pro (Black Forest)', sizes: ['1024x1024', '1280x720', '720x1280'] },
-  { id: 'imagen', name: 'Imagen 3 (Google)', sizes: ['1024x1024', '1536x1536', '2048x2048'] },
-  { id: 'banana', name: 'Nano Banana (TapNow 角色一致性)', sizes: ['1024x1024', '1280x720'] },
-  { id: 'gemini', name: 'Gemini 3 Flash 图像 (Google)', sizes: ['1024x1024', '2048x2048'] },
-  { id: 'qwen', name: '通义万相 (阿里)', sizes: ['1024x1024', '1280x720'] },
-  { id: 'glm', name: 'CogView (智谱)', sizes: ['1024x1024'] },
-  { id: 'minimax', name: 'MiniMax 图像 (海螺)', sizes: ['1024x1024', '2048x2048'] },
+  { id: 'gpt-image-1', name: 'GPT-4o 图像 (OpenAI)', sizes: ['1024x1024', '1792x1024', '1024x1792'], keyReuse: 'openai' },
+  { id: 'dall-e-3', name: 'DALL·E 3 (OpenAI)', sizes: ['1024x1024', '1792x1024', '1024x1792'], keyReuse: 'openai' },
+  { id: 'seedream', name: 'Seedream 5.0 (字节)', sizes: ['1024x1024', '2048x2048'], keyReuse: 'seedance' },
+  { id: 'qwen-image', name: '通义万相 (阿里)', sizes: ['1024x1024', '1280x720'], keyReuse: 'qwen' },
+  { id: 'cogview', name: 'CogView (智谱)', sizes: ['1024x1024'], keyReuse: 'glm' },
+  { id: 'minimax-image', name: 'MiniMax 图像 (海螺)', sizes: ['1024x1024', '2048x2048'], keyReuse: 'minimax' },
+  { id: 'gemini', name: 'Gemini 3 Flash 图像 (Google)', sizes: ['1024x1024', '2048x2048'], keyReuse: 'gemini' },
+  { id: 'flux', name: 'Flux.1 Pro (Black Forest)', sizes: ['1024x1024', '1280x720', '720x1280'], keyReuse: 'openai' },
+  { id: 'stability', name: 'Stable Diffusion 3.5', sizes: ['1024x1024', '1344x768', '768x1344'], keyReuse: null },
+  { id: 'midjourney', name: 'Midjourney V7', sizes: ['1024x1024', '2048x2048'], keyReuse: null },
+  { id: 'imagen', name: 'Imagen 3 (Google)', sizes: ['1024x1024', '1536x1536', '2048x2048'], keyReuse: 'gemini' },
+  { id: 'banana', name: 'Nano Banana (TapNow)', sizes: ['1024x1024', '1280x720'], keyReuse: null },
 ]
 
-// ===== 视频生成模型 (durationRange: [min秒, max秒]) =====
+// ===== 视频生成模型 =====
 export const VIDEO_MODELS = [
-  { id: 'seedance', name: 'Seedance 2.0 (字节)', durationRange: [3, 15] },
-  { id: 'kling', name: '可灵 3.0 (快手)', durationRange: [3, 15] },
-  { id: 'wan', name: 'Wan 2.6 (阿里)', durationRange: [3, 10] },
-  { id: 'runway', name: 'Runway Gen-4', durationRange: [4, 10] },
-  { id: 'pika', name: 'Pika 2.0', durationRange: [3, 10] },
-  { id: 'hailuo', name: '海螺视频 (MiniMax)', durationRange: [3, 15] },
-  { id: 'veo', name: 'Veo 3 (Google)', durationRange: [5, 15] },
-  { id: 'sora', name: 'Sora 2 (OpenAI)', durationRange: [5, 15] },
-  { id: 'gemini-video', name: 'Gemini 3 视频 (Google)', durationRange: [3, 10] },
+  { id: 'sora', name: 'Sora 2 (OpenAI)', durationRange: [5, 15], keyReuse: 'openai' },
+  { id: 'seedance', name: 'Seedance 2.0 (字节)', durationRange: [3, 15], keyReuse: 'seedance' },
+  { id: 'kling', name: '可灵 3.0 (快手)', durationRange: [3, 15], keyReuse: 'kling' },
+  { id: 'wan', name: 'Wan 2.6 (阿里)', durationRange: [3, 10], keyReuse: 'qwen' },
+  { id: 'minimax-video', name: '海螺视频 (MiniMax)', durationRange: [3, 15], keyReuse: 'minimax' },
+  { id: 'gemini-video', name: 'Gemini 3 视频 (Google)', durationRange: [3, 10], keyReuse: 'gemini' },
+  { id: 'runway', name: 'Runway Gen-4', durationRange: [4, 10], keyReuse: null },
+  { id: 'pika', name: 'Pika 2.0', durationRange: [3, 10], keyReuse: null },
+  { id: 'veo', name: 'Veo 3 (Google)', durationRange: [5, 15], keyReuse: 'gemini' },
 ]
 
 // ===== 8 个 AI 智能体 (来自侧边栏) =====

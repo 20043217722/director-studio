@@ -103,6 +103,16 @@ export const MODEL_PRESETS = {
     protocol: "openai",
     vision: false,
   },
+  "gemini": {
+    name: "Gemini 3 Flash",
+    provider: "Google Gemini",
+    endpoint: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+    model: "gemini-2.5-flash",
+    authHeader: "x-goog-api-key",
+    authPrefix: "",
+    protocol: "openai",
+    vision: true,
+  },
   "custom": {
     name: "自定义",
     provider: "Custom",
