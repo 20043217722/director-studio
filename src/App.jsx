@@ -10,6 +10,7 @@ import SettingsModal from "./components/SettingsModal";
 import ThemeSwitcher, { getEffectiveTheme } from "./components/ThemeSwitcher";
 import MobileTabBar from "./components/MobileTabBar";
 import AgentIcon from "./components/AgentIcon";
+import CanvasWorkspace from "./components/canvas/CanvasWorkspace";
 
 // Init theme on load
 document.documentElement.setAttribute("data-theme", getEffectiveTheme());
@@ -23,6 +24,7 @@ const AGENTS = [
   { id: "character", name: "人物造型", desc: "高精度角色设计 · 七层专业框架" },
   { id: "scene", name: "场景设计", desc: "十维场景生成 · 全风格全氛围覆盖" },
   { id: "lens", name: "视觉解析师", desc: "反向提示词工程 · 视觉元素拆解 · 多平台适配" },
+  { id: "canvas", name: "无限画布", desc: "节点式AI工作流 · 文生图 · 图生视频 · 多模型聚合" },
 ];
 
 const HISTORY_PREFIX = "director_studio_history_";
@@ -517,22 +519,28 @@ export default function App() {
           <button onClick={clearHistory} className="p-1.5 rounded-lg opacity-25 hover:opacity-60 transition-opacity text-xs" title="清空记录">🗑</button>
           <button onClick={() => setSettingsOpen(true)} className="p-1.5 rounded-lg opacity-40 hover:opacity-80 transition-opacity text-sm" title="设置">⚙</button>
         </header>
-        <div className="flex-1 overflow-y-auto relative" ref={chatContainerRef} onScroll={handleChatScroll}>
-          {loading && <div className="typing-progress sticky top-0 z-10 w-full" />}
-          <ChatArea mode={mode} messages={messages} loading={loading} onUndo={undoMessage} onRegenerate={regenerate} onRetry={handleSend} onToggleLike={toggleLike} />
-          <div ref={messagesEnd} />
-          {userScrolledUp && (
-            <button onClick={() => { userScrollRef.current = false; scrollToBottom(true); }}
-              className="sticky bottom-4 float-right z-30 w-9 h-9 rounded-full shadow-lg flex items-center justify-center text-sm transition-all hover:scale-110 mr-4"
-              style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--gold)" }}
-              title="回到底部">
-              ↓
-            </button>
-          )}
-        </div>
-        <MobileTabBar agents={AGENTS} active={mode} onSelect={switchMode} />
-        <div className="motif-line mx-4" />
-        <InputBar onSend={handleSend} onStop={() => abortRef.current?.abort()} loading={loading} network={network} />
+        {mode === "canvas" ? (
+          <CanvasWorkspace />
+        ) : (
+          <>
+            <div className="flex-1 overflow-y-auto relative" ref={chatContainerRef} onScroll={handleChatScroll}>
+              {loading && <div className="typing-progress sticky top-0 z-10 w-full" />}
+              <ChatArea mode={mode} messages={messages} loading={loading} onUndo={undoMessage} onRegenerate={regenerate} onRetry={handleSend} onToggleLike={toggleLike} />
+              <div ref={messagesEnd} />
+              {userScrolledUp && (
+                <button onClick={() => { userScrollRef.current = false; scrollToBottom(true); }}
+                  className="sticky bottom-4 float-right z-30 w-9 h-9 rounded-full shadow-lg flex items-center justify-center text-sm transition-all hover:scale-110 mr-4"
+                  style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--gold)" }}
+                  title="回到底部">
+                  ↓
+                </button>
+              )}
+            </div>
+            <MobileTabBar agents={AGENTS} active={mode} onSelect={switchMode} />
+            <div className="motif-line mx-4" />
+            <InputBar onSend={handleSend} onStop={() => abortRef.current?.abort()} loading={loading} network={network} />
+          </>
+        )}
       </div>
       {settingsOpen && <SettingsModal activeProvider={provider} onSave={handleSettingsSave} onClose={() => setSettingsOpen(false)} />}
       {/* 快捷键面板 */}

@@ -1010,3 +1010,128 @@ button, .agent-card, .mobile-tab, .update-badge, .provider-grid-btn,
   60% { transform: scale(0.9); }
   100% { transform: scale(1); }
 }
+
+/* ===== Canvas Nodes ===== */
+.canvas-node {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-panel);
+  font-size: 12px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.canvas-node:hover {
+  box-shadow: var(--shadow-panel), var(--shadow-glow);
+  border-color: var(--border-active);
+}
+.node-header {
+  padding: 8px 12px;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 9px 9px 0 0;
+  padding-left: 9px;
+}
+.node-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.node-textarea {
+  width: 100%;
+  resize: vertical;
+  font-size: 12px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-root);
+  color: var(--text);
+  font-family: inherit;
+  line-height: 1.5;
+  min-height: 60px;
+}
+.node-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+.node-select {
+  width: 100%;
+  font-size: 11px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-root);
+  color: var(--text);
+}
+.node-btn {
+  width: 100%;
+  padding: 8px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+.node-btn:active { transform: scale(0.97); }
+.node-error {
+  font-size: 11px;
+  color: #ef4444;
+  padding: 6px 8px;
+  background: rgba(239,68,68,0.08);
+  border-radius: 4px;
+  border: 1px solid rgba(239,68,68,0.2);
+}
+.node-chip {
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.config-field { margin-bottom: 10px; }
+.config-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; }
+.config-input {
+  width: 100%;
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-root);
+  color: var(--text);
+}
+.config-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+.toolbar-btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  font-size: 11px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.toolbar-btn:hover {
+  background: var(--bg-root);
+  color: var(--text);
+}
+
+/* React Flow overrides for theme */
+.react-flow__node { font-size: 12px !important; }
+.react-flow__controls button {
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+  fill: var(--text) !important;
+}
+.react-flow__minimap {
+  background: var(--bg-surface) !important;
+}
