@@ -84,6 +84,50 @@ export const useCanvasStore = create(
         set({ nodes: [...get().nodes, { id, type, position, data: { ...nodeDefaults[type] } }] })
       },
 
+      autoBuild: (sourceId, targetType, targetData = {}, addPreview = false) => {
+        const s = get()
+        const sourceNode = s.nodes.find((n) => n.id === sourceId)
+        if (!sourceNode || s.nodes.length >= MAX_NODES) return
+
+        s._pushUndo()
+        const baseX = sourceNode.position.x + 340
+        const baseY = sourceNode.position.y - 60
+
+        // Create target node
+        const genId = `n_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+        const newNodes = [...s.nodes, {
+          id: genId, type: targetType,
+          position: { x: baseX, y: baseY },
+          data: { ...targetData },
+        }]
+
+        // Create edge
+        const newEdges = [...s.edges, {
+          id: `e_${Date.now()}_a`, source: sourceId, sourceHandle: 'output',
+          target: genId, targetHandle: 'prompt',
+          type: 'smoothstep', animated: true,
+          style: { stroke: 'var(--accent)', strokeWidth: 2 },
+        }]
+
+        // Optional preview node
+        if (addPreview) {
+          const previewId = `n_${Date.now() + 1}_${Math.random().toString(36).slice(2, 7)}`
+          newNodes.push({
+            id: previewId, type: 'preview',
+            position: { x: baseX + 340, y: baseY },
+            data: { label: '预览输出', outputType: targetType === 'videoGen' ? 'video' : 'image' },
+          })
+          newEdges.push({
+            id: `e_${Date.now()}_b`, source: genId, sourceHandle: 'output',
+            target: previewId, targetHandle: 'input',
+            type: 'smoothstep', animated: true,
+            style: { stroke: 'var(--accent)', strokeWidth: 2 },
+          })
+        }
+
+        set({ nodes: newNodes, edges: newEdges })
+      },
+
       duplicateNode: (nodeId) => {
         const node = get().nodes.find((n) => n.id === nodeId)
         if (!node || get().nodes.length >= MAX_NODES) return
