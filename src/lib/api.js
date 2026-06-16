@@ -1,6 +1,25 @@
 // ========== 多模型 API 客户端 ==========
 import { getPreferenceInjection } from "./preferences";
 
+// 后端代理检测（如果 localhost:3001 运行，自动走代理，免 API Key）
+let _proxyChecked = false
+let _proxyAvailable = false
+async function ensureProxy() {
+  if (_proxyChecked) return _proxyAvailable
+  _proxyChecked = true
+  try {
+    const r = await fetch('http://localhost:3001/health', { signal: AbortSignal.timeout(1500) })
+    _proxyAvailable = r.ok
+    if (_proxyAvailable) console.log('[API] Proxy detected — using backend')
+  } catch { _proxyAvailable = false }
+  return _proxyAvailable
+}
+function wrapEndpoint(url) {
+  if (_proxyAvailable) return `http://localhost:3001/api/${url}`
+  const userProxy = (() => { try { return localStorage.getItem('api_proxy_url') || '' } catch { return '' } })()
+  return userProxy || url
+}
+
 // 预设模型配置
 export const MODEL_PRESETS = {
   "deepseek": {
@@ -133,10 +152,11 @@ export async function* callAgentStream(prompt, mode, { apiKey, provider = "deeps
   const rawEndpoint = provider === "custom" ? customEndpoint : preset.endpoint;
   const model = provider === "custom" ? customModel : preset.model;
 
-  // 代理地址：国内用户可通过代理访问海外 API
+  // 代理地址：优先后端代理(localhost:3001) → 用户设置代理 → 直连
+  await ensureProxy()
+  const endpoint = _proxyAvailable ? wrapEndpoint(rawEndpoint) : (proxyUrl || rawEndpoint)
   let proxyUrl = "";
   try { proxyUrl = localStorage.getItem("api_proxy_url") || ""; } catch (_) {}
-  const endpoint = proxyUrl ? proxyUrl : rawEndpoint;
   const sys = getSystemPrompt(mode);
   const messages = history.map((h) => ({ role: h.role, content: h.text }));
 

@@ -5,7 +5,35 @@
 
 // Same key store as api.js (shared localStorage key)
 const getKeys = () => { try { return JSON.parse(localStorage.getItem('api_keys') || '{}') } catch { return {} } }
-const getProxy = () => localStorage.getItem('api_proxy_url') || ''
+
+// Auto-detect backend proxy: if running, no API key needed
+const PROXY_URL = 'http://localhost:3001'
+let proxyAvailable = null  // null=unknown, true/false after check
+
+async function checkProxy() {
+  if (proxyAvailable !== null) return proxyAvailable
+  try {
+    const res = await fetch(`${PROXY_URL}/health`, { signal: AbortSignal.timeout(2000) })
+    if (res.ok) {
+      const data = await res.json()
+      proxyAvailable = data.status === 'ok'
+      if (proxyAvailable) console.log(`[Canvas] Proxy detected — ${(data.configured||[]).length} keys configured`)
+    } else {
+      proxyAvailable = false
+    }
+  } catch { proxyAvailable = false }
+  return proxyAvailable
+}
+
+function getProxyEndpoint(targetUrl) {
+  // If backend proxy is running, route through it (no API key needed)
+  // Otherwise, use user-configured proxy or direct
+  return `${PROXY_URL}/api/${targetUrl}`
+}
+
+function getUserProxy() {
+  return localStorage.getItem('api_proxy_url') || ''
+}
 
 // Key alias mapping — many image/video APIs reuse chat API keys
 const KEY_ALIAS = {
@@ -62,21 +90,24 @@ async function fetchWithRetry(url, options, retries = 2) {
 
 // ===== Image Generation =====
 export async function generateImage(prompt, {
-  provider = 'gpt-image-1',  // Default: GPT-4o image (reuses OpenAI key)
+  provider = 'gpt-image-1',
   aspectRatio = '1:1',
   negativePrompt = '',
   count = 1,
   signal,
 } = {}) {
-  const { key, source } = getResolvedKey(provider)
-  if (!key) {
+  // Try backend proxy first (no key needed)
+  const useProxy = await checkProxy()
+  const { key } = getResolvedKey(provider)
+  if (!useProxy && !key) {
     const name = provider === 'gpt-image-1' ? 'GPT-4o 图片生成' : provider
-    throw new Error(`请在设置中配置 API Key（${name} 需要 ${provider === 'gpt-image-1' ? 'OpenAI' : provider} Key）`)
+    throw new Error(`请启动后端代理 (npm run proxy) 或在设置中配置 API Key（${name}）`)
   }
 
-  // === GPT-4o Image (OpenAI Chat Completions API with image output) ===
+  // === GPT-4o Image ===
   if (provider === 'gpt-image-1') {
-    const endpoint = getProxy() || 'https://api.openai.com/v1/chat/completions'
+    const baseEndpoint = 'https://api.openai.com/v1/chat/completions'
+    const endpoint = useProxy ? getProxyEndpoint(baseEndpoint) : (getUserProxy() || baseEndpoint)
     const sizeMap = { '1:1': '1024x1024', '16:9': '1792x1024', '9:16': '1024x1792' }
     const size = sizeMap[aspectRatio] || '1024x1024'
 
@@ -114,7 +145,8 @@ export async function generateImage(prompt, {
 
   // === DALL·E 3 ===
   if (provider === 'dall-e-3') {
-    const endpoint = getProxy() || 'https://api.openai.com/v1/images/generations'
+    const baseEndpoint = 'https://api.openai.com/v1/images/generations'
+    const endpoint = useProxy ? getProxyEndpoint(baseEndpoint) : (getUserProxy() || baseEndpoint)
     const sizeMap = { '1:1': '1024x1024', '16:9': '1792x1024', '9:16': '1024x1792' }
     const size = sizeMap[aspectRatio] || '1024x1024'
 
@@ -153,7 +185,8 @@ export async function generateVideo(promptOrImage, {
 
   // === Sora 2 (OpenAI) ===
   if (provider === 'sora') {
-    const endpoint = getProxy() || 'https://api.openai.com/v1/videos'
+    const baseEndpoint = 'https://api.openai.com/v1/videos'
+    const endpoint = useProxy ? getProxyEndpoint(baseEndpoint) : (getUserProxy() || baseEndpoint)
     const isImage = typeof promptOrImage === 'string' && promptOrImage.startsWith('data:')
     const body = isImage
       ? { model: 'sora-2', image: promptOrImage, duration_seconds: duration }
@@ -199,7 +232,9 @@ export async function* pollVideoGeneration(jobId, {
 
   // Sora 2 polling
   if (provider === 'sora') {
-    const endpoint = getProxy() || `https://api.openai.com/v1/videos/${jobId}`
+    const useProxy = await checkProxy()
+    const baseEndpoint = `https://api.openai.com/v1/videos/${jobId}`
+    const endpoint = useProxy ? getProxyEndpoint(baseEndpoint) : (getUserProxy() || baseEndpoint)
     for (let i = 0; i < maxAttempts; i++) {
       if (signal?.aborted) break
       await new Promise(r => setTimeout(r, interval))
