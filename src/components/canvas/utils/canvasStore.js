@@ -7,6 +7,137 @@ const STORAGE_KEY = 'director_studio_canvas'
 const MAX_UNDO = 50
 const MAX_NODES = 100
 
+// ===== Data Flow Engine =====
+// Propagates data through connected nodes automatically
+
+function getDownstreamTargets(nodeId, nodes, edges) {
+  // Find all edges where this node is source, return target node IDs
+  return edges.filter(e => e.source === nodeId).map(e => e.target)
+}
+
+function getUpstreamSources(nodeId, nodes, edges) {
+  // Find all edges where this node is target, return source node IDs
+  return edges.filter(e => e.target === nodeId).map(e => e.source)
+}
+
+function syncNodeDownstream(sourceId, nodes, edges) {
+  // Propagate source node's data to all connected downstream nodes
+  const sourceNode = nodes.find(n => n.id === sourceId)
+  if (!sourceNode) return nodes
+
+  const targets = getDownstreamTargets(sourceId, nodes, edges)
+  if (!targets.length) return nodes
+
+  const updated = [...nodes]
+  const srcData = sourceNode.data
+
+  for (const targetId of targets) {
+    const idx = updated.findIndex(n => n.id === targetId)
+    if (idx === -1) continue
+    const target = updated[idx]
+
+    // Data flow rules by source → target type
+    if (sourceNode.type === 'textPrompt') {
+      // TextPrompt → ImageGen/VideoGen/Agent: push prompt text
+      if (target.type === 'imageGen' || target.type === 'videoGen' || target.type === 'agent') {
+        if (srcData.prompt && !target.data.prompt) {
+          updated[idx] = { ...target, data: { ...target.data, prompt: srcData.prompt } }
+        }
+      }
+    }
+
+    if (sourceNode.type === 'imageGen') {
+      // ImageGen → Preview: push generated images
+      if (target.type === 'preview' && srcData.generatedImages?.length) {
+        updated[idx] = {
+          ...target,
+          data: {
+            ...target.data,
+            outputType: 'image',
+            outputContent: srcData.generatedImages[0],
+            status: srcData.status,
+          }
+        }
+      }
+      // ImageGen → VideoGen: push generated image as source
+      if (target.type === 'videoGen' && srcData.generatedImages?.length) {
+        const img = srcData.generatedImages[0]
+        if (img && !target.data.sourceImage) {
+          updated[idx] = {
+            ...target,
+            data: { ...target.data, sourceImage: img.url || img.base64 }
+          }
+        }
+      }
+    }
+
+    if (sourceNode.type === 'videoGen') {
+      // VideoGen → Preview: push generated video
+      if (target.type === 'preview' && srcData.generatedVideo?.url) {
+        updated[idx] = {
+          ...target,
+          data: {
+            ...target.data,
+            outputType: 'video',
+            outputContent: srcData.generatedVideo,
+            status: srcData.status,
+          }
+        }
+      }
+    }
+
+    if (sourceNode.type === 'reference') {
+      // Reference → ImageGen/VideoGen: push media as prompt source
+      if ((target.type === 'imageGen' || target.type === 'videoGen') && srcData.mediaData) {
+        updated[idx] = {
+          ...target,
+          data: { ...target.data, sourceImage: srcData.mediaData }
+        }
+      }
+    }
+
+    if (sourceNode.type === 'agent') {
+      // Agent → Preview: push response text
+      if (target.type === 'preview' && srcData.response) {
+        updated[idx] = {
+          ...target,
+          data: { ...target.data, outputType: 'image', outputContent: null, response: srcData.response }
+        }
+      }
+    }
+  }
+
+  return updated
+}
+
+function syncNodeUpstream(targetId, nodes, edges) {
+  // Pull data from upstream sources into this node
+  const targetNode = nodes.find(n => n.id === targetId)
+  if (!targetNode) return nodes
+
+  const sources = getUpstreamSources(targetId, nodes, edges)
+  if (!sources.length) return nodes
+
+  const updated = [...nodes]
+  const idx = updated.findIndex(n => n.id === targetId)
+
+  for (const sourceId of sources) {
+    const source = updated.find(n => n.id === sourceId)
+    if (!source) continue
+
+    // Auto-fill target data from source
+    if (source.type === 'textPrompt' && source.data.prompt) {
+      if (targetNode.type === 'imageGen' || targetNode.type === 'videoGen' || targetNode.type === 'agent') {
+        if (!targetNode.data.prompt || targetNode.data.prompt === source.data.prompt) {
+          updated[idx] = { ...updated[idx], data: { ...updated[idx].data, prompt: source.data.prompt } }
+        }
+      }
+    }
+  }
+
+  return updated
+}
+
 export const useCanvasStore = create(
   persist(
     (set, get) => ({
@@ -58,23 +189,27 @@ export const useCanvasStore = create(
         const { source, target } = connection
         if (source === target) return
 
-        // Validate connection: sourceType -> targetType
         const sourceNode = get().nodes.find((n) => n.id === source)
         const targetNode = get().nodes.find((n) => n.id === target)
         if (sourceNode && targetNode) {
           const allowed = validConnections[sourceNode.type]
-          if (!allowed || !allowed[targetNode.type]) {
-            return // Invalid connection — silently reject
-          }
+          if (!allowed || !allowed[targetNode.type]) return
         }
 
         get()._pushUndo()
-        set({ edges: [...get().edges, {
+
+        const newEdges = [...get().edges, {
           ...connection,
           id: `e_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
           type: 'smoothstep', animated: true,
           style: { stroke: 'var(--accent)', strokeWidth: 2 },
-        }]})
+        }]
+
+        // 🔗 Auto-sync data on connection
+        let updatedNodes = syncNodeDownstream(source, get().nodes, newEdges)
+        updatedNodes = syncNodeUpstream(target, updatedNodes, newEdges)
+
+        set({ edges: newEdges, nodes: updatedNodes })
       },
 
       addNode: (type, position = { x: 250, y: 200 }) => {
@@ -140,9 +275,14 @@ export const useCanvasStore = create(
         }]})
       },
 
-      updateNodeData: (nodeId, data) =>
-        set({ nodes: get().nodes.map((n) =>
-          n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n) }),
+      updateNodeData: (nodeId, data, { syncDownstream = true } = {}) => {
+        let updated = get().nodes.map((n) =>
+          n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n)
+        if (syncDownstream) {
+          updated = syncNodeDownstream(nodeId, updated, get().edges)
+        }
+        set({ nodes: updated })
+      },
 
       deleteNode: (nodeId) => {
         get()._pushUndo()

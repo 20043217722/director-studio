@@ -37,9 +37,17 @@ export const PreviewNode = memo(({ data }) => {
           <div className="node-error">{data.errorMessage}</div>
         )}
 
-        {!data.outputContent && data.status !== 'generating' && data.status !== 'error' && (
+        {/* Text response from Agent nodes */}
+        {data.response && !data.outputContent && (
+          <div style={{ fontSize: 11, color: 'var(--text)', maxHeight: 200, overflowY: 'auto',
+            background: 'var(--bg-root)', padding: 8, borderRadius: 6, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+            {data.response.slice(0, 600)}{data.response.length > 600 && '...'}
+          </div>
+        )}
+
+        {!data.outputContent && !data.response && data.status !== 'generating' && data.status !== 'error' && (
           <div style={{ textAlign: 'center', padding: 16, color: 'var(--text-muted)', fontSize: 12 }}>
-            连接生成节点<br/>查看输出结果
+            🔗 连接生成节点<br/>数据自动流转
           </div>
         )}
 
