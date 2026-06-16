@@ -153,10 +153,10 @@ export async function* callAgentStream(prompt, mode, { apiKey, provider = "deeps
   const model = provider === "custom" ? customModel : preset.model;
 
   // 代理地址：优先后端代理(localhost:3001) → 用户设置代理 → 直连
-  await ensureProxy()
-  const endpoint = _proxyAvailable ? wrapEndpoint(rawEndpoint) : (proxyUrl || rawEndpoint)
   let proxyUrl = "";
   try { proxyUrl = localStorage.getItem("api_proxy_url") || ""; } catch (_) {}
+  await ensureProxy()
+  const endpoint = _proxyAvailable ? wrapEndpoint(rawEndpoint) : (proxyUrl || rawEndpoint)
   const sys = getSystemPrompt(mode);
   const messages = history.map((h) => ({ role: h.role, content: h.text }));
 

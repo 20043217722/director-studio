@@ -1,14 +1,13 @@
 /**
- * Director Studio — API Proxy Server
- * 后端持有所有 API Key，前端无需配置
- * 启动: node backend/server.js
+ * Director Studio — API Proxy Server v2
+ * 支持 SSE 流式代理 + 请求体大小限制 + 超时保护
  */
 const http = require('http')
 const https = require('https')
 const fs = require('fs')
 const path = require('path')
 
-// Load .env
+// ===== Load .env =====
 const envPath = path.join(__dirname, '.env')
 if (fs.existsSync(envPath)) {
   const lines = fs.readFileSync(envPath, 'utf-8').split('\n')
@@ -20,7 +19,13 @@ if (fs.existsSync(envPath)) {
   }
 }
 
-// API Key mapping — 提供商 → 环境变量
+// ===== Config =====
+const PORT = process.env.PORT || 3001
+const MAX_BODY_SIZE = 50 * 1024 * 1024  // 50MB (for image/video upload)
+const REQUEST_TIMEOUT = 120_000          // 120s timeout
+const STREAMING_CONTENT_TYPES = ['text/event-stream', 'application/x-ndjson']
+
+// ===== Key Registry =====
 const KEYS = {
   openai: process.env.OPENAI_API_KEY || '',
   deepseek: process.env.DEEPSEEK_API_KEY || '',
@@ -35,132 +40,175 @@ const KEYS = {
   xiaomi: process.env.XIAOMI_API_KEY || '',
 }
 
-// Model → Key provider mapping
-const MODEL_KEY_MAP = {
-  // Chat models
-  'api.deepseek.com': 'deepseek',
-  'api.openai.com': 'openai',
-  'api.anthropic.com': 'claude',
-  'dashscope.aliyuncs.com': 'qwen',
-  'open.bigmodel.cn': 'glm',
-  'api.moonshot.cn': 'moonshot',
-  'api.minimax.chat': 'minimax',
-  'api.minimax.io': 'minimax',
-  'generativelanguage.googleapis.com': 'gemini',
-  // Image models
-  'api.stability.ai': 'stability',
-  'api.midjourney.com': 'midjourney',
-  // Video models
-  'api.seedance.com': 'seedance',
-  'api.klingai.com': 'kling',
-}
+// Hostname → Key provider mapping (supports wildcard subdomains)
+const HOST_KEY_MAP = [
+  ['api.deepseek.com', 'deepseek'],
+  ['api.openai.com', 'openai'],
+  ['api.anthropic.com', 'claude'],
+  ['dashscope.aliyuncs.com', 'qwen'],
+  ['open.bigmodel.cn', 'glm'],
+  ['api.moonshot.cn', 'moonshot'],
+  ['api.minimax.chat', 'minimax'],
+  ['api.minimax.io', 'minimax'],
+  ['generativelanguage.googleapis.com', 'gemini'],
+  ['api.stability.ai', 'stability'],
+  ['api.seedance.com', 'seedance'],
+  ['api.klingai.com', 'kling'],
+  ['ark.cn-beijing.volces.com', 'seedance'],
+]
 
 function getKeyForHost(hostname) {
-  for (const [host, provider] of Object.entries(MODEL_KEY_MAP)) {
-    if (hostname.includes(host)) return KEYS[provider] || ''
+  for (const [host, provider] of HOST_KEY_MAP) {
+    if (hostname.includes(host)) return { key: KEYS[provider] || '', provider }
   }
-  // Fallback: try OpenAI key for unknown hosts
-  return KEYS.openai || ''
+  return { key: '', provider: 'unknown' }
 }
 
-function getAuthHeader(hostname, key) {
-  if (hostname.includes('deepseek.com')) return 'x-api-key'
-  if (hostname.includes('anthropic.com')) return 'x-api-key'
-  if (hostname.includes('generativelanguage.googleapis.com')) return 'x-goog-api-key'
-  if (hostname.includes('dashscope.aliyuncs.com')) return 'Authorization'
-  return 'Authorization'
+// Auth header format per provider
+function buildAuthHeader(hostname, key) {
+  if (!key) return null
+  // x-api-key style (DeepSeek, Anthropic, Google)
+  if (hostname.includes('deepseek.com') || hostname.includes('anthropic.com')) {
+    return ['x-api-key', key]
+  }
+  if (hostname.includes('generativelanguage.googleapis.com')) {
+    return ['x-goog-api-key', key]
+  }
+  // Bearer token style (OpenAI, MiniMax, Qwen, etc.)
+  return ['Authorization', `Bearer ${key}`]
 }
 
-function getAuthPrefix(hostname) {
-  if (hostname.includes('deepseek.com')) return ''
-  if (hostname.includes('anthropic.com')) return ''
-  if (hostname.includes('generativelanguage.googleapis.com')) return ''
-  return 'Bearer '
+// ===== Helpers =====
+function log(level, msg) {
+  const ts = new Date().toISOString().slice(11, 19)
+  console.log(`[${ts}] ${level}: ${msg}`)
 }
 
-const PORT = process.env.PORT || 3001
+function json(res, status, data) {
+  res.writeHead(status, { 'Content-Type': 'application/json' })
+  res.end(JSON.stringify(data))
+}
 
+// ===== Server =====
 const server = http.createServer((req, res) => {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,x-api-key,x-goog-api-key')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,x-api-key,x-goog-api-key,Accept')
 
   if (req.method === 'OPTIONS') {
-    res.writeHead(204)
-    res.end()
+    res.writeHead(204); res.end()
     return
   }
 
   // Health check
   if (req.url === '/health') {
     const configured = Object.entries(KEYS).filter(([, v]) => v).map(([k]) => k)
-    res.writeHead(200, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ status: 'ok', configured }))
+    json(res, 200, { status: 'ok', configured })
     return
   }
 
-  // Proxy /api/* → target server
-  if (req.url.startsWith('/api/')) {
-    const url = req.url.slice(4) // Remove /api prefix
-    if (!url.startsWith('http')) {
-      res.writeHead(400, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify({ error: 'URL must be absolute: /api/https://...' }))
+  // Proxy /api/{absolute-url} → target
+  if (!req.url.startsWith('/api/')) {
+    json(res, 404, { error: 'Not found. Use /api/{target-url} or /health' })
+    return
+  }
+
+  const targetUrl = req.url.slice(4)
+  let target
+  try {
+    target = new URL(decodeURIComponent(targetUrl))
+    if (!target.hostname) throw new Error('No hostname')
+  } catch {
+    json(res, 400, { error: 'Invalid target URL. Must be absolute: /api/https://api.openai.com/...' })
+    return
+  }
+
+  const { key, provider } = getKeyForHost(target.hostname)
+  const auth = buildAuthHeader(target.hostname, key)
+
+  log('info', `${req.method} → ${target.hostname}${target.pathname.slice(0, 60)} [key: ${provider}${key ? '' : ' MISSING'}]`)
+
+  // Collect body with size limit
+  let body = ''
+  let bodySize = 0
+  req.on('data', (chunk) => {
+    bodySize += chunk.length
+    if (bodySize > MAX_BODY_SIZE) {
+      log('warn', `Body too large: ${bodySize} bytes`)
+      if (!res.headersSent) json(res, 413, { error: 'Request body too large (>50MB)' })
+      req.destroy()
       return
     }
+    body += chunk
+  })
 
-    const target = new URL(url)
-    const key = getKeyForHost(target.hostname)
-    const authHeader = getAuthHeader(target.hostname, key)
-    const authPrefix = getAuthPrefix(target.hostname)
+  req.on('end', () => {
+    const reqHeaders = {
+      'Content-Type': req.headers['content-type'] || 'application/json',
+      'Accept': req.headers['accept'] || '*/*',
+    }
+    // Inject API key as auth header
+    if (auth) {
+      reqHeaders[auth[0]] = auth[1]
+    }
 
-    let body = ''
-    req.on('data', chunk => { body += chunk })
-    req.on('end', () => {
-      const headers = {
-        'Content-Type': req.headers['content-type'] || 'application/json',
-      }
-      // Inject API key
-      if (key) {
-        headers[authHeader] = authPrefix + key
-      }
+    const options = {
+      hostname: target.hostname,
+      port: target.port || (target.protocol === 'https:' ? 443 : 80),
+      path: target.pathname + target.search,
+      method: req.method,
+      headers: reqHeaders,
+      timeout: REQUEST_TIMEOUT,
+    }
 
-      const options = {
-        hostname: target.hostname,
-        port: target.port || (target.protocol === 'https:' ? 443 : 80),
-        path: target.pathname + target.search,
-        method: req.method,
-        headers,
-      }
+    const proxyProto = target.protocol === 'https:' ? https : http
+    const proxyReq = proxyProto.request(options, (proxyRes) => {
+      const status = proxyRes.statusCode
+      const isStream = STREAMING_CONTENT_TYPES.some(t =>
+        (proxyRes.headers['content-type'] || '').includes(t)
+      )
 
-      const proxy = target.protocol === 'https:' ? https : http
-      const proxyReq = proxy.request(options, (proxyRes) => {
-        res.writeHead(proxyRes.statusCode, proxyRes.headers)
+      log('info', `← ${status}${isStream ? ' [stream]' : ''}`)
+
+      // Remove hop-by-hop headers
+      const resHeaders = { ...proxyRes.headers }
+      delete resHeaders['transfer-encoding']
+      delete resHeaders['connection']
+      delete resHeaders['keep-alive']
+
+      res.writeHead(status, resHeaders)
+
+      if (isStream) {
+        // Streaming: pipe raw chunks without buffering (SSE for chat)
         proxyRes.pipe(res)
-      })
-
-      proxyReq.on('error', (e) => {
-        console.error('Proxy error:', e.message)
-        res.writeHead(502, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ error: `Proxy error: ${e.message}` }))
-      })
-
-      if (body) proxyReq.write(body)
-      proxyReq.end()
+      } else {
+        // Non-streaming: collect and send
+        let resBody = ''
+        proxyRes.on('data', (chunk) => { resBody += chunk })
+        proxyRes.on('end', () => { res.end(resBody) })
+      }
     })
-    return
-  }
 
-  // 404
-  res.writeHead(404, { 'Content-Type': 'application/json' })
-  res.end(JSON.stringify({ error: 'Not found' }))
+    proxyReq.on('timeout', () => {
+      log('error', 'Upstream timeout')
+      proxyReq.destroy()
+      if (!res.headersSent) json(res, 504, { error: 'Upstream timeout' })
+    })
+
+    proxyReq.on('error', (e) => {
+      log('error', `Proxy error: ${e.message}`)
+      if (!res.headersSent) json(res, 502, { error: `Proxy error: ${e.message}` })
+    })
+
+    if (body) proxyReq.write(body)
+    proxyReq.end()
+  })
 })
 
 server.listen(PORT, () => {
   const configured = Object.entries(KEYS).filter(([, v]) => v).map(([k]) => k)
-  console.log(`\n  Director Studio Proxy`)
-  console.log(`  → http://localhost:${PORT}`)
-  console.log(`  → /health to check status`)
-  console.log(`  → /api/{target-url} to proxy requests`)
-  console.log(`\n  Keys configured: ${configured.length ? configured.join(', ') : 'NONE — edit backend/.env'}\n`)
+  log('info', `Director Studio Proxy v2 — http://localhost:${PORT}`)
+  log('info', `Keys configured: ${configured.length ? configured.join(', ') : 'NONE (edit backend/.env)'}`)
+  if (!configured.length) log('warn', 'No API keys configured — proxy will forward requests without auth')
 })
