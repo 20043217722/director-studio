@@ -271,5 +271,87 @@ export async function* pollVideoGeneration(jobId, {
   throw new Error('视频生成超时')
 }
 
+// ===== Pixelle-Video Integration =====
+const PIXELLE_BASE = 'http://localhost:8000'
+
+/**
+ * Generate a full short video via Pixelle-Video (async)
+ * Pixelle-Video must be running: docker compose up -d or uv run
+ */
+export async function generatePixelleVideo(topic, {
+  nScenes = 5,
+  template = '1080x1920/image_default.html',
+  tts = 'edge',
+  bgm = 'uplift',
+  signal,
+} = {}) {
+  // Try the Pixelle-Video API directly
+  const endpoint = `${PIXELLE_BASE}/api/video/generate/async`
+  const body = {
+    text: topic,
+    mode: 'generate',
+    n_scenes: nScenes,
+    frame_template: template,
+    tts_workflow: tts === 'index' ? 'tts_index.json' : 'tts_edge.json',
+    template_params: {
+      bgm_style: bgm,
+      accent_color: '#8b5cf6',
+      font_size: 48,
+    },
+  }
+
+  const res = await fetchWithRetry(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  })
+  const data = await res.json()
+  if (data.task_id) return { taskId: data.task_id }
+  throw new Error('Pixelle-Video 未返回 task_id，请确认服务已启动 (http://localhost:8000)')
+}
+
+/**
+ * Poll Pixelle-Video async task progress
+ * Yields { progress, status, stage, url }
+ */
+export async function* pollPixelleVideo(taskId, {
+  signal,
+  interval = 2000,
+  maxAttempts = 120,  // Video generation can take 2-4 minutes
+} = {}) {
+  if (!taskId) { yield { progress: 100, status: 'done' }; return }
+
+  for (let i = 0; i < maxAttempts; i++) {
+    if (signal?.aborted) break
+    await new Promise(r => setTimeout(r, interval))
+
+    const endpoint = `${PIXELLE_BASE}/api/tasks/${taskId}`
+    const res = await fetch(endpoint, { signal }).catch(() => null)
+    if (!res?.ok) continue
+
+    const data = await res.json()
+
+    // Map Pixelle-Video status to our progress model
+    const stageMap = {
+      'init': 'init', 'script': 'script', 'title': 'title',
+      'planning': 'planning', 'storyboard': 'storyboard',
+      'media': 'media', 'compositing': 'compositing', 'finalize': 'finalize',
+    }
+    const stage = stageMap[data.stage] || data.stage || ''
+    const progress = data.progress || Math.min(i * 1.2, 95)
+
+    if (data.status === 'completed') {
+      yield { progress: 100, status: 'done', stage: 'finalize', url: data.result?.video_url || data.video_url }
+      return
+    }
+    if (data.status === 'failed') {
+      throw new Error(data.error || data.message || 'Pixelle-Video 生成失败')
+    }
+    yield { progress: Math.round(progress), status: 'generating', stage }
+  }
+  throw new Error('视频生成超时（4分钟），请检查 Pixelle-Video 服务状态')
+}
+
 // Export for node UI to check key availability
 export { hasKey, getResolvedKey }

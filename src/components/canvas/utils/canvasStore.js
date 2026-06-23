@@ -39,7 +39,7 @@ function syncNodeDownstream(sourceId, nodes, edges) {
     // Data flow rules by source → target type
     if (sourceNode.type === 'textPrompt') {
       // TextPrompt → ImageGen/VideoGen/Agent: push prompt text
-      if (target.type === 'imageGen' || target.type === 'videoGen' || target.type === 'agent') {
+      if (target.type === 'imageGen' || target.type === 'videoGen' || target.type === 'agent' || target.type === 'pixelleVideo') {
         if (srcData.prompt && !target.data.prompt) {
           updated[idx] = { ...target, data: { ...target.data, prompt: srcData.prompt } }
         }
@@ -102,6 +102,21 @@ function syncNodeDownstream(sourceId, nodes, edges) {
         updated[idx] = {
           ...target,
           data: { ...target.data, outputType: 'image', outputContent: null, response: srcData.response }
+        }
+      }
+    }
+
+    if (sourceNode.type === 'pixelleVideo') {
+      // PixelleVideo → Preview: push generated video
+      if (target.type === 'preview' && srcData.generatedVideo?.url) {
+        updated[idx] = {
+          ...target,
+          data: {
+            ...target.data,
+            outputType: 'video',
+            outputContent: srcData.generatedVideo,
+            status: srcData.status,
+          }
         }
       }
     }

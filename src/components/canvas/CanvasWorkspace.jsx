@@ -11,6 +11,7 @@ import { VideoGenNode } from './nodes/VideoGenNode'
 import { ReferenceNode } from './nodes/ReferenceNode'
 import { PreviewNode } from './nodes/PreviewNode'
 import { AgentNode } from './nodes/AgentNode'
+import { PixelleVideoNode } from './nodes/PixelleVideoNode'
 import { CanvasToolbar } from './CanvasToolbar'
 import { NodeConfigPanel } from './NodeConfigPanel'
 import { CanvasWelcome } from './CanvasWelcome'
@@ -20,12 +21,13 @@ const nodeTypes = {
   textPrompt: TextPromptNode, imageGen: ImageGenNode,
   videoGen: VideoGenNode, reference: ReferenceNode,
   preview: PreviewNode, agent: AgentNode,
+  pixelleVideo: PixelleVideoNode,
 }
 
 const NODE_COLORS = {
   textPrompt: 'var(--accent-tts)', imageGen: 'var(--accent-music)',
   videoGen: 'var(--accent-sfx)', reference: 'var(--accent-clone)',
-  preview: 'var(--brand)', agent: 'var(--brand)',
+  preview: 'var(--brand)', agent: 'var(--brand)', pixelleVideo: '#8b5cf6',
 }
 
 export default function CanvasWorkspace() {

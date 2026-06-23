@@ -8,6 +8,7 @@ const NODE_TYPES = [
   { type: 'reference', label: '🖼️ 参考', color: 'var(--accent-clone)' },
   { type: 'preview', label: '👁️ 预览', color: 'var(--brand)' },
   { type: 'agent', label: '🧠 智能体', color: 'var(--brand)' },
+  { type: 'pixelleVideo', label: '🎞️ 短视频', color: '#8b5cf6' },
 ]
 
 const btnBase = {

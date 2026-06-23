@@ -30,7 +30,7 @@ export const MODEL_PRESETS = {
     authHeader: "x-api-key",
     authPrefix: "",
     protocol: "anthropic", // Anthropic-compatible Messages API
-    vision: false,   // DeepSeek V4 不支持图片
+    vision: true,    // DeepSeek V4 Pro 已支持图片识别
   },
   "openai": {
     name: "GPT-4o",

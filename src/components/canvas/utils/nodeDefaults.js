@@ -23,16 +23,22 @@ export const nodeDefaults = {
     label: 'AI 智能体', agentMode: 'director', prompt: '',
     response: '', status: 'idle', errorMessage: '',
   },
+  pixelleVideo: {
+    label: 'AI 短视频', prompt: '', nScenes: 5,
+    template: '1080x1920/image_default.html', tts: 'edge', bgm: 'uplift',
+    progress: 0, generatedVideo: null, status: 'idle', errorMessage: '',
+  },
 }
 
 // Valid connections
 export const validConnections = {
-  textPrompt: { imageGen: ['prompt'], videoGen: ['prompt'], agent: ['prompt'] },
+  textPrompt: { imageGen: ['prompt'], videoGen: ['prompt'], agent: ['prompt'], pixelleVideo: ['prompt'] },
   imageGen: { preview: ['input'], videoGen: ['image'], agent: ['prompt'] },
   videoGen: { preview: ['input'] },
   reference: { imageGen: ['prompt'], videoGen: ['image'] },
   preview: {},
   agent: { preview: ['input'] },
+  pixelleVideo: { preview: ['input'] },
 }
 
 // ===== 图片生成模型 (keyReuse = 复用已有聊天 Key) =====
