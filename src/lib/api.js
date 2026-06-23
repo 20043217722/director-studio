@@ -23,7 +23,7 @@ function wrapEndpoint(url) {
 // 预设模型配置
 export const MODEL_PRESETS = {
   "deepseek": {
-    name: "DeepSeek V4",
+    name: "DeepSeek V4 Pro",
     provider: "DeepSeek",
     endpoint: "https://api.deepseek.com/anthropic/v1/messages",
     model: "deepseek-v4-pro[1m]",
