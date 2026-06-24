@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { applyNodeChanges, applyEdgeChanges } from '@xyflow/react'
-import { nodeDefaults, validConnections } from './nodeDefaults'
+import { nodeDefaults, validConnections, HANDLE_IDS } from './nodeDefaults'
 
 const STORAGE_KEY = 'director_studio_canvas'
 const MAX_UNDO = 50
@@ -227,6 +227,11 @@ export const useCanvasStore = create(
         if (!sourceNode || !targetNode) return
         const allowed = validConnections[sourceNode.type]
         if (!allowed || !allowed[targetNode.type]) return
+        // Additional Handle ID validation: target handle must match expected id
+        const expectedHandles = allowed[targetNode.type]
+        if (expectedHandles?.length && connection.targetHandle) {
+          if (!expectedHandles.includes(connection.targetHandle)) return
+        }
 
         get()._pushUndo()
 
@@ -343,6 +348,11 @@ export const useCanvasStore = create(
         }
 
         set({ nodes: newNodes, edges: newEdges })
+
+        // D1: Auto-sync source data to new target + upstream pull
+        const postNodes = syncNodeDownstream(sourceId, get().nodes, get().edges)
+        const finalNodes = syncNodeUpstream(genId, postNodes, get().edges)
+        if (finalNodes !== postNodes) set({ nodes: finalNodes })
       },
 
       duplicateNode: (nodeId) => {
@@ -362,6 +372,8 @@ export const useCanvasStore = create(
           n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n)
         if (syncDownstream) {
           updated = syncNodeDownstream(nodeId, updated, get().edges)
+          // D5: Also sync upstream so editing TextPrompt updates connected targets
+          updated = syncNodeUpstream(nodeId, updated, get().edges)
         }
         set({ nodes: updated })
       },
@@ -392,6 +404,11 @@ export const useCanvasStore = create(
           delete next[nodeId]
           set({ _abortControllers: next })
         }
+        // Reset node status to idle and sync downstream
+        let updated = get().nodes.map((n) =>
+          n.id === nodeId ? { ...n, data: { ...n.data, status: 'idle', errorMessage: '' } } : n)
+        updated = syncNodeDownstream(nodeId, updated, get().edges)
+        set({ nodes: updated })
       },
 
       deleteEdge: (edgeId) => {

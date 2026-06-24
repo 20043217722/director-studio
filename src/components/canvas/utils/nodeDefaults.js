@@ -1,3 +1,9 @@
+// Unified Handle IDs — single source of truth for all nodes and store logic
+export const HANDLE_IDS = {
+  source: 'output',
+  target: { prompt: 'prompt', image: 'image', input: 'input' },
+}
+
 export const nodeDefaults = {
   textPrompt: {
     label: '文本提示词', prompt: '',

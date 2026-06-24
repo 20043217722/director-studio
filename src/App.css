@@ -1207,3 +1207,172 @@ button, .agent-card, .mobile-tab, .update-badge, .provider-grid-btn,
   background: rgba(var(--accent-rgb, 14, 165, 233), 0.06) !important;
   border: 1px dashed var(--accent) !important;
 }
+
+/* ============================================
+   Lightbox — fullscreen image/video viewer
+   ============================================ */
+.lightbox-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.88); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+.lightbox-content {
+  display: flex; align-items: center; justify-content: center;
+  max-width: 92vw; max-height: 92vh;
+}
+.lightbox-img {
+  max-width: 90vw; max-height: 90vh;
+  object-fit: contain; border-radius: 8px;
+  box-shadow: 0 0 60px rgba(0,0,0,0.4);
+}
+.lightbox-video {
+  max-width: 90vw; max-height: 85vh;
+  border-radius: 8px; box-shadow: 0 0 60px rgba(0,0,0,0.4);
+}
+.lightbox-close {
+  position: fixed; top: 16px; right: 16px; z-index: 101;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+  color: #fff; font-size: 20px; width: 40px; height: 40px;
+  border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.lightbox-close:hover { background: rgba(255,255,255,0.2); }
+.lightbox-download {
+  position: fixed; top: 16px; right: 72px; z-index: 101;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+  color: #fff; font-size: 16px; width: 40px; height: 40px;
+  border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.lightbox-download:hover { background: rgba(255,255,255,0.2); }
+.lightbox-counter {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 101;
+  color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 600;
+}
+.lightbox-arrow {
+  position: fixed; top: 50%; transform: translateY(-50%); z-index: 101;
+  background: rgba(255,255,255,0.08); border: none; color: #fff;
+  font-size: 40px; width: 50px; height: 80px; cursor: pointer;
+  border-radius: 8px; transition: background 0.15s; display: flex; align-items: center; justify-content: center;
+}
+.lightbox-arrow:hover { background: rgba(255,255,255,0.18); }
+.lightbox-arrow-left { left: 12px; }
+.lightbox-arrow-right { right: 12px; }
+
+/* ============================================
+   Image Gallery (in ImageGenNode)
+   ============================================ */
+.img-gallery {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.img-gallery-item {
+  position: relative; width: calc(50% - 3px);
+  min-width: 90px; border-radius: 6px; overflow: hidden;
+}
+.img-gallery-thumb {
+  width: 100%; height: auto; max-height: 180px;
+  object-fit: contain; border-radius: 6px; cursor: pointer;
+  background: var(--bg-root); border: 1px solid var(--border);
+  transition: transform 0.15s;
+}
+.img-gallery-thumb:hover { transform: scale(1.03); }
+.img-gallery-actions {
+  display: flex; gap: 3px; position: absolute; bottom: 4px; right: 4px;
+  opacity: 0; transition: opacity 0.15s;
+}
+.img-gallery-item:hover .img-gallery-actions { opacity: 1; }
+.img-action-btn {
+  background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.1);
+  color: #fff; font-size: 10px; padding: 3px 6px; border-radius: 4px;
+  cursor: pointer; transition: background 0.12s; line-height: 1;
+}
+.img-action-btn:hover { background: rgba(0,0,0,0.85); }
+
+/* ============================================
+   Video Preview (in VideoGenNode)
+   ============================================ */
+.video-preview-wrap {
+  position: relative; border-radius: 6px; overflow: hidden;
+}
+.video-preview {
+  display: block; width: 100%; max-height: 200px;
+  border-radius: 6px; background: #000; outline: none;
+}
+.media-actions {
+  display: flex; gap: 4px; position: absolute; bottom: 6px; right: 6px;
+  opacity: 0; transition: opacity 0.15s;
+}
+.video-preview-wrap:hover .media-actions,
+.preview-media-wrap:hover .media-actions { opacity: 1; }
+
+/* ============================================
+   Preview Node
+   ============================================ */
+.preview-media-wrap {
+  position: relative; border-radius: 6px; overflow: hidden;
+}
+.preview-img {
+  display: block; cursor: pointer; transition: opacity 0.15s;
+}
+.preview-img:hover { opacity: 0.9; }
+.preview-text {
+  font-size: 11px; color: var(--text); max-height: 180px; overflow-y: auto;
+  background: var(--bg-root); padding: 8px; border-radius: 6px;
+  line-height: 1.6; white-space: pre-wrap;
+}
+.preview-empty {
+  text-align: center; padding: 20px; color: var(--text-muted); font-size: 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.loading-dots {
+  text-align: center; padding: 16px;
+}
+.loading-dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-muted); margin: 0 3px;
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+@keyframes dotPulse {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+/* ============================================
+   Duration & Progress Controls
+   ============================================ */
+.duration-control {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 6px; background: var(--bg-root); border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.progress-bar-lg {
+  width: 100%;
+}
+
+/* ============================================
+   Node Pills
+   ============================================ */
+.node-pill {
+  border: 1px solid var(--border); border-radius: 4px;
+  padding: 2px 8px; font-size: 11px; cursor: pointer;
+  transition: all 0.12s; font-weight: 600;
+}
+.node-pill:hover { filter: brightness(1.1); }
+
+/* ============================================
+   Node Buttons
+   ============================================ */
+.node-btn-primary {
+  padding: 8px 12px; font-size: 12px; font-weight: 700;
+  border: none; border-radius: 6px; cursor: pointer; transition: all 0.15s;
+}
+.node-btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
+.node-btn-danger {
+  padding: 5px 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: 700;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

@@ -1,10 +1,10 @@
 import { memo, useState, useCallback, useSyncExternalStore } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { useCanvasStore } from '../utils/canvasStore'
+import Lightbox from '../Lightbox'
 import { IMAGE_MODELS } from '../utils/nodeDefaults'
 
-// Reactive hook: re-renders when localStorage api_keys change
-// Returns a Set — snapshot must be a stable comparable value (string) to avoid infinite loop
+// --- Reactive API key detection ---
 function useModelKeys() {
   const subscribe = useCallback((cb) => {
     const handler = () => cb()
@@ -15,16 +15,23 @@ function useModelKeys() {
       window.removeEventListener('apikeys-changed', handler)
     }
   }, [])
-  // IMPORTANT: getSnapshot must return a value that is === stable between identical reads.
-  // Returning a new Set each time causes React error #185 (infinite re-render).
   const getSnapshot = useCallback(() => {
     try {
       const keys = JSON.parse(localStorage.getItem('api_keys') || '{}')
       return JSON.stringify(Object.keys(keys).sort())
     } catch { return '[]' }
   }, [])
-  const keysJson = useSyncExternalStore(subscribe, getSnapshot)
-  return new Set(JSON.parse(keysJson))
+  return new Set(JSON.parse(useSyncExternalStore(subscribe, getSnapshot)))
+}
+
+// --- Handle drag-to-node ---
+function onImageDragStart(e, img) {
+  e.dataTransfer.setData('application/canvas-image', JSON.stringify({
+    url: img.url || img.base64,
+    type: 'image',
+    name: img.revised_prompt ? img.revised_prompt.slice(0, 40) : 'Generated Image',
+  }))
+  e.dataTransfer.effectAllowed = 'copy'
 }
 
 export const ImageGenNode = memo(({ id, data }) => {
@@ -32,7 +39,9 @@ export const ImageGenNode = memo(({ id, data }) => {
   const registerAbort = useCanvasStore((s) => s.registerAbort)
   const unregisterAbort = useCanvasStore((s) => s.unregisterAbort)
   const [genLoading, setGenLoading] = useState(false)
+  const [lightboxIdx, setLightboxIdx] = useState(-1)
   const userKeys = useModelKeys()
+  const model = IMAGE_MODELS.find((m) => m.id === data.modelProvider)
 
   const handleCancel = useCallback(() => {
     useCanvasStore.getState().abortGeneration(id)
@@ -55,10 +64,7 @@ export const ImageGenNode = memo(({ id, data }) => {
         signal: controller.signal,
       })
       if (controller.signal.aborted) return
-      updateNodeData(id, {
-        generatedImages: result.images || [],
-        status: 'done',
-      })
+      updateNodeData(id, { generatedImages: result.images || [], status: 'done' })
     } catch (e) {
       if (e.name === 'AbortError' || controller.signal.aborted) return
       updateNodeData(id, { status: 'error', errorMessage: e.message })
@@ -68,86 +74,117 @@ export const ImageGenNode = memo(({ id, data }) => {
     }
   }
 
-  const model = IMAGE_MODELS.find((m) => m.id === data.modelProvider)
+  const handleDownload = useCallback((img, e) => {
+    e.stopPropagation()
+    const a = document.createElement('a')
+    a.href = img.url || img.base64
+    a.download = img.revised_prompt ? img.revised_prompt.slice(0, 30) + '.png' : 'generated.png'
+    a.target = '_blank'; a.rel = 'noopener'
+    document.body.appendChild(a); a.click(); document.body.removeChild(a)
+  }, [])
+
+  const images = data.generatedImages || []
+  const hasImages = images.length > 0
 
   return (
-    <div className="canvas-node" style={{ minWidth: 240 }}>
+    <div className="canvas-node img-gen-node" style={{ minWidth: 260, maxWidth: 360 }}>
+      {/* --- Handles --- */}
       <Handle type="target" position={Position.Left} id="prompt"
-        style={{ ...handleStyle('var(--accent-music)'), top: '30%' }} />
+        style={{ ...handleStyle('var(--accent-music)'), top: '26%' }} />
 
-      <div className="node-header" style={{ borderLeftColor: 'var(--accent-music)' }}>
+      {/* --- Header --- */}
+      <div className="node-header" style={{ borderLeftColor: 'var(--accent-music)', justifyContent: 'space-between' }}>
         <span>🎨 {data.label}</span>
+        <span style={{ fontSize: 10, fontWeight: 600, color:
+          data.status === 'done' ? 'var(--success)' :
+          data.status === 'error' ? '#ef4444' :
+          data.status === 'generating' ? 'var(--brand)' : 'var(--text-muted)' }}>
+          {data.status === 'generating' ? '⏳' : data.status === 'done' ? '✅' : data.status === 'error' ? '❌' : '⏸'}
+        </span>
       </div>
 
-      <div className="node-body" style={{ gap: 8 }}>
-        {/* Model selector */}
-        <select
-          value={data.modelProvider}
-          onChange={(e) => updateNodeData(id, { modelProvider: e.target.value })}
-          className="node-select"
-        >
-          {IMAGE_MODELS.map((m) => {
-            const hasKey = m.keyReuse ? userKeys.has(m.keyReuse) : false
-            return (
-              <option key={m.id} value={m.id}>
-                {hasKey ? '✅ ' : '🔑 '}{m.name}
-              </option>
-            )
-          })}
-        </select>
-
-        {/* Aspect ratio */}
+      {/* --- Body --- */}
+      <div className="node-body" style={{ gap: 10 }}>
+        {/* Model + Aspect pills */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <select value={data.modelProvider}
+            onChange={(e) => updateNodeData(id, { modelProvider: e.target.value })}
+            className="node-select" style={{ flex: 1, minWidth: 100 }}>
+            {IMAGE_MODELS.map((m) => {
+              const hasKey = m.keyReuse ? userKeys.has(m.keyReuse) : false
+              return <option key={m.id} value={m.id}>{hasKey ? '✅' : '🔑'} {m.name}</option>
+            })}
+          </select>
+        </div>
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
           {(model?.sizes || ['1024x1024']).map((s) => (
-            <button
-              key={s}
-              className="node-chip"
+            <button key={s} className="node-pill"
               style={{
                 background: data.aspectRatio === s ? 'var(--accent-music)' : 'var(--bg-root)',
                 color: data.aspectRatio === s ? '#fff' : 'var(--text-dim)',
-                border: '1px solid var(--border)',
-                borderRadius: 4, padding: '2px 8px', fontSize: 11, cursor: 'pointer',
               }}
-              onClick={() => updateNodeData(id, { aspectRatio: s })}
-            >{s}</button>
+              onClick={() => updateNodeData(id, { aspectRatio: s })}>{s}</button>
           ))}
         </div>
 
-        {/* Generate / Cancel buttons */}
+        {/* Generate / Cancel */}
         <div style={{ display: 'flex', gap: 6 }}>
-          <button
-            className="node-btn"
-            onClick={handleGenerate}
-            disabled={genLoading || !data.prompt}
-            style={{
-              flex: 1, background: 'var(--accent-music)', color: '#fff',
-              opacity: (genLoading || !data.prompt) ? 0.5 : 1,
-            }}
-          >
+          <button className="node-btn node-btn-primary"
+            onClick={handleGenerate} disabled={genLoading || !data.prompt}
+            style={{ flex: 1, background: 'var(--accent-music)', color: '#fff',
+              opacity: (genLoading || !data.prompt) ? 0.5 : 1 }}>
             {genLoading ? '⏳ 生成中...' : '🎨 生成图片'}
           </button>
           {genLoading && (
-            <button className="node-btn" onClick={handleCancel}
-              style={{ background: '#ef4444', color: '#fff', padding: '5px 10px' }}>
-              ✕
-            </button>
+            <button className="node-btn node-btn-danger" onClick={handleCancel}
+              style={{ background: '#ef4444', color: '#fff' }}>✕</button>
           )}
         </div>
 
-        {/* Generated images preview */}
-        {data.generatedImages?.length > 0 && (
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-            {data.generatedImages.map((img, i) => (
-              <img key={i} src={img.url || img.base64} alt=""
-                style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4 }} />
-            ))}
+        {/* Error + retry */}
+        {data.status === 'error' && (
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <div className="node-error" style={{ flex: 1, margin: 0 }}>{data.errorMessage}</div>
+            <button onClick={handleGenerate}
+              style={{ padding: '4px 10px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)',
+                background: 'var(--bg-root)', color: 'var(--text)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              🔄 重试
+            </button>
           </div>
         )}
 
-        {data.status === 'error' && (
-          <div className="node-error">{data.errorMessage}</div>
+        {/* Generated images gallery */}
+        {hasImages && (
+          <div className="img-gallery">
+            {images.map((img, i) => (
+              <div key={i} className="img-gallery-item"
+                draggable onDragStart={(e) => onImageDragStart(e, img)}>
+                <img src={img.url || img.base64} alt={`Generated ${i + 1}`}
+                  className="img-gallery-thumb"
+                  onClick={() => setLightboxIdx(i)} />
+                <div className="img-gallery-actions">
+                  <button className="img-action-btn" title="放大查看"
+                    onClick={() => setLightboxIdx(i)}>🔍</button>
+                  <button className="img-action-btn" title="拖出为节点"
+                    draggable onDragStart={(e) => onImageDragStart(e, img)}
+                    style={{ cursor: 'grab' }}>⚡</button>
+                  <button className="img-action-btn" title="下载"
+                    onClick={(e) => handleDownload(img, e)}>⬇</button>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
+
+      {/* --- Lightbox --- */}
+      {lightboxIdx >= 0 && hasImages && (
+        <Lightbox
+          items={images.map((img) => ({ url: img.url || img.base64, type: 'image', name: img.revised_prompt }))}
+          index={lightboxIdx}
+          onClose={() => setLightboxIdx(-1)}
+        />
+      )}
 
       <Handle type="source" position={Position.Right} id="output"
         style={{ ...handleStyle('var(--accent-music)'), top: '70%' }} />

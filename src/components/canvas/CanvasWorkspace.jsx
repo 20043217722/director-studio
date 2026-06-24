@@ -84,17 +84,43 @@ function CanvasInner() {
     return () => window.removeEventListener('keydown', handle)
   }, [])
 
-  // Drag-from-toolbar handlers
+  // Drag-from-toolbar + drag-image-to-node handlers
   const onDragOver = useCallback((e) => {
     e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
+    const hasType = e.dataTransfer.types.includes('application/reactflow-type')
+    const hasImage = e.dataTransfer.types.includes('application/canvas-image')
+    e.dataTransfer.dropEffect = hasType ? 'move' : hasImage ? 'copy' : 'move'
   }, [])
 
   const onDrop = useCallback((e) => {
     e.preventDefault()
+    const position = screenToFlowPosition({ x: e.clientX, y: e.clientY })
+
+    // Check for image drop (create ReferenceNode)
+    const imageData = e.dataTransfer.getData('application/canvas-image')
+    if (imageData) {
+      try {
+        const parsed = JSON.parse(imageData)
+        // Create a ReferenceNode with the image URL pre-loaded
+        addNode('reference', position)
+        // Find the newly created node and update its data
+        const s = useCanvasStore.getState()
+        const newNode = s.nodes[s.nodes.length - 1]
+        if (newNode) {
+          s.updateNodeData(newNode.id, {
+            label: parsed.name || '图片素材',
+            mediaType: 'image',
+            mediaData: parsed.url,
+            fileName: parsed.name || 'Generated Image',
+          }, { syncDownstream: true })
+        }
+        return
+      } catch { /* fall through to node type handling */ }
+    }
+
+    // Node type drop (from toolbar)
     const type = e.dataTransfer.getData('application/reactflow-type')
     if (!type) return
-    const position = screenToFlowPosition({ x: e.clientX, y: e.clientY })
     addNode(type, position)
   }, [screenToFlowPosition, addNode])
 
