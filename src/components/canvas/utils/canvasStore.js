@@ -222,10 +222,11 @@ export const useCanvasStore = create(
 
         const sourceNode = get().nodes.find((n) => n.id === source)
         const targetNode = get().nodes.find((n) => n.id === target)
-        if (sourceNode && targetNode) {
-          const allowed = validConnections[sourceNode.type]
-          if (!allowed || !allowed[targetNode.type]) return
-        }
+
+        // Reject if either node doesn't exist or connection is invalid
+        if (!sourceNode || !targetNode) return
+        const allowed = validConnections[sourceNode.type]
+        if (!allowed || !allowed[targetNode.type]) return
 
         get()._pushUndo()
 
