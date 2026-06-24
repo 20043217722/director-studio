@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { applyNodeChanges, applyEdgeChanges } from '@xyflow/react'
-import { nodeDefaults, validConnections, HANDLE_IDS } from './nodeDefaults'
+import { nodeDefaults, validConnections, HANDLE_IDS, NODE_ALIASES } from './nodeDefaults'
 
 const STORAGE_KEY = 'director_studio_canvas'
 const MAX_UNDO = 50
@@ -15,6 +15,7 @@ const EDGE_LABELS = {
   reference: { imageGen: '📎 参考图', videoGen: '📎 参考素材' },
   agent: { preview: '📄 分析结果' },
   pixelleVideo: { preview: '🎞️ 成品视频' },
+  mediaGen: { preview: '🎨 媒体输出', videoGen: '🖼️ 图→视频', agent: '🖼️ 视觉参考' },
 }
 
 function getEdgeLabel(sourceType, targetType) {
@@ -33,6 +34,9 @@ function getUpstreamSources(nodeId, nodes, edges) {
   // Find all edges where this node is target, return source node IDs
   return edges.filter(e => e.target === nodeId).map(e => e.source)
 }
+
+// Resolve effective type (legacy aliases → current type)
+function effectiveType(type) { return NODE_ALIASES[type] || type }
 
 function syncNodeDownstream(sourceId, nodes, edges) {
   // Propagate source node's data to all connected downstream nodes
@@ -134,6 +138,35 @@ function syncNodeDownstream(sourceId, nodes, edges) {
         }
       }
     }
+
+    if (sourceNode.type === 'mediaGen') {
+      // MediaGen → Preview: push image or video based on mediaType
+      if (target.type === 'preview') {
+        const isImage = srcData.mediaType !== 'video'
+        if (isImage && srcData.generatedImages?.length) {
+          updated[idx] = {
+            ...target, data: { ...target.data, outputType: 'image',
+              outputContent: srcData.generatedImages[0], status: srcData.status }
+          }
+        } else if (!isImage && srcData.generatedVideo?.url) {
+          updated[idx] = {
+            ...target, data: { ...target.data, outputType: 'video',
+              outputContent: srcData.generatedVideo, status: srcData.status }
+          }
+        }
+      }
+      // MediaGen (image mode) → VideoGen: push source image
+      if (target.type === 'videoGen' && srcData.mediaType !== 'video' && srcData.generatedImages?.length) {
+        const img = srcData.generatedImages[0]
+        if (img && !target.data.sourceImage) {
+          updated[idx] = { ...target, data: { ...target.data, sourceImage: img.url || img.base64 } }
+        }
+      }
+      // MediaGen → Agent: push prompt
+      if (target.type === 'agent' && srcData.prompt && !target.data.prompt) {
+        updated[idx] = { ...target, data: { ...target.data, prompt: srcData.prompt } }
+      }
+    }
   }
 
   return updated
@@ -173,6 +206,8 @@ export const useCanvasStore = create(
       nodes: [],
       edges: [],
       selectedNodeId: null,
+      selectedEdgeId: null,
+      groups: [], // { id, name, nodeIds, color }
       undoStack: [],
       redoStack: [],
       // Active abort controllers for in-flight generations (keyed by node ID)
@@ -413,10 +448,85 @@ export const useCanvasStore = create(
 
       deleteEdge: (edgeId) => {
         get()._pushUndo()
-        set({ edges: get().edges.filter((e) => e.id !== edgeId) })
+        set({ edges: get().edges.filter((e) => e.id !== edgeId), selectedEdgeId: null })
       },
 
-      selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
+      selectEdge: (edgeId) => set({ selectedEdgeId: edgeId, selectedNodeId: null }),
+      deselectEdge: () => set({ selectedEdgeId: null }),
+
+      // Insert a node between two connected nodes (edge interaction)
+      insertNodeBetween: (edgeId, nodeType, nodeData = {}) => {
+        const s = get()
+        const edge = s.edges.find((e) => e.id === edgeId)
+        if (!edge) return
+        const srcNode = s.nodes.find((n) => n.id === edge.source)
+        const tgtNode = s.nodes.find((n) => n.id === edge.target)
+        if (!srcNode || !tgtNode) return
+        if (s.nodes.length >= MAX_NODES) return
+
+        s._pushUndo()
+        const midX = (srcNode.position.x + tgtNode.position.x) / 2
+        const midY = (srcNode.position.y + tgtNode.position.y) / 2
+        const newId = `n_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+
+        // Create new node in middle
+        const newNode = {
+          id: newId, type: nodeType,
+          position: { x: midX - 130, y: midY - 60 },
+          data: { ...(nodeDefaults[nodeType] || {}), ...nodeData },
+        }
+
+        // Auto-fill prompt from upstream
+        if (srcNode.type === 'textPrompt' && srcNode.data.prompt) {
+          newNode.data.prompt = srcNode.data.prompt
+        }
+
+        // Remove old edge, create two new edges
+        const newNodes = [...s.nodes, newNode]
+        const label1 = getEdgeLabel(srcNode.type, nodeType)
+        const label2 = getEdgeLabel(nodeType, tgtNode.type)
+        const newEdges = s.edges
+          .filter((e) => e.id !== edgeId)
+          .concat([
+            {
+              id: `e_${Date.now()}_a`, source: srcNode.id, target: newId,
+              sourceHandle: HANDLE_IDS.source, targetHandle: HANDLE_IDS.target.prompt,
+              type: 'smoothstep', animated: true, label: label1,
+              labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
+              labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
+              labelBgPadding: [4, 3], labelBgBorderRadius: 3,
+              style: { stroke: 'var(--accent)', strokeWidth: 2 },
+            },
+            {
+              id: `e_${Date.now()}_b`, source: newId, target: tgtNode.id,
+              sourceHandle: HANDLE_IDS.source, targetHandle: edge.targetHandle || HANDLE_IDS.target.input,
+              type: 'smoothstep', animated: true, label: label2,
+              labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
+              labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
+              labelBgPadding: [4, 3], labelBgBorderRadius: 3,
+              style: { stroke: 'var(--accent)', strokeWidth: 2 },
+            },
+          ])
+
+        set({ nodes: newNodes, edges: newEdges, selectedEdgeId: null })
+      },
+
+      // Groups
+      createGroup: (name, nodeIds, color) => {
+        get()._pushUndo()
+        const id = `g_${Date.now()}`
+        set({ groups: [...get().groups, { id, name: name || '节点组', nodeIds, color: color || '#6b7280' }] })
+        return id
+      },
+      updateGroup: (groupId, updates) => {
+        set({ groups: get().groups.map((g) => g.id === groupId ? { ...g, ...updates } : g) })
+      },
+      deleteGroup: (groupId) => {
+        get()._pushUndo()
+        set({ groups: get().groups.filter((g) => g.id !== groupId) })
+      },
+
+      selectNode: (nodeId) => set({ selectedNodeId: nodeId, selectedEdgeId: null }),
       deselectNode: () => set({ selectedNodeId: null }),
 
       clearCanvas: () => {

@@ -1376,3 +1376,76 @@ button, .agent-card, .mobile-tab, .update-badge, .provider-grid-btn,
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* ============================================
+   Context Menu
+   ============================================ */
+.canvas-context-menu {
+  animation: fadeIn 0.12s ease;
+}
+.menu-divider {
+  height: 1px; background: var(--border); margin: 4px 6px;
+}
+.menu-label {
+  font-size: 10px; color: var(--text-muted); padding: 4px 8px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.menu-sub-label {
+  font-size: 10px; color: var(--text-muted); padding: 2px 8px;
+  opacity: 0.7;
+}
+
+/* ============================================
+   Rename Modal
+   ============================================ */
+.rename-overlay {
+  position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,0.3);
+}
+.rename-modal {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 61; background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px; min-width: 260px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: fadeIn 0.15s ease;
+}
+
+/* ============================================
+   MediaGen Tabs
+   ============================================ */
+.media-tabs {
+  display: flex; gap: 4px; margin-bottom: 4px; align-items: center;
+  padding: 4px; background: var(--bg-root); border-radius: 6px;
+}
+.media-tab {
+  flex: 1; padding: 4px 8px; font-size: 11px; font-weight: 600;
+  border: none; border-radius: 4px; cursor: pointer;
+  background: transparent; color: var(--text-muted);
+  transition: all 0.12s;
+}
+.media-tab.active {
+  background: var(--bg-surface); color: var(--text);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.media-placeholder {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 6px; padding: 16px;
+  color: var(--text-muted); font-size: 12px;
+  background: var(--bg-root); border-radius: 8px;
+  border: 2px dashed var(--border); margin-bottom: 8px;
+}
+
+/* ============================================
+   Config Field styles (for NodeConfigPanel)
+   ============================================ */
+.config-input {
+  width: 100%; padding: 6px 10px; font-size: 12px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--bg-input);
+  color: var(--text); outline: none; transition: border-color 0.15s;
+}
+.config-input:focus { border-color: var(--accent); }
+.config-field {
+  margin-bottom: 10px;
+}
+.config-label {
+  display: block; font-size: 10px; color: var(--text-muted);
+  margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;
+}

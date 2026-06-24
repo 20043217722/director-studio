@@ -34,17 +34,31 @@ export const nodeDefaults = {
     template: '1080x1920/image_default.html', tts: 'edge', bgm: 'uplift',
     progress: 0, generatedVideo: null, status: 'idle', errorMessage: '',
   },
+  mediaGen: {
+    label: '媒体生成', prompt: '', mediaType: 'image',
+    modelProvider: 'gpt-image-1', aspectRatio: '1:1', imageCount: 1,
+    duration: 5, sourceImage: null,
+    generatedImages: [], generatedVideo: null,
+    status: 'idle', errorMessage: '', progress: 0,
+  },
+}
+
+// Legacy → MediaGen aliases (for backward compatibility when loading old canvases)
+export const NODE_ALIASES = {
+  imageGen: 'mediaGen',
+  videoGen: 'mediaGen',
 }
 
 // Valid connections
 export const validConnections = {
-  textPrompt: { imageGen: ['prompt'], videoGen: ['prompt'], agent: ['prompt'], pixelleVideo: ['prompt'] },
-  imageGen: { preview: ['input'], videoGen: ['image'], agent: ['prompt'] },
-  videoGen: { preview: ['input'] },
-  reference: { imageGen: ['prompt'], videoGen: ['image'] },
+  textPrompt: { imageGen: ['prompt'], videoGen: ['prompt'], agent: ['prompt'], pixelleVideo: ['prompt'], mediaGen: ['prompt'] },
+  imageGen: { preview: ['input'], videoGen: ['image'], agent: ['prompt'], mediaGen: ['image'] },
+  videoGen: { preview: ['input'], mediaGen: ['input'] },
+  reference: { imageGen: ['prompt'], videoGen: ['image'], mediaGen: ['prompt'] },
   preview: {},
   agent: { preview: ['input'] },
   pixelleVideo: { preview: ['input'] },
+  mediaGen: { preview: ['input'], videoGen: ['image'], agent: ['prompt'] },
 }
 
 // ===== 图片生成模型 (keyReuse = 复用已有聊天 Key) =====

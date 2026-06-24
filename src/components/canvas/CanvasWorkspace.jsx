@@ -8,6 +8,7 @@ import { useCanvasStore } from './utils/canvasStore'
 import { TextPromptNode } from './nodes/TextPromptNode'
 import { ImageGenNode } from './nodes/ImageGenNode'
 import { VideoGenNode } from './nodes/VideoGenNode'
+import { MediaGenNode } from './nodes/MediaGenNode'
 import { ReferenceNode } from './nodes/ReferenceNode'
 import { PreviewNode } from './nodes/PreviewNode'
 import { AgentNode } from './nodes/AgentNode'
@@ -29,16 +30,33 @@ function getConnectedNodeIds(nodeId, edges) {
 
 const nodeTypes = {
   textPrompt: TextPromptNode, imageGen: ImageGenNode,
-  videoGen: VideoGenNode, reference: ReferenceNode,
-  preview: PreviewNode, agent: AgentNode,
-  pixelleVideo: PixelleVideoNode,
+  videoGen: VideoGenNode, mediaGen: MediaGenNode,
+  reference: ReferenceNode, preview: PreviewNode,
+  agent: AgentNode, pixelleVideo: PixelleVideoNode,
 }
 
 const NODE_COLORS = {
   textPrompt: 'var(--accent-tts)', imageGen: 'var(--accent-music)',
-  videoGen: 'var(--accent-sfx)', reference: 'var(--accent-clone)',
-  preview: 'var(--brand)', agent: 'var(--brand)', pixelleVideo: '#8b5cf6',
+  videoGen: 'var(--accent-sfx)', mediaGen: '#8b5cf6',
+  reference: 'var(--accent-clone)', preview: 'var(--brand)',
+  agent: 'var(--brand)', pixelleVideo: '#8b5cf6',
 }
+
+// Node types for quick-add context menus
+const QUICK_ADD_NODES = [
+  { type: 'textPrompt', label: '📝 文本提示词' },
+  { type: 'mediaGen', label: '🎨 媒体生成' },
+  { type: 'reference', label: '🖼️ 参考素材' },
+  { type: 'agent', label: '🧠 AI 智能体' },
+  { type: 'preview', label: '👁️ 预览输出' },
+]
+
+// Edge insert node options
+const EDGE_INSERT_NODES = [
+  { type: 'textPrompt', label: '📝 文本' },
+  { type: 'mediaGen', label: '🎨 媒体生成' },
+  { type: 'agent', label: '🧠 智能体' },
+]
 
 export default function CanvasWorkspace() {
   return (
@@ -50,12 +68,14 @@ export default function CanvasWorkspace() {
 
 function CanvasInner() {
   const {
-    nodes, edges, onNodesChange, onEdgesChange, onConnect,
-    selectedNodeId, deselectNode, deleteEdge, deleteNode,
+    nodes, edges, groups, onNodesChange, onEdgesChange, onConnect,
+    selectedNodeId, selectedEdgeId, deselectNode, deleteEdge, deleteNode,
     undo, redo, duplicateNode, addNode, selectNode,
+    insertNodeBetween, createGroup, deleteGroup, updateNodeData,
   } = useCanvasStore()
   const [zoom, setZoom] = useState(1)
-  const [contextMenu, setContextMenu] = useState(null)
+  const [contextMenu, setContextMenu] = useState(null) // { type, x, y, nodeId/edgeId }
+  const [renameModal, setRenameModal] = useState(null) // { nodeId, name }
   const { screenToFlowPosition, fitView } = useReactFlow()
   const wrapperRef = useRef(null)
 
@@ -75,10 +95,11 @@ function CanvasInner() {
       if (e.ctrlKey && e.key === 'z' && !e.shiftKey) { e.preventDefault(); s.undo() }
       if ((e.ctrlKey && e.key === 'Z') || (e.ctrlKey && e.key === 'y')) { e.preventDefault(); s.redo() }
       if (e.ctrlKey && e.key === 'd') { e.preventDefault(); if (s.selectedNodeId) s.duplicateNode(s.selectedNodeId) }
+      if (e.ctrlKey && e.key === 'g' && s.selectedNodeId) { e.preventDefault(); handleGroupSelection(s) }
       if ((e.key === 'Delete' || e.key === 'Backspace') && s.selectedNodeId) {
         s.deleteNode(s.selectedNodeId)
       }
-      if (e.key === 'Escape') { s.deselectNode(); setContextMenu(null) }
+      if (e.key === 'Escape') { s.deselectNode(); s.deselectEdge(); setContextMenu(null) }
     }
     window.addEventListener('keydown', handle)
     return () => window.removeEventListener('keydown', handle)
@@ -101,45 +122,99 @@ function CanvasInner() {
     if (imageData) {
       try {
         const parsed = JSON.parse(imageData)
-        // Create a ReferenceNode with the image URL pre-loaded
         addNode('reference', position)
-        // Find the newly created node and update its data
         const s = useCanvasStore.getState()
         const newNode = s.nodes[s.nodes.length - 1]
         if (newNode) {
           s.updateNodeData(newNode.id, {
-            label: parsed.name || '图片素材',
-            mediaType: 'image',
-            mediaData: parsed.url,
-            fileName: parsed.name || 'Generated Image',
+            label: parsed.name || '图片素材', mediaType: 'image',
+            mediaData: parsed.url, fileName: parsed.name || 'Generated Image',
           }, { syncDownstream: true })
         }
         return
-      } catch { /* fall through to node type handling */ }
+      } catch { /* fall through */ }
     }
 
-    // Node type drop (from toolbar)
     const type = e.dataTransfer.getData('application/reactflow-type')
     if (!type) return
     addNode(type, position)
   }, [screenToFlowPosition, addNode])
 
-  // Right-click context menu
+  // --- Rename node on double-click ---
+  const onNodeDoubleClick = useCallback((_, node) => {
+    setRenameModal({ nodeId: node.id, name: node.data.label || node.type || '' })
+  }, [])
+
+  const handleRename = useCallback(() => {
+    if (!renameModal) return
+    useCanvasStore.getState().updateNodeData(renameModal.nodeId, { label: renameModal.name })
+    setRenameModal(null)
+  }, [renameModal])
+
+  // --- Group selected nodes ---
+  const handleGroupSelection = useCallback((store) => {
+    const selected = store.nodes.filter((n) => n.selected)
+    if (selected.length < 2) return
+    const name = prompt('输入节点组名称:', '节点组')
+    if (!name) return
+    const colors = ['#8b5cf6', '#ec4899', '#f97316', '#06b6d4', '#84cc16', '#ef4444']
+    store.createGroup(name, selected.map((n) => n.id), colors[Math.floor(Math.random() * colors.length)])
+  }, [])
+
+  // --- Right-click on node ---
   const onNodeContextMenu = useCallback((e, node) => {
     e.preventDefault()
     selectNode(node.id)
-    // Position relative to viewport
-    setContextMenu({ x: e.clientX, y: e.clientY, nodeId: node.id })
+    setContextMenu({ type: 'node', x: e.clientX, y: e.clientY, nodeId: node.id })
   }, [selectNode])
 
+  // --- Right-click on canvas background → add nodes ---
+  const onPaneContextMenu = useCallback((e) => {
+    e.preventDefault()
+    const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY })
+    setContextMenu({ type: 'pane', x: e.clientX, y: e.clientY, position: pos })
+  }, [screenToFlowPosition])
+
+  // --- Click on pane → deselect ---
   const onPaneClick = useCallback(() => {
     deselectNode()
+    useCanvasStore.getState().deselectEdge()
     setContextMenu(null)
   }, [deselectNode])
 
-  const onEdgeClick = useCallback((_, edge) => {
-    deleteEdge(edge.id)
+  // --- Click on edge → select (not delete) ---
+  const onEdgeClick = useCallback((e, edge) => {
+    useCanvasStore.getState().selectEdge(edge.id)
+  }, [])
+
+  // --- Right-click on edge → context menu ---
+  const handleEdgeDelete = useCallback((edgeId) => {
+    deleteEdge(edgeId)
+    setContextMenu(null)
   }, [deleteEdge])
+
+  const handleEdgeInsert = useCallback((edgeId, nodeType) => {
+    insertNodeBetween(edgeId, nodeType)
+    setContextMenu(null)
+  }, [insertNodeBetween])
+
+  // --- Edge context menu trigger ---
+  useEffect(() => {
+    if (selectedEdgeId) {
+      const edge = useCanvasStore.getState().edges.find((e) => e.id === selectedEdgeId)
+      if (!edge) return
+      // Show edge menu at edge midpoint (approximate via source/target node positions)
+      const src = useCanvasStore.getState().nodes.find((n) => n.id === edge.source)
+      const tgt = useCanvasStore.getState().nodes.find((n) => n.id === edge.target)
+      if (src && tgt) {
+        setContextMenu({
+          type: 'edge', edgeId: selectedEdgeId,
+          x: (src.position.x + tgt.position.x) / 2 + 80,
+          y: (src.position.y + tgt.position.y) / 2 + 100,
+        })
+      }
+    }
+  }, [selectedEdgeId])
 
   // Highlight connected nodes / dim non-connected when a node is selected
   const displayNodes = useMemo(() => {
@@ -159,8 +234,10 @@ function CanvasInner() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onPaneClick={onPaneClick}
+        onPaneContextMenu={onPaneContextMenu}
         onEdgeClick={onEdgeClick}
         onNodeClick={(_, node) => useCanvasStore.getState().selectNode(node.id)}
+        onNodeDoubleClick={onNodeDoubleClick}
         onNodeContextMenu={onNodeContextMenu}
         onDragOver={onDragOver}
         onDrop={onDrop}
@@ -206,19 +283,86 @@ function CanvasInner() {
         border: '1px solid var(--glass-border)', borderRadius: 6, padding: '4px 10px',
       }}>{Math.round(zoom * 100)}%</div>
 
-      {/* Right-click context menu */}
+      {/* --- Right-click Context Menu --- */}
       {contextMenu && (
-        <div style={{
+        <div className="canvas-context-menu" style={{
           position: 'fixed', left: contextMenu.x, top: contextMenu.y, zIndex: 50,
           background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-          borderRadius: 8, padding: 4, minWidth: 140,
+          borderRadius: 8, padding: 4, minWidth: 160,
           boxShadow: 'var(--shadow-panel)',
         }} onClick={(e) => e.stopPropagation()}>
-          <MenuItem onClick={() => { duplicateNode(contextMenu.nodeId); setContextMenu(null) }}
-            label="📋 复制节点" shortcut="Ctrl+D" />
-          <MenuItem onClick={() => { deleteNode(contextMenu.nodeId); setContextMenu(null) }}
-            label="🗑️ 删除节点" shortcut="Del" danger />
+          {/* Node menu */}
+          {contextMenu.type === 'node' && (
+            <>
+              <MenuItem onClick={() => {
+                setRenameModal({ nodeId: contextMenu.nodeId,
+                  name: useCanvasStore.getState().nodes.find((n) => n.id === contextMenu.nodeId)?.data?.label || '' })
+                setContextMenu(null)
+              }} label="✏️ 重命名" />
+              <MenuItem onClick={() => { duplicateNode(contextMenu.nodeId); setContextMenu(null) }}
+                label="📋 复制" shortcut="Ctrl+D" />
+              <div className="menu-divider" />
+              <MenuItem onClick={() => { deleteNode(contextMenu.nodeId); setContextMenu(null) }}
+                label="🗑️ 删除" shortcut="Del" danger />
+            </>
+          )}
+
+          {/* Pane (canvas background) menu */}
+          {contextMenu.type === 'pane' && (
+            <>
+              <div className="menu-label">➕ 快速添加</div>
+              {QUICK_ADD_NODES.map((n) => (
+                <MenuItem key={n.type} onClick={() => {
+                  addNode(n.type, contextMenu.position)
+                  setContextMenu(null)
+                }} label={n.label} />
+              ))}
+            </>
+          )}
+
+          {/* Edge menu */}
+          {contextMenu.type === 'edge' && (
+            <>
+              <div className="menu-label">🔗 连线操作</div>
+              <div className="menu-sub-label">插入节点</div>
+              {EDGE_INSERT_NODES.map((n) => (
+                <MenuItem key={n.type} onClick={() => handleEdgeInsert(contextMenu.edgeId, n.type)}
+                  label={n.label} />
+              ))}
+              <div className="menu-divider" />
+              <MenuItem onClick={() => handleEdgeDelete(contextMenu.edgeId)}
+                label="✂️ 删除连线" danger />
+            </>
+          )}
         </div>
+      )}
+
+      {/* --- Rename Modal --- */}
+      {renameModal && (
+        <>
+          <div className="rename-overlay" onClick={() => setRenameModal(null)} />
+          <div className="rename-modal" onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+              ✏️ 重命名节点
+            </div>
+            <input
+              value={renameModal.name}
+              onChange={(e) => setRenameModal({ ...renameModal, name: e.target.value })}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenameModal(null) }}
+              className="config-input"
+              autoFocus
+              placeholder="输入节点名称..."
+            />
+            <div style={{ display: 'flex', gap: 6, marginTop: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setRenameModal(null)}
+                style={{ padding: '5px 12px', fontSize: 11, borderRadius: 5, border: '1px solid var(--border)',
+                  background: 'transparent', color: 'var(--text)', cursor: 'pointer' }}>取消</button>
+              <button onClick={handleRename}
+                style={{ padding: '5px 12px', fontSize: 11, borderRadius: 5, border: 'none',
+                  background: 'var(--accent)', color: '#fff', cursor: 'pointer' }}>确定</button>
+            </div>
+          </div>
+        </>
       )}
 
       <CanvasToolbar undo={undo} redo={redo} fitView={fitView} />

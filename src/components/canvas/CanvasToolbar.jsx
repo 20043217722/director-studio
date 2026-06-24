@@ -3,6 +3,7 @@ import { useCanvasStore } from './utils/canvasStore'
 
 const NODE_TYPES = [
   { type: 'textPrompt', label: '📝 文本', color: 'var(--accent-tts)' },
+  { type: 'mediaGen', label: '🎨 媒体生成', color: '#8b5cf6' },
   { type: 'imageGen', label: '🎨 生图', color: 'var(--accent-music)' },
   { type: 'videoGen', label: '🎬 生视频', color: 'var(--accent-sfx)' },
   { type: 'reference', label: '🖼️ 参考', color: 'var(--accent-clone)' },
