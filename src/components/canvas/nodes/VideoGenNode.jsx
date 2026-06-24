@@ -4,9 +4,10 @@ import { useCanvasStore } from '../utils/canvasStore'
 import { VIDEO_MODELS } from '../utils/nodeDefaults'
 
 // Reactive hook: re-renders when localStorage api_keys change
+// Returns a Set — snapshot must be a stable comparable value (string) to avoid infinite loop
 function useModelKeys() {
   const subscribe = useCallback((cb) => {
-    const handler = (e) => { if (e.key === 'api_keys') cb() }
+    const handler = () => cb()
     window.addEventListener('storage', handler)
     window.addEventListener('apikeys-changed', handler)
     return () => {
@@ -14,13 +15,16 @@ function useModelKeys() {
       window.removeEventListener('apikeys-changed', handler)
     }
   }, [])
+  // IMPORTANT: getSnapshot must return a value that is === stable between identical reads.
+  // Returning a new Set each time causes React error #185 (infinite re-render).
   const getSnapshot = useCallback(() => {
     try {
       const keys = JSON.parse(localStorage.getItem('api_keys') || '{}')
-      return new Set(Object.keys(keys))
-    } catch { return new Set() }
+      return JSON.stringify(Object.keys(keys).sort())
+    } catch { return '[]' }
   }, [])
-  return useSyncExternalStore(subscribe, getSnapshot)
+  const keysJson = useSyncExternalStore(subscribe, getSnapshot)
+  return new Set(JSON.parse(keysJson))
 }
 
 export const VideoGenNode = memo(({ id, data }) => {
