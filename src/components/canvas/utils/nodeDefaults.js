@@ -52,9 +52,9 @@ export const NODE_ALIASES = {
 // Valid connections
 export const validConnections = {
   textPrompt: { imageGen: ['prompt'], videoGen: ['prompt'], agent: ['prompt'], pixelleVideo: ['prompt'], mediaGen: ['prompt'] },
-  imageGen: { preview: ['input'], videoGen: ['image'], agent: ['prompt'], mediaGen: ['image'] },
-  videoGen: { preview: ['input'], mediaGen: ['input'] },
-  reference: { imageGen: ['prompt'], videoGen: ['image'], mediaGen: ['prompt'] },
+  imageGen: { preview: ['input'], videoGen: ['image'], agent: ['prompt'], mediaGen: ['prompt', 'image'] },
+  videoGen: { preview: ['input'], mediaGen: ['prompt', 'image'] },
+  reference: { imageGen: ['prompt'], videoGen: ['image'], mediaGen: ['prompt', 'image'] },
   preview: {},
   agent: { preview: ['input'] },
   pixelleVideo: { preview: ['input'] },
