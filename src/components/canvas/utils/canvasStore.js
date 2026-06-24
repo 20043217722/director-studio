@@ -38,6 +38,19 @@ function getUpstreamSources(nodeId, nodes, edges) {
 // Resolve effective type (legacy aliases → current type)
 function effectiveType(type) { return NODE_ALIASES[type] || type }
 
+// Validate connection with full handle-ID check (shared by isValidConnection + onConnect)
+export function validateConnection(sourceNode, targetNode, targetHandle) {
+  if (!sourceNode || !targetNode) return false
+  const allowed = validConnections[sourceNode.type]
+  if (!allowed || !allowed[targetNode.type]) return false
+  // Handle-level check: if target handle specified, must be in the allowed list
+  const expected = allowed[targetNode.type]
+  if (expected?.length && targetHandle) {
+    return expected.includes(targetHandle)
+  }
+  return true
+}
+
 function syncNodeDownstream(sourceId, nodes, edges) {
   // Propagate source node's data to all connected downstream nodes
   const sourceNode = nodes.find(n => n.id === sourceId)
@@ -258,15 +271,8 @@ export const useCanvasStore = create(
         const sourceNode = get().nodes.find((n) => n.id === source)
         const targetNode = get().nodes.find((n) => n.id === target)
 
-        // Reject if either node doesn't exist or connection is invalid
-        if (!sourceNode || !targetNode) return
-        const allowed = validConnections[sourceNode.type]
-        if (!allowed || !allowed[targetNode.type]) return
-        // Additional Handle ID validation: target handle must match expected id
-        const expectedHandles = allowed[targetNode.type]
-        if (expectedHandles?.length && connection.targetHandle) {
-          if (!expectedHandles.includes(connection.targetHandle)) return
-        }
+        // Use shared validation (type + handle level)
+        if (!validateConnection(sourceNode, targetNode, connection.targetHandle)) return
 
         get()._pushUndo()
 

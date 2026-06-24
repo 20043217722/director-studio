@@ -16,7 +16,8 @@ import { PixelleVideoNode } from './nodes/PixelleVideoNode'
 import { CanvasToolbar } from './CanvasToolbar'
 import { NodeConfigPanel } from './NodeConfigPanel'
 import { CanvasWelcome } from './CanvasWelcome'
-import { validConnections } from './utils/nodeDefaults'
+import { CanvasInputBar } from './CanvasInputBar'
+import { validateConnection } from './utils/canvasStore'
 
 // Compute connected node IDs for highlighting
 function getConnectedNodeIds(nodeId, edges) {
@@ -274,8 +275,7 @@ function CanvasInner() {
           const src = s.nodes.find((n) => n.id === connection.source)
           const tgt = s.nodes.find((n) => n.id === connection.target)
           if (!src || !tgt || src.id === tgt.id) return false
-          const allowed = validConnections[src.type]
-          return !!allowed && !!allowed[tgt.type]
+          return validateConnection(src, tgt, connection.targetHandle)
         }}
       >
         <Background gap={24} size={1} color="var(--border)" />
@@ -381,6 +381,7 @@ function CanvasInner() {
 
       <CanvasToolbar undo={undo} redo={redo} fitView={fitView} />
       <NodeConfigPanel />
+      <CanvasInputBar />
       {nodes.length === 0 && <CanvasWelcome />}
     </div>
   )

@@ -1449,3 +1449,47 @@ button, .agent-card, .mobile-tab, .update-badge, .provider-grid-btn,
   display: block; font-size: 10px; color: var(--text-muted);
   margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;
 }
+
+/* ============================================
+   Canvas Quick Input Bar (bottom)
+   ============================================ */
+.canvas-input-bar {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  z-index: 10; width: 90%; max-width: 600px;
+}
+.canvas-input-inner {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--glass-bg); backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border); border-radius: 12px;
+  padding: 6px 8px 6px 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+}
+.canvas-input-intent {
+  font-size: 16px; padding: 2px 6px; border-radius: 6px;
+  background: var(--bg-root); flex-shrink: 0;
+}
+.canvas-input-field {
+  flex: 1; background: transparent; border: none; outline: none;
+  font-size: 13px; color: var(--text); padding: 6px 0;
+}
+.canvas-input-field::placeholder { color: var(--text-muted); opacity: 0.6; }
+.canvas-input-btn {
+  background: var(--accent); color: #fff; border: none;
+  width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+  font-size: 14px; display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.15s; flex-shrink: 0;
+}
+.canvas-input-btn:disabled { opacity: 0.35; cursor: default; }
+.canvas-input-hints {
+  display: flex; gap: 10px; justify-content: center; margin-top: 6px;
+  font-size: 10px; color: var(--text-muted); opacity: 0.7;
+}
+
+/* ============================================
+   Compact Canvas Node (narrow mode)
+   ============================================ */
+.compact-node .canvas-node { min-width: 170px !important; max-width: 220px !important; }
+.compact-node .node-body { gap: 4px !important; }
+.compact-node .node-textarea { font-size: 10px !important; padding: 4px !important; }
+.compact-node .node-select { font-size: 10px !important; padding: 3px 6px !important; }
+.compact-node .node-btn { font-size: 10px !important; padding: 4px 8px !important; }
