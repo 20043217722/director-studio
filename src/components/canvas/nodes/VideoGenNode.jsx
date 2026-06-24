@@ -1,33 +1,60 @@
-import { memo, useState, useMemo } from 'react'
+import { memo, useState, useCallback, useSyncExternalStore } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { useCanvasStore } from '../utils/canvasStore'
 import { VIDEO_MODELS } from '../utils/nodeDefaults'
 
+// Reactive hook: re-renders when localStorage api_keys change
 function useModelKeys() {
-  return useMemo(() => {
+  const subscribe = useCallback((cb) => {
+    const handler = (e) => { if (e.key === 'api_keys') cb() }
+    window.addEventListener('storage', handler)
+    window.addEventListener('apikeys-changed', handler)
+    return () => {
+      window.removeEventListener('storage', handler)
+      window.removeEventListener('apikeys-changed', handler)
+    }
+  }, [])
+  const getSnapshot = useCallback(() => {
     try {
       const keys = JSON.parse(localStorage.getItem('api_keys') || '{}')
       return new Set(Object.keys(keys))
     } catch { return new Set() }
   }, [])
+  return useSyncExternalStore(subscribe, getSnapshot)
 }
 
 export const VideoGenNode = memo(({ id, data }) => {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData)
+  const registerAbort = useCanvasStore((s) => s.registerAbort)
+  const unregisterAbort = useCanvasStore((s) => s.unregisterAbort)
   const [genLoading, setGenLoading] = useState(false)
   const userKeys = useModelKeys()
+
+  const handleCancel = useCallback(() => {
+    useCanvasStore.getState().abortGeneration(id)
+    setGenLoading(false)
+    updateNodeData(id, { status: 'idle', errorMessage: '' })
+  }, [id, updateNodeData])
 
   const handleGenerate = async () => {
     if (!data.prompt && !data.sourceImage) return
     setGenLoading(true)
     updateNodeData(id, { status: 'generating', progress: 0 })
+    const controller = new AbortController()
+    registerAbort(id, controller)
     try {
       const { generateVideo, pollVideoGeneration } = await import('../../../lib/canvasApi')
       const { jobId } = await generateVideo(data.prompt || data.sourceImage, {
         provider: data.modelProvider,
         duration: data.duration,
+        signal: controller.signal,
       })
-      for await (const update of pollVideoGeneration(jobId, { provider: data.modelProvider })) {
+      if (controller.signal.aborted) return
+      for await (const update of pollVideoGeneration(jobId, {
+        provider: data.modelProvider,
+        signal: controller.signal,
+      })) {
+        if (controller.signal.aborted) return
         updateNodeData(id, { progress: update.progress || 0, status: 'generating' })
         if (update.status === 'done') {
           updateNodeData(id, { generatedVideo: update, status: 'done', progress: 100 })
@@ -35,9 +62,11 @@ export const VideoGenNode = memo(({ id, data }) => {
         }
       }
     } catch (e) {
+      if (e.name === 'AbortError' || controller.signal.aborted) return
       updateNodeData(id, { status: 'error', errorMessage: e.message })
     } finally {
       setGenLoading(false)
+      unregisterAbort(id)
     }
   }
 
@@ -77,11 +106,19 @@ export const VideoGenNode = memo(({ id, data }) => {
           )
         })()}
 
-        <button className="node-btn" onClick={handleGenerate}
-          disabled={genLoading || (!data.prompt && !data.sourceImage)}
-          style={{ background: 'var(--accent-sfx)', color: '#fff', opacity: (genLoading || (!data.prompt && !data.sourceImage)) ? 0.5 : 1 }}>
-          {genLoading ? `⏳ ${data.progress}%` : '🎬 生成视频'}
-        </button>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button className="node-btn" onClick={handleGenerate}
+            disabled={genLoading || (!data.prompt && !data.sourceImage)}
+            style={{ flex: 1, background: 'var(--accent-sfx)', color: '#fff', opacity: (genLoading || (!data.prompt && !data.sourceImage)) ? 0.5 : 1 }}>
+            {genLoading ? `⏳ ${data.progress}%` : '🎬 生成视频'}
+          </button>
+          {genLoading && (
+            <button className="node-btn" onClick={handleCancel}
+              style={{ background: '#ef4444', color: '#fff', padding: '5px 10px' }}>
+              ✕
+            </button>
+          )}
+        </div>
 
         {data.status === 'generating' && (
           <div className="progress-bar" style={{ background: 'var(--border)', borderRadius: 4, height: 4 }}>

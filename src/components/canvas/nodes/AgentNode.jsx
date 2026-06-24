@@ -1,32 +1,46 @@
-import { memo, useState } from 'react'
+import { memo, useState, useCallback } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { useCanvasStore } from '../utils/canvasStore'
 import { AGENT_MODES } from '../utils/nodeDefaults'
 
 export const AgentNode = memo(({ id, data }) => {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData)
+  const registerAbort = useCanvasStore((s) => s.registerAbort)
+  const unregisterAbort = useCanvasStore((s) => s.unregisterAbort)
   const [genLoading, setGenLoading] = useState(false)
 
   const agent = AGENT_MODES.find((a) => a.id === data.agentMode)
   const agentName = agent?.name || 'AI 智能体'
 
+  const handleCancel = useCallback(() => {
+    useCanvasStore.getState().abortGeneration(id)
+    setGenLoading(false)
+    updateNodeData(id, { status: 'idle', errorMessage: '' })
+  }, [id, updateNodeData])
+
   const handleRun = async () => {
     if (!data.prompt) return
     setGenLoading(true)
     updateNodeData(id, { status: 'generating', response: '', errorMessage: '' })
+    const controller = new AbortController()
+    registerAbort(id, controller)
 
     try {
       const { callAgentStream } = await import('../../../lib/api')
       let fullResponse = ''
-      for await (const chunk of callAgentStream(data.prompt, data.agentMode)) {
+      for await (const chunk of callAgentStream(data.prompt, data.agentMode, { signal: controller.signal })) {
+        if (controller.signal.aborted) return
         fullResponse += chunk
         updateNodeData(id, { response: fullResponse, status: 'generating' })
       }
+      if (controller.signal.aborted) return
       updateNodeData(id, { status: 'done' })
     } catch (e) {
+      if (e.name === 'AbortError' || controller.signal.aborted) return
       updateNodeData(id, { status: 'error', errorMessage: e.message })
     } finally {
       setGenLoading(false)
+      unregisterAbort(id)
     }
   }
 
@@ -64,15 +78,23 @@ export const AgentNode = memo(({ id, data }) => {
           onClick={(e) => e.stopPropagation()}
         />
 
-        {/* Run button */}
-        <button className="node-btn" onClick={handleRun}
-          disabled={genLoading || !data.prompt}
-          style={{
-            background: 'var(--brand)', color: '#000',
-            opacity: (genLoading || !data.prompt) ? 0.5 : 1,
-          }}>
-          {genLoading ? '⏳ 思考中...' : '▶ 运行'}
-        </button>
+        {/* Run / Cancel buttons */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button className="node-btn" onClick={handleRun}
+            disabled={genLoading || !data.prompt}
+            style={{
+              flex: 1, background: 'var(--brand)', color: '#000',
+              opacity: (genLoading || !data.prompt) ? 0.5 : 1,
+            }}>
+            {genLoading ? '⏳ 思考中...' : '▶ 运行'}
+          </button>
+          {genLoading && (
+            <button className="node-btn" onClick={handleCancel}
+              style={{ background: '#ef4444', color: '#fff', padding: '5px 10px' }}>
+              ✕
+            </button>
+          )}
+        </div>
 
         {/* Response */}
         {data.response && (

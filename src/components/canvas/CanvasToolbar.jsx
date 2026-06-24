@@ -17,10 +17,13 @@ const btnBase = {
   background: 'transparent', color: 'var(--text-dim)',
 }
 
+const MAX_NODES = 100
+
 export function CanvasToolbar({ undo, redo, fitView }) {
   const { addNode, clearCanvas, exportCanvas, importCanvas, autoLayout, nodes } = useCanvasStore()
   const [showAdd, setShowAdd] = useState(false)
   const dropdownRef = useRef(null)
+  const nodeCount = nodes.length
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -140,11 +143,19 @@ export function CanvasToolbar({ undo, redo, fitView }) {
         onMouseEnter={(e) => { e.target.style.background = 'var(--bg-root)'; e.target.style.color = 'var(--text)' }}
         onMouseLeave={(e) => { e.target.style.background = 'transparent'; e.target.style.color = 'var(--text-dim)' }}
       >📤</button>
-      <button onClick={() => { if (nodes.length === 0 || window.confirm('清空画布？')) clearCanvas() }}
+      <button onClick={() => { if (nodeCount === 0 || window.confirm('清空画布？')) clearCanvas() }}
         style={{ ...btnBase, color: '#ef4444' }}
         onMouseEnter={(e) => e.target.style.background = 'rgba(239,68,68,0.08)'}
         onMouseLeave={(e) => e.target.style.background = 'transparent'}
         title="清空画布">🗑</button>
+
+      {/* Node count indicator */}
+      <div style={{
+        fontSize: 10, color: nodeCount >= MAX_NODES * 0.8 ? '#ef4444' : 'var(--text-muted)',
+        fontWeight: 600, paddingLeft: 4,
+      }} title={`${nodeCount}/${MAX_NODES} 节点`}>
+        {nodeCount}/{MAX_NODES}
+      </div>
     </div>
   )
 }

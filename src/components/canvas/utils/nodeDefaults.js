@@ -55,6 +55,7 @@ export const IMAGE_MODELS = [
   { id: 'midjourney', name: 'Midjourney V7', sizes: ['1024x1024', '2048x2048'], keyReuse: null },
   { id: 'imagen', name: 'Imagen 3 (Google)', sizes: ['1024x1024', '1536x1536', '2048x2048'], keyReuse: 'gemini' },
   { id: 'banana', name: 'Nano Banana (TapNow)', sizes: ['1024x1024', '1280x720'], keyReuse: null },
+  { id: 'agnes-image', name: 'Agnes Image 2.1 (免费)', sizes: ['1024x1024', '1792x1024', '1024x1792'], keyReuse: 'agnes' },
 ]
 
 // ===== 视频生成模型 =====
@@ -68,6 +69,7 @@ export const VIDEO_MODELS = [
   { id: 'runway', name: 'Runway Gen-4', durationRange: [4, 10], keyReuse: null },
   { id: 'pika', name: 'Pika 2.0', durationRange: [3, 10], keyReuse: null },
   { id: 'veo', name: 'Veo 3 (Google)', durationRange: [5, 15], keyReuse: 'gemini' },
+  { id: 'agnes-video', name: 'Agnes Video V2.0 (免费·音画同出)', durationRange: [3, 15], keyReuse: 'agnes' },
 ]
 
 // ===== 8 个 AI 智能体 (来自侧边栏) =====

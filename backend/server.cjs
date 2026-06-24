@@ -38,6 +38,7 @@ const KEYS = {
   kling: process.env.KLING_API_KEY || '',
   claude: process.env.CLAUDE_API_KEY || '',
   xiaomi: process.env.XIAOMI_API_KEY || '',
+  agnes: process.env.AGNES_API_KEY || '',
 }
 
 // Hostname → Key provider mapping (supports wildcard subdomains)
@@ -55,6 +56,7 @@ const HOST_KEY_MAP = [
   ['api.seedance.com', 'seedance'],
   ['api.klingai.com', 'kling'],
   ['ark.cn-beijing.volces.com', 'seedance'],
+  ['apihub.agnes-ai.com', 'agnes'],
 ]
 
 function getKeyForHost(hostname) {

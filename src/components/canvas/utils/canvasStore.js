@@ -7,6 +7,20 @@ const STORAGE_KEY = 'director_studio_canvas'
 const MAX_UNDO = 50
 const MAX_NODES = 100
 
+// Edge label by data type flowing through the connection
+const EDGE_LABELS = {
+  textPrompt: { imageGen: '📝 提示词', videoGen: '📝 提示词', agent: '📝 提示词', pixelleVideo: '📝 文本' },
+  imageGen: { preview: '🖼️ 图片', videoGen: '🖼️ 图→视频', agent: '🖼️ 视觉参考' },
+  videoGen: { preview: '🎬 视频' },
+  reference: { imageGen: '📎 参考图', videoGen: '📎 参考素材' },
+  agent: { preview: '📄 分析结果' },
+  pixelleVideo: { preview: '🎞️ 成品视频' },
+}
+
+function getEdgeLabel(sourceType, targetType) {
+  return EDGE_LABELS[sourceType]?.[targetType] || ''
+}
+
 // ===== Data Flow Engine =====
 // Propagates data through connected nodes automatically
 
@@ -161,8 +175,10 @@ export const useCanvasStore = create(
       selectedNodeId: null,
       undoStack: [],
       redoStack: [],
+      // Active abort controllers for in-flight generations (keyed by node ID)
+      _abortControllers: {},
 
-      _snapshot: () => JSON.stringify({ nodes: get().nodes, edges: get().edges }),
+      _snapshot: () => JSON.stringify({ nodes: get().nodes, edges: get().edges, selectedNodeId: get().selectedNodeId }),
       _pushUndo: () => {
         const { undoStack } = get()
         const snap = get()._snapshot()
@@ -213,10 +229,16 @@ export const useCanvasStore = create(
 
         get()._pushUndo()
 
+        const label = getEdgeLabel(sourceNode.type, targetNode.type)
         const newEdges = [...get().edges, {
           ...connection,
           id: `e_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
           type: 'smoothstep', animated: true,
+          label,
+          labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
+          labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
+          labelBgPadding: [4, 3],
+          labelBgBorderRadius: 3,
           style: { stroke: 'var(--accent)', strokeWidth: 2 },
         }]
 
@@ -232,6 +254,42 @@ export const useCanvasStore = create(
         get()._pushUndo()
         const id = `n_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
         set({ nodes: [...get().nodes, { id, type, position, data: { ...nodeDefaults[type] } }] })
+      },
+
+      // Batch add: multiple nodes + edges in one undo step (for quick-start templates)
+      // `items.nodes` = [{type, position?, data?}], `items.edges` = [{source: index, target: index}]
+      batchAddNodes: (items) => {
+        const s = get()
+        if (s.nodes.length >= MAX_NODES) return
+        get()._pushUndo()
+        const ts = Date.now()
+        const nodeItems = items.nodes || []
+        if (!nodeItems.length) return
+        const ids = nodeItems.map((_, i) => `n_${ts}_${i}_${Math.random().toString(36).slice(2, 5)}`)
+        const newNodes = nodeItems.map((it, i) => ({
+          id: ids[i],
+          type: it.type,
+          position: it.position || { x: 250, y: 200 + i * 100 },
+          data: { ...(nodeDefaults[it.type] || {}), ...(it.data || {}) },
+        }))
+        const newEdges = (items.edges || []).map((e, i) => {
+          const srcNode = newNodes.find(n => ids.indexOf(n.id) === e.source)
+          const tgtNode = newNodes.find(n => ids.indexOf(n.id) === e.target)
+          const label = srcNode && tgtNode ? getEdgeLabel(srcNode.type, tgtNode.type) : ''
+          return {
+            id: `e_${ts}_${i}_${Math.random().toString(36).slice(2, 5)}`,
+            source: ids[e.source],
+            target: ids[e.target],
+            sourceHandle: e.sourceHandle || 'output',
+            targetHandle: e.targetHandle || 'prompt',
+            type: 'smoothstep', animated: true, label,
+            labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
+            labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
+            labelBgPadding: [4, 3], labelBgBorderRadius: 3,
+            style: { stroke: 'var(--accent)', strokeWidth: 2 },
+          }
+        })
+        set({ nodes: [...s.nodes, ...newNodes], edges: [...s.edges, ...newEdges] })
       },
 
       autoBuild: (sourceId, targetType, targetData = {}, addPreview = false) => {
@@ -251,17 +309,22 @@ export const useCanvasStore = create(
           data: { ...targetData },
         }]
 
-        // Create edge
+        // Create edge with data flow label
+        const edgeLabel = getEdgeLabel(sourceNode.type, targetType)
         const newEdges = [...s.edges, {
           id: `e_${Date.now()}_a`, source: sourceId, sourceHandle: 'output',
           target: genId, targetHandle: 'prompt',
-          type: 'smoothstep', animated: true,
+          type: 'smoothstep', animated: true, label: edgeLabel,
+          labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
+          labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
+          labelBgPadding: [4, 3], labelBgBorderRadius: 3,
           style: { stroke: 'var(--accent)', strokeWidth: 2 },
         }]
 
         // Optional preview node
         if (addPreview) {
           const previewId = `n_${Date.now() + 1}_${Math.random().toString(36).slice(2, 7)}`
+          const previewEdgeLabel = targetType === 'videoGen' ? '🎬 视频' : '🖼️ 图片'
           newNodes.push({
             id: previewId, type: 'preview',
             position: { x: baseX + 340, y: baseY },
@@ -270,7 +333,10 @@ export const useCanvasStore = create(
           newEdges.push({
             id: `e_${Date.now()}_b`, source: genId, sourceHandle: 'output',
             target: previewId, targetHandle: 'input',
-            type: 'smoothstep', animated: true,
+            type: 'smoothstep', animated: true, label: previewEdgeLabel,
+            labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
+            labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
+            labelBgPadding: [4, 3], labelBgBorderRadius: 3,
             style: { stroke: 'var(--accent)', strokeWidth: 2 },
           })
         }
@@ -300,10 +366,31 @@ export const useCanvasStore = create(
       },
 
       deleteNode: (nodeId) => {
+        // Abort any in-flight generation for this node
+        get().abortGeneration(nodeId)
         get()._pushUndo()
         set({ nodes: get().nodes.filter((n) => n.id !== nodeId),
           edges: get().edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
           selectedNodeId: get().selectedNodeId === nodeId ? null : get().selectedNodeId })
+      },
+
+      // AbortController management for in-flight generations
+      registerAbort: (nodeId, controller) => {
+        set({ _abortControllers: { ...get()._abortControllers, [nodeId]: controller } })
+      },
+      unregisterAbort: (nodeId) => {
+        const next = { ...get()._abortControllers }
+        delete next[nodeId]
+        set({ _abortControllers: next })
+      },
+      abortGeneration: (nodeId) => {
+        const ctrl = get()._abortControllers[nodeId]
+        if (ctrl) {
+          ctrl.abort()
+          const next = { ...get()._abortControllers }
+          delete next[nodeId]
+          set({ _abortControllers: next })
+        }
       },
 
       deleteEdge: (edgeId) => {
@@ -355,7 +442,32 @@ export const useCanvasStore = create(
       name: STORAGE_KEY,
       partialize: (state) => ({ nodes: state.nodes, edges: state.edges }),
       version: 1,
+      // localStorage quota protection
+      storage: {
+        getItem: (name) => {
+          try { return JSON.parse(localStorage.getItem(name) || 'null') }
+          catch { return null }
+        },
+        setItem: (name, value) => {
+          try {
+            localStorage.setItem(name, JSON.stringify(value))
+          } catch (e) {
+            if (e.name === 'QuotaExceededError') {
+              console.warn('[Canvas] localStorage full, attempting cleanup...')
+              try { localStorage.removeItem('director_studio_messages') } catch {}
+              try {
+                localStorage.setItem(name, JSON.stringify(value))
+              } catch {
+                console.error('[Canvas] Failed to save — storage full')
+              }
+            }
+          }
+        },
+        removeItem: (name) => { try { localStorage.removeItem(name) } catch {} },
+      },
       onRehydrateStorage: () => (state) => {
+        // Ensure runtime-only fields are initialized
+        if (state && !state._abortControllers) state._abortControllers = {}
         // Validate stored state on load
         if (state && !Array.isArray(state.nodes)) {
           state.nodes = []

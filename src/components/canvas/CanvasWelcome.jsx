@@ -2,46 +2,73 @@ import { useCanvasStore } from './utils/canvasStore'
 
 const QUICK_STARTS = [
   {
-    icon: '🖼️', label: '文生图', desc: '文本 → DALL·E/SD → 预览',
-    layout: () => {
-      const s = useCanvasStore.getState()
-      s.addNode('textPrompt', { x: 80, y: 200 })
-      s.addNode('imageGen', { x: 380, y: 180 })
-      s.addNode('preview', { x: 720, y: 200 })
-    },
+    icon: '🖼️', label: '文生图', desc: '文本 → 图片生成 → 预览',
+    nodes: [
+      { type: 'textPrompt', position: { x: 80, y: 200 } },
+      { type: 'imageGen', position: { x: 380, y: 180 } },
+      { type: 'preview', position: { x: 720, y: 200 } },
+    ],
+    edges: [
+      { source: 0, target: 1 },
+      { source: 1, target: 2 },
+    ],
   },
   {
-    icon: '🎬', label: '图生视频', desc: '参考图 → Seedance/可灵 → 预览',
-    layout: () => {
-      const s = useCanvasStore.getState()
-      s.addNode('reference', { x: 80, y: 200 })
-      s.addNode('videoGen', { x: 380, y: 180 })
-      s.addNode('preview', { x: 720, y: 200 })
-    },
+    icon: '🎬', label: '图生视频', desc: '参考图 → 视频生成 → 预览',
+    nodes: [
+      { type: 'reference', position: { x: 80, y: 200 } },
+      { type: 'videoGen', position: { x: 380, y: 180 } },
+      { type: 'preview', position: { x: 720, y: 200 } },
+    ],
+    edges: [
+      { source: 0, target: 1 },
+      { source: 1, target: 2 },
+    ],
   },
   {
     icon: '🧠', label: '多Agent协作', desc: '人物造型 → 场景设计 → 剧幕分析',
-    layout: () => {
-      const s = useCanvasStore.getState()
-      s.addNode('textPrompt', { x: 60, y: 80 })
-      s.addNode('agent', { x: 360, y: 60 })
-      s.addNode('agent', { x: 360, y: 200 })
-      s.addNode('agent', { x: 360, y: 340 })
-      s.addNode('preview', { x: 700, y: 200 })
-    },
+    nodes: [
+      { type: 'textPrompt', position: { x: 60, y: 200 } },
+      { type: 'agent', position: { x: 380, y: 40 }, data: { agentMode: 'character' } },
+      { type: 'agent', position: { x: 380, y: 200 }, data: { agentMode: 'scene' } },
+      { type: 'agent', position: { x: 380, y: 360 }, data: { agentMode: 'seedance' } },
+      { type: 'preview', position: { x: 720, y: 200 } },
+    ],
+    edges: [
+      { source: 0, target: 1 },
+      { source: 0, target: 2 },
+      { source: 0, target: 3 },
+      { source: 1, target: 4 },
+      { source: 2, target: 4 },
+      { source: 3, target: 4 },
+    ],
   },
   {
-    icon: '📝', label: '文生视频', desc: '文本 → 可灵/Wan → 预览',
-    layout: () => {
-      const s = useCanvasStore.getState()
-      s.addNode('textPrompt', { x: 80, y: 200 })
-      s.addNode('videoGen', { x: 380, y: 180 })
-      s.addNode('preview', { x: 720, y: 200 })
-    },
+    icon: '📝', label: '文生视频', desc: '文本 → 视频生成 → 预览',
+    nodes: [
+      { type: 'textPrompt', position: { x: 80, y: 200 } },
+      { type: 'videoGen', position: { x: 380, y: 180 } },
+      { type: 'preview', position: { x: 720, y: 200 } },
+    ],
+    edges: [
+      { source: 0, target: 1 },
+      { source: 1, target: 2 },
+    ],
   },
 ]
 
 export function CanvasWelcome() {
+  const batchAddNodes = useCanvasStore((s) => s.batchAddNodes)
+  const nodes = useCanvasStore((s) => s.nodes)
+
+  const handleTemplate = (template) => {
+    if (nodes.length > 0 && !window.confirm('画布已有节点，是否清空并应用此模板？')) return
+    if (nodes.length > 0) useCanvasStore.getState().clearCanvas()
+    // Map edge source/target indices to actual node IDs (they'll be assigned in order)
+    const items = { ...template }
+    batchAddNodes(items)
+  }
+
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 5 }}>
       <div className="pointer-events-auto text-center p-8 rounded-2xl"
@@ -59,7 +86,7 @@ export function CanvasWelcome() {
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {QUICK_STARTS.map((qs) => (
-            <button key={qs.label} onClick={qs.layout}
+            <button key={qs.label} onClick={() => handleTemplate(qs)}
               style={{
                 padding: '12px', borderRadius: 10, textAlign: 'left',
                 border: '1px solid var(--border)', background: 'var(--bg-elevated)',

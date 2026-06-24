@@ -132,6 +132,16 @@ export const MODEL_PRESETS = {
     protocol: "openai",
     vision: true,
   },
+  "agnes": {
+    name: "Agnes 2.0 Flash",
+    provider: "Agnes AI",
+    endpoint: "https://apihub.agnes-ai.com/v1/chat/completions",
+    model: "agnes-2.0-flash",
+    authHeader: "Authorization",
+    authPrefix: "Bearer ",
+    protocol: "openai",
+    vision: true,
+  },
   "custom": {
     name: "自定义",
     provider: "Custom",

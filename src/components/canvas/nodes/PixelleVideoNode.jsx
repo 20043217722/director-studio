@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import { memo, useState, useCallback } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { useCanvasStore } from '../utils/canvasStore'
 
@@ -36,13 +36,24 @@ const STAGE_LABELS = {
 
 export const PixelleVideoNode = memo(({ id, data }) => {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData)
+  const registerAbort = useCanvasStore((s) => s.registerAbort)
+  const unregisterAbort = useCanvasStore((s) => s.unregisterAbort)
   const [loading, setLoading] = useState(false)
   const [stage, setStage] = useState('')
+
+  const handleCancel = useCallback(() => {
+    useCanvasStore.getState().abortGeneration(id)
+    setLoading(false)
+    setStage('')
+    updateNodeData(id, { status: 'idle', errorMessage: '' })
+  }, [id, updateNodeData])
 
   const handleGenerate = async () => {
     if (!data.prompt) return
     setLoading(true)
     updateNodeData(id, { status: 'generating', progress: 0 })
+    const controller = new AbortController()
+    registerAbort(id, controller)
     try {
       const { generatePixelleVideo, pollPixelleVideo } = await import('../../../lib/canvasApi')
 
@@ -52,22 +63,26 @@ export const PixelleVideoNode = memo(({ id, data }) => {
         template: data.template || '1080x1920/image_default.html',
         tts: data.tts || 'edge',
         bgm: data.bgm || 'uplift',
+        signal: controller.signal,
       })
+      if (controller.signal.aborted) return
 
-      for await (const update of pollPixelleVideo(taskId)) {
+      for await (const update of pollPixelleVideo(taskId, { signal: controller.signal })) {
+        if (controller.signal.aborted) return
         setStage(update.stage || '')
         if (update.progress != null) updateNodeData(id, { progress: update.progress, status: 'generating' })
         if (update.status === 'done') {
           updateNodeData(id, { generatedVideo: { url: update.url }, status: 'done', progress: 100 })
           break
         }
-        if (update.status === 'failed') throw new Error(update.error || 'Pixelle-Video 生成失败')
       }
     } catch (e) {
+      if (e.name === 'AbortError' || controller.signal.aborted) return
       updateNodeData(id, { status: 'error', errorMessage: e.message })
     } finally {
       setLoading(false)
       setStage('')
+      unregisterAbort(id)
     }
   }
 
@@ -118,15 +133,23 @@ export const PixelleVideoNode = memo(({ id, data }) => {
           {BGM_OPTIONS.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
 
-        {/* Generate button */}
-        <button className="node-btn" onClick={handleGenerate}
-          disabled={loading || !data.prompt}
-          style={{
-            background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: '#fff',
-            opacity: (loading || !data.prompt) ? 0.5 : 1,
-          }}>
-          {loading ? `⏳ ${STAGE_LABELS[stage] || stage}` : '🎞️ 一键生成短视频'}
-        </button>
+        {/* Generate / Cancel buttons */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button className="node-btn" onClick={handleGenerate}
+            disabled={loading || !data.prompt}
+            style={{
+              flex: 1, background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: '#fff',
+              opacity: (loading || !data.prompt) ? 0.5 : 1,
+            }}>
+            {loading ? `⏳ ${STAGE_LABELS[stage] || stage}` : '🎞️ 一键生成短视频'}
+          </button>
+          {loading && (
+            <button className="node-btn" onClick={handleCancel}
+              style={{ background: '#ef4444', color: '#fff', padding: '5px 10px' }}>
+              ✕
+            </button>
+          )}
+        </div>
 
         {/* Progress bar */}
         {data.status === 'generating' && (

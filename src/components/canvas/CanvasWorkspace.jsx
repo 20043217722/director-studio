@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, useRef } from 'react'
+import { useCallback, useState, useEffect, useRef, useMemo } from 'react'
 import {
   ReactFlow, ReactFlowProvider, Background, Controls, MiniMap,
   useReactFlow,
@@ -16,6 +16,16 @@ import { CanvasToolbar } from './CanvasToolbar'
 import { NodeConfigPanel } from './NodeConfigPanel'
 import { CanvasWelcome } from './CanvasWelcome'
 import { validConnections } from './utils/nodeDefaults'
+
+// Compute connected node IDs for highlighting
+function getConnectedNodeIds(nodeId, edges) {
+  const ids = new Set([nodeId])
+  for (const e of edges) {
+    if (e.source === nodeId) ids.add(e.target)
+    if (e.target === nodeId) ids.add(e.source)
+  }
+  return ids
+}
 
 const nodeTypes = {
   textPrompt: TextPromptNode, imageGen: ImageGenNode,
@@ -48,6 +58,11 @@ function CanvasInner() {
   const [contextMenu, setContextMenu] = useState(null)
   const { screenToFlowPosition, fitView } = useReactFlow()
   const wrapperRef = useRef(null)
+
+  // Compute connected nodes for selection highlighting
+  const connectedNodeIds = useMemo(() =>
+    selectedNodeId ? getConnectedNodeIds(selectedNodeId, edges) : new Set(),
+    [selectedNodeId, edges])
 
   // Close context menu on any click
   const closeMenu = useCallback(() => setContextMenu(null), [])
@@ -100,10 +115,19 @@ function CanvasInner() {
     deleteEdge(edge.id)
   }, [deleteEdge])
 
+  // Highlight connected nodes / dim non-connected when a node is selected
+  const displayNodes = useMemo(() => {
+    if (!selectedNodeId || connectedNodeIds.size <= 1) return nodes
+    return nodes.map(n => ({
+      ...n,
+      className: connectedNodeIds.has(n.id) ? 'node-highlighted' : 'node-dimmed',
+    }))
+  }, [nodes, selectedNodeId, connectedNodeIds])
+
   return (
     <div className="w-full h-full relative" ref={wrapperRef} onClick={closeMenu} style={{ outline: 'none' }}>
       <ReactFlow
-        nodes={nodes}
+        nodes={displayNodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}

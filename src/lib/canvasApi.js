@@ -51,6 +51,9 @@ const KEY_ALIAS = {
   'wan': 'qwen',              // Wan → 通义千问 key
   'minimax-video': 'minimax', // 海螺视频 → MiniMax key
   'gemini': 'gemini',         // Gemini → dedicated key
+  // Agnes AI models (all share the same agnes key)
+  'agnes-image': 'agnes',     // Agnes 生图 → Agnes key
+  'agnes-video': 'agnes',     // Agnes 生视频 → Agnes key
 }
 
 function getResolvedKey(provider) {
@@ -143,6 +146,35 @@ export async function generateImage(prompt, {
     return { images, model: 'GPT-4o' }
   }
 
+  // === Agnes AI Image Generation ===
+  if (provider === 'agnes-image') {
+    const baseEndpoint = 'https://apihub.agnes-ai.com/v1/images/generations'
+    const endpoint = useProxy ? getProxyEndpoint(baseEndpoint) : (getUserProxy() || baseEndpoint)
+    const sizeMap = { '1:1': '1024x1024', '16:9': '1792x1024', '9:16': '1024x1792' }
+    const size = sizeMap[aspectRatio] || '1024x1024'
+
+    const body = {
+      model: 'agnes-image-2.1-flash',
+      prompt,
+      size,
+    }
+    if (negativePrompt) body.negative_prompt = negativePrompt
+
+    const res = await fetchWithRetry(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify(body),
+      signal,
+    })
+    const data = await res.json()
+    if (data.data && data.data.length > 0) {
+      return { images: data.data.map(d => ({ url: d.url, revised_prompt: d.revised_prompt })), model: 'Agnes Image 2.1' }
+    }
+    // Some responses return direct URL
+    if (data.url) return { images: [{ url: data.url }], model: 'Agnes Image 2.1' }
+    throw new Error('Agnes 生图失败：未返回图片URL')
+  }
+
   // === DALL·E 3 ===
   if (provider === 'dall-e-3') {
     const baseEndpoint = 'https://api.openai.com/v1/images/generations'
@@ -181,6 +213,45 @@ export async function generateVideo(promptOrImage, {
   const { key, source } = getResolvedKey(provider)
   if (!key) {
     throw new Error(`请在设置中配置 API Key（${provider} 需要专用 Key）`)
+  }
+
+  // === Agnes AI Video Generation ===
+  if (provider === 'agnes-video') {
+    const baseEndpoint = 'https://apihub.agnes-ai.com/v1/videos'
+    const endpoint = getUserProxy() || baseEndpoint
+    const isImage = typeof promptOrImage === 'string' && promptOrImage.startsWith('data:')
+
+    // num_frames must satisfy 8n+1 and ≤ 441
+    const frameRate = 24
+    const numFrames = Math.min(duration * frameRate, 441)
+    // Round to nearest 8n+1
+    const adjustedFrames = Math.floor((numFrames - 1) / 8) * 8 + 1
+
+    const body = {
+      model: 'agnes-video-v2.0',
+      height: 768,
+      width: 1152,
+      num_frames: adjustedFrames,
+      frame_rate: frameRate,
+    }
+    if (isImage) {
+      body.image = promptOrImage
+    } else {
+      body.prompt = promptOrImage
+    }
+
+    const res = await fetchWithRetry(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify(body),
+      signal,
+    })
+    const data = await res.json()
+    // Agnes returns video_id for async polling
+    if (data.video_id) return { jobId: data.video_id, provider: 'agnes-video' }
+    if (data.id) return { jobId: data.id, provider: 'agnes-video' }
+    if (data.url) return { url: data.url, jobId: null }
+    throw new Error('Agnes 视频生成请求失败：未返回 video_id')
   }
 
   // === Sora 2 (OpenAI) ===
@@ -229,6 +300,34 @@ export async function* pollVideoGeneration(jobId, {
 } = {}) {
   const { key } = getResolvedKey(provider)
   if (!jobId) { yield { progress: 100, status: 'done' }; return }
+
+  // === Agnes AI Video Polling ===
+  if (provider === 'agnes-video') {
+    const baseEndpoint = `https://apihub.agnes-ai.com/agnesapi?video_id=${jobId}`
+    const endpoint = getUserProxy() || baseEndpoint
+    for (let i = 0; i < maxAttempts; i++) {
+      if (signal?.aborted) break
+      await new Promise(r => setTimeout(r, interval))
+      const res = await fetch(endpoint, {
+        headers: { 'Authorization': `Bearer ${key}` },
+        signal,
+      }).catch(() => null)
+      if (!res?.ok) continue
+      const data = await res.json()
+      // Agnes video polling response: status + url when done
+      const status = data.status || data.state || 'processing'
+      if (status === 'completed' || status === 'done' || status === 'succeeded' || data.url || data.video_url) {
+        yield { progress: 100, status: 'done', url: data.url || data.video_url }
+        return
+      }
+      if (status === 'failed' || status === 'error') {
+        throw new Error(data.error || data.message || 'Agnes 视频生成失败')
+      }
+      const progress = Math.min(i * 2.5, 95)
+      yield { progress: Math.round(progress), status: 'generating' }
+    }
+    throw new Error('Agnes 视频生成超时，请重试')
+  }
 
   // Sora 2 polling
   if (provider === 'sora') {

@@ -1,41 +1,67 @@
-import { memo, useState, useMemo } from 'react'
+import { memo, useState, useCallback, useSyncExternalStore } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { useCanvasStore } from '../utils/canvasStore'
 import { IMAGE_MODELS } from '../utils/nodeDefaults'
 
+// Reactive hook: re-renders when localStorage api_keys change
 function useModelKeys() {
-  return useMemo(() => {
+  const subscribe = useCallback((cb) => {
+    const handler = (e) => { if (e.key === 'api_keys') cb() }
+    window.addEventListener('storage', handler)
+    // Also listen for custom event from SettingsModal
+    window.addEventListener('apikeys-changed', handler)
+    return () => {
+      window.removeEventListener('storage', handler)
+      window.removeEventListener('apikeys-changed', handler)
+    }
+  }, [])
+  const getSnapshot = useCallback(() => {
     try {
       const keys = JSON.parse(localStorage.getItem('api_keys') || '{}')
       return new Set(Object.keys(keys))
     } catch { return new Set() }
   }, [])
+  return useSyncExternalStore(subscribe, getSnapshot)
 }
 
 export const ImageGenNode = memo(({ id, data }) => {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData)
+  const registerAbort = useCanvasStore((s) => s.registerAbort)
+  const unregisterAbort = useCanvasStore((s) => s.unregisterAbort)
   const [genLoading, setGenLoading] = useState(false)
   const userKeys = useModelKeys()
+
+  const handleCancel = useCallback(() => {
+    useCanvasStore.getState().abortGeneration(id)
+    setGenLoading(false)
+    updateNodeData(id, { status: 'idle', errorMessage: '' })
+  }, [id, updateNodeData])
 
   const handleGenerate = async () => {
     if (!data.prompt) return
     setGenLoading(true)
     updateNodeData(id, { status: 'generating', errorMessage: '' })
+    const controller = new AbortController()
+    registerAbort(id, controller)
     try {
       const { generateImage } = await import('../../../lib/canvasApi')
       const result = await generateImage(data.prompt, {
         provider: data.modelProvider,
         aspectRatio: data.aspectRatio,
         count: data.imageCount,
+        signal: controller.signal,
       })
+      if (controller.signal.aborted) return
       updateNodeData(id, {
         generatedImages: result.images || [],
         status: 'done',
       })
     } catch (e) {
+      if (e.name === 'AbortError' || controller.signal.aborted) return
       updateNodeData(id, { status: 'error', errorMessage: e.message })
     } finally {
       setGenLoading(false)
+      unregisterAbort(id)
     }
   }
 
@@ -84,18 +110,26 @@ export const ImageGenNode = memo(({ id, data }) => {
           ))}
         </div>
 
-        {/* Generate button */}
-        <button
-          className="node-btn"
-          onClick={handleGenerate}
-          disabled={genLoading || !data.prompt}
-          style={{
-            background: 'var(--accent-music)', color: '#fff',
-            opacity: (genLoading || !data.prompt) ? 0.5 : 1,
-          }}
-        >
-          {genLoading ? '⏳ 生成中...' : '🎨 生成图片'}
-        </button>
+        {/* Generate / Cancel buttons */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button
+            className="node-btn"
+            onClick={handleGenerate}
+            disabled={genLoading || !data.prompt}
+            style={{
+              flex: 1, background: 'var(--accent-music)', color: '#fff',
+              opacity: (genLoading || !data.prompt) ? 0.5 : 1,
+            }}
+          >
+            {genLoading ? '⏳ 生成中...' : '🎨 生成图片'}
+          </button>
+          {genLoading && (
+            <button className="node-btn" onClick={handleCancel}
+              style={{ background: '#ef4444', color: '#fff', padding: '5px 10px' }}>
+              ✕
+            </button>
+          )}
+        </div>
 
         {/* Generated images preview */}
         {data.generatedImages?.length > 0 && (

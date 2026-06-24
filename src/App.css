@@ -1130,6 +1130,24 @@ button, .agent-card, .mobile-tab, .update-badge, .provider-grid-btn,
   box-shadow: 0 0 0 2px var(--accent), var(--shadow-glow) !important;
   border-color: var(--accent) !important;
 }
+/* Connected node highlighting — brighten connected, dim unconnected */
+.node-highlighted .canvas-node {
+  filter: brightness(1.1);
+  transition: filter 0.3s ease, opacity 0.3s ease;
+}
+.node-dimmed .canvas-node {
+  opacity: 0.38;
+  filter: grayscale(0.4);
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+/* Edge data-flow pulse animation */
+.react-flow__edge.animated .react-flow__edge-path {
+  stroke-dasharray: 8 4;
+  animation: edge-flow 1.2s linear infinite;
+}
+@keyframes edge-flow {
+  to { stroke-dashoffset: -24; }
+}
 .react-flow__handle {
   transition: transform 0.15s, opacity 0.15s;
   opacity: 0.7;
