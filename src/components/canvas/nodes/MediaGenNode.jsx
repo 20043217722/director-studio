@@ -59,7 +59,8 @@ export const MediaGenNode = memo(({ id, data }) => {
 
   // --- Generate ---
   const handleGenerate = async () => {
-    if (!data.prompt) return
+    // Video mode can use sourceImage (img2vid) without prompt; image mode requires prompt
+    if (!data.prompt && (isImage || !data.sourceImage)) return
     setGenLoading(true)
     updateNodeData(id, { status: 'generating', progress: 0, errorMessage: '' })
     const ctrl = new AbortController()
@@ -269,7 +270,7 @@ export const MediaGenNode = memo(({ id, data }) => {
       {/* Generate / Cancel */}
       <div style={{ display: 'flex', gap: 6 }}>
         <button className="node-btn node-btn-primary"
-          onClick={handleGenerate} disabled={genLoading || !data.prompt}
+          onClick={handleGenerate} disabled={genLoading || (!data.prompt && (isImage || !data.sourceImage))}
           style={{ flex: 1, background: isImage ? 'var(--accent-music)' : 'var(--accent-sfx)', color: '#fff',
             opacity: (genLoading || !data.prompt) ? 0.5 : 1 }}>
           {genLoading

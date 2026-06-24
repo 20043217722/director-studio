@@ -153,12 +153,23 @@ function CanvasInner() {
 
   // --- Group selected nodes ---
   const handleGroupSelection = useCallback((store) => {
-    const selected = store.nodes.filter((n) => n.selected)
-    if (selected.length < 2) return
+    // Use store's selectedNodeId + find its connected nodes for grouping
+    const selId = store.selectedNodeId
+    if (!selId) return
+    const node = store.nodes.find((n) => n.id === selId)
+    if (!node) return
+    // Collect directly connected nodes
+    const ids = new Set([selId])
+    for (const e of store.edges) {
+      if (e.source === selId) ids.add(e.target)
+      if (e.target === selId) ids.add(e.source)
+    }
+    const nodeIds = [...ids]
+    if (nodeIds.length < 2) return
     const name = prompt('输入节点组名称:', '节点组')
     if (!name) return
     const colors = ['#8b5cf6', '#ec4899', '#f97316', '#06b6d4', '#84cc16', '#ef4444']
-    store.createGroup(name, selected.map((n) => n.id), colors[Math.floor(Math.random() * colors.length)])
+    store.createGroup(name, nodeIds, colors[Math.floor(Math.random() * colors.length)])
   }, [])
 
   // --- Right-click on node ---
@@ -200,19 +211,22 @@ function CanvasInner() {
 
   // --- Edge context menu trigger ---
   useEffect(() => {
-    if (selectedEdgeId) {
-      const edge = useCanvasStore.getState().edges.find((e) => e.id === selectedEdgeId)
-      if (!edge) return
-      // Show edge menu at edge midpoint (approximate via source/target node positions)
-      const src = useCanvasStore.getState().nodes.find((n) => n.id === edge.source)
-      const tgt = useCanvasStore.getState().nodes.find((n) => n.id === edge.target)
-      if (src && tgt) {
-        setContextMenu({
-          type: 'edge', edgeId: selectedEdgeId,
-          x: (src.position.x + tgt.position.x) / 2 + 80,
-          y: (src.position.y + tgt.position.y) / 2 + 100,
-        })
-      }
+    if (!selectedEdgeId) {
+      // Clear edge menu when edge is deselected
+      setContextMenu(null)
+      return
+    }
+    const edge = useCanvasStore.getState().edges.find((e) => e.id === selectedEdgeId)
+    if (!edge) {
+      setContextMenu(null)
+      return
+    }
+    const src = useCanvasStore.getState().nodes.find((n) => n.id === edge.source)
+    const tgt = useCanvasStore.getState().nodes.find((n) => n.id === edge.target)
+    if (src && tgt) {
+      setContextMenu({ type: 'edge', edgeId: selectedEdgeId,
+        x: (src.position.x + tgt.position.x) / 2 + 80,
+        y: (src.position.y + tgt.position.y) / 2 + 100 })
     }
   }, [selectedEdgeId])
 
@@ -243,7 +257,7 @@ function CanvasInner() {
         onDrop={onDrop}
         nodeTypes={nodeTypes}
         fitView
-        deleteKeyCode={['Delete', 'Backspace']}
+        deleteKeyCode={null}
         multiSelectionKeyCode="Shift"
         snapToGrid
         snapGrid={[16, 16]}

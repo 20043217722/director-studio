@@ -114,7 +114,8 @@ export const TextPromptNode = memo(({ id, data }) => {
           placeholder={`输入创作指令...&#10;&#10;例如:&#10;"生成一张16:9的赛博朋克风格海报，不要文字"&#10;"帮我设计一个古装女侠角色"&#10;"把这个场景用可灵生成5秒视频"`}
           rows={4}
           className="node-textarea"
-          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); useCanvasStore.getState().selectNode(id) }}
         />
 
         {/* Parameter pills */}

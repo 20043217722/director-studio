@@ -189,7 +189,7 @@ function syncNodeUpstream(targetId, nodes, edges) {
 
     // Auto-fill target data from source
     if (source.type === 'textPrompt' && source.data.prompt) {
-      if (targetNode.type === 'imageGen' || targetNode.type === 'videoGen' || targetNode.type === 'agent') {
+      if (targetNode.type === 'imageGen' || targetNode.type === 'videoGen' || targetNode.type === 'agent' || targetNode.type === 'pixelleVideo' || targetNode.type === 'mediaGen') {
         if (!targetNode.data.prompt || targetNode.data.prompt === source.data.prompt) {
           updated[idx] = { ...updated[idx], data: { ...updated[idx].data, prompt: source.data.prompt } }
         }
@@ -213,7 +213,7 @@ export const useCanvasStore = create(
       // Active abort controllers for in-flight generations (keyed by node ID)
       _abortControllers: {},
 
-      _snapshot: () => JSON.stringify({ nodes: get().nodes, edges: get().edges, selectedNodeId: get().selectedNodeId }),
+      _snapshot: () => JSON.stringify({ nodes: get().nodes, edges: get().edges, selectedNodeId: get().selectedNodeId, selectedEdgeId: get().selectedEdgeId, groups: get().groups }),
       _pushUndo: () => {
         const { undoStack } = get()
         const snap = get()._snapshot()
@@ -509,6 +509,11 @@ export const useCanvasStore = create(
           ])
 
         set({ nodes: newNodes, edges: newEdges, selectedEdgeId: null })
+
+        // Sync data flow through the new node
+        const postNodes = syncNodeDownstream(srcNode.id, get().nodes, get().edges)
+        const finalNodes = syncNodeUpstream(newId, postNodes, get().edges)
+        if (finalNodes !== postNodes) set({ nodes: finalNodes })
       },
 
       // Groups
@@ -519,6 +524,7 @@ export const useCanvasStore = create(
         return id
       },
       updateGroup: (groupId, updates) => {
+        get()._pushUndo()
         set({ groups: get().groups.map((g) => g.id === groupId ? { ...g, ...updates } : g) })
       },
       deleteGroup: (groupId) => {
@@ -545,10 +551,11 @@ export const useCanvasStore = create(
       },
 
       exportCanvas: () => ({
-        version: 1,
+        version: 2,
         nodes: get().nodes.map(({ id, type, position, data }) => ({ id, type, position, data })),
         edges: get().edges.map(({ id, source, target, sourceHandle, targetHandle }) =>
           ({ id, source, target, sourceHandle, targetHandle })),
+        groups: get().groups,
       }),
 
       importCanvas: (state) => {
@@ -562,13 +569,14 @@ export const useCanvasStore = create(
             ...e, type: e.type || 'smoothstep', animated: true,
             style: e.style || { stroke: 'var(--accent)', strokeWidth: 2 },
           })),
-          selectedNodeId: null,
+          groups: state.groups || [],
+          selectedNodeId: null, selectedEdgeId: null,
         })
       },
     }),
     {
       name: STORAGE_KEY,
-      partialize: (state) => ({ nodes: state.nodes, edges: state.edges }),
+      partialize: (state) => ({ nodes: state.nodes, edges: state.edges, groups: state.groups }),
       version: 1,
       // localStorage quota protection
       storage: {
