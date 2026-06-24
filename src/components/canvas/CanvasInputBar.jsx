@@ -34,9 +34,7 @@ function extractParams(text) {
 export function CanvasInputBar() {
   const [text, setText] = useState('')
   const [detected, setDetected] = useState(null)
-  const autoBuild = useCanvasStore((s) => s.autoBuild)
-  const addNode = useCanvasStore((s) => s.addNode)
-  const nodes = useCanvasStore((s) => s.nodes)
+  const nodeCount = useCanvasStore((s) => s.nodes.length)
 
   const handleChange = useCallback((e) => {
     const v = e.target.value
@@ -52,21 +50,19 @@ export function CanvasInputBar() {
     const targetMap = { image: 'imageGen', video: 'videoGen', agent: 'agent' }
     const targetType = targetMap[intent.key] || 'imageGen'
 
-    // Calculate position below the last node or at center
-    const lastNode = nodes.length > 0
-      ? nodes.reduce((a, b) => a.position.y > b.position.y ? a : b)
+    const s = useCanvasStore.getState()
+    // Calculate position using fresh state (not hook value which may be stale)
+    const freshNodes = s.nodes
+    const lastNode = freshNodes.length > 0
+      ? freshNodes.reduce((a, b) => a.position.y > b.position.y ? a : b)
       : null
     const startX = lastNode ? lastNode.position.x : 300
     const startY = lastNode ? lastNode.position.y + 280 : 200
 
-    // Create text prompt node at smart position
-    const s = useCanvasStore.getState()
     s.addNode('textPrompt', { x: startX, y: startY })
-    const newNodes = s.nodes
-    const textNode = newNodes[newNodes.length - 1]
+    const textNode = s.nodes[s.nodes.length - 1]
     if (textNode) {
       s.updateNodeData(textNode.id, { prompt: text }, { syncDownstream: false })
-      // Auto-build downstream
       const genData = { prompt: text }
       if (params.aspectRatio) genData.aspectRatio = params.aspectRatio
       if (params.duration) genData.duration = params.duration
@@ -76,7 +72,10 @@ export function CanvasInputBar() {
 
     setText('')
     setDetected(null)
-  }, [text, nodes])
+  }, [text])
+
+  // Hide when canvas is empty (CanvasWelcome shows instead)
+  if (nodeCount === 0) return null
 
   return (
     <div className="canvas-input-bar">

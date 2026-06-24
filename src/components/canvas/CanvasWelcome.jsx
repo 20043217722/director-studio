@@ -63,8 +63,9 @@ export function CanvasWelcome() {
     if (nodes.length > 0) useCanvasStore.getState().clearCanvas()
 
     const targetType = detectIntent(nlInput)
-    // Create textPrompt + gen + preview chain
-    useCanvasStore.getState().batchAddNodes({
+    const s = useCanvasStore.getState()
+    const beforeCount = s.nodes.length
+    s.batchAddNodes({
       nodes: [
         { type: 'textPrompt', position: { x: 80, y: 200 } },
         { type: targetType, position: { x: 420, y: 180 } },
@@ -72,14 +73,14 @@ export function CanvasWelcome() {
       ],
       edges: [{ source: 0, target: 1 }, { source: 1, target: 2 }],
     })
-    // Then update the textPrompt node with the user's input
-    setTimeout(() => {
-      const s = useCanvasStore.getState()
-      const textNode = s.nodes[s.nodes.length - 3]
-      if (textNode && textNode.type === 'textPrompt') {
-        s.updateNodeData(textNode.id, { prompt: nlInput.trim() })
+    // Find the textPrompt node by scanning from beforeCount
+    const afterNodes = s.nodes
+    for (let i = beforeCount; i < afterNodes.length; i++) {
+      if (afterNodes[i].type === 'textPrompt') {
+        s.updateNodeData(afterNodes[i].id, { prompt: nlInput.trim() })
+        break
       }
-    }, 50)
+    }
     setNlInput('')
   }, [nlInput, nodes])
 
