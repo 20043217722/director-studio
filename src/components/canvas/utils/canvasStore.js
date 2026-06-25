@@ -286,7 +286,7 @@ export const useCanvasStore = create(
           labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
           labelBgPadding: [4, 3],
           labelBgBorderRadius: 3,
-          style: { stroke: 'var(--accent)', strokeWidth: 2 },
+          style: { stroke: 'var(--accent)', strokeWidth: 3, strokeLinecap: 'round' },
         }]
 
         // 🔗 Auto-sync data on connection
@@ -334,7 +334,7 @@ export const useCanvasStore = create(
             labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
             labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
             labelBgPadding: [4, 3], labelBgBorderRadius: 3,
-            style: { stroke: 'var(--accent)', strokeWidth: 2 },
+            style: { stroke: 'var(--accent)', strokeWidth: 3, strokeLinecap: 'round' },
           }
         })
         set({ nodes: [...s.nodes, ...newNodes], edges: [...s.edges, ...newEdges] })
@@ -367,7 +367,7 @@ export const useCanvasStore = create(
           labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
           labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
           labelBgPadding: [4, 3], labelBgBorderRadius: 3,
-          style: { stroke: 'var(--accent)', strokeWidth: 2 },
+          style: { stroke: 'var(--accent)', strokeWidth: 3, strokeLinecap: 'round' },
         }]
 
         // Optional preview node
@@ -386,7 +386,7 @@ export const useCanvasStore = create(
             labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
             labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
             labelBgPadding: [4, 3], labelBgBorderRadius: 3,
-            style: { stroke: 'var(--accent)', strokeWidth: 2 },
+            style: { stroke: 'var(--accent)', strokeWidth: 3, strokeLinecap: 'round' },
           })
         }
 
@@ -507,7 +507,7 @@ export const useCanvasStore = create(
               labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
               labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
               labelBgPadding: [4, 3], labelBgBorderRadius: 3,
-              style: { stroke: 'var(--accent)', strokeWidth: 2 },
+              style: { stroke: 'var(--accent)', strokeWidth: 3, strokeLinecap: 'round' },
             },
             {
               id: `e_${Date.now()}_b`, source: newId, target: tgtNode.id,
@@ -516,7 +516,7 @@ export const useCanvasStore = create(
               labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
               labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
               labelBgPadding: [4, 3], labelBgBorderRadius: 3,
-              style: { stroke: 'var(--accent)', strokeWidth: 2 },
+              style: { stroke: 'var(--accent)', strokeWidth: 3, strokeLinecap: 'round' },
             },
           ])
 
@@ -583,7 +583,7 @@ export const useCanvasStore = create(
           }).filter(Boolean),
           edges: (state.edges || []).map((e) => ({
             ...e, type: e.type || 'smoothstep', animated: true,
-            style: e.style || { stroke: 'var(--accent)', strokeWidth: 2 },
+            style: e.style || { stroke: 'var(--accent)', strokeWidth: 3, strokeLinecap: 'round' },
           })),
           groups: state.groups || [],
           selectedNodeId: null, selectedEdgeId: null,

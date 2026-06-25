@@ -264,7 +264,7 @@ function CanvasInner() {
         snapGrid={[16, 16]}
         defaultEdgeOptions={{
           type: 'smoothstep', animated: true,
-          style: { stroke: 'var(--accent)', strokeWidth: 2 },
+          style: { stroke: 'var(--accent, #0EA5E9)', strokeWidth: 3, strokeLinecap: 'round' },
         }}
         proOptions={{ hideAttribution: true }}
         style={{ background: 'var(--bg-root)' }}
