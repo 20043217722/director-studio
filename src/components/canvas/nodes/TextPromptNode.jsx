@@ -168,8 +168,10 @@ export const TextPromptNode = memo(({ id, data }) => {
         </div>
       </div>
 
+      <Handle type="target" position={Position.Left} id="prompt"
+        style={{ background: 'var(--accent-tts)', border: '2px solid var(--bg-surface)', width: 14, height: 14 }} />
       <Handle type="source" position={Position.Right} id="output"
-        style={{ background: 'var(--accent-tts)', border: '2px solid var(--bg-surface)', width: 12, height: 12 }} />
+        style={{ background: 'var(--accent-tts)', border: '2px solid var(--bg-surface)', width: 14, height: 14 }} />
     </div>
   )
 })

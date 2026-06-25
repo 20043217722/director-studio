@@ -70,10 +70,20 @@ function syncNodeDownstream(sourceId, nodes, edges) {
 
     // Data flow rules by source → target type
     if (sourceNode.type === 'textPrompt') {
-      // TextPrompt → ImageGen/VideoGen/Agent/PixelleVideo/MediaGen/TextPrompt: push prompt
+      // TextPrompt → downstream: push prompt + any attached image
       const promptTargets = ['imageGen', 'videoGen', 'agent', 'pixelleVideo', 'mediaGen', 'textPrompt']
       if (promptTargets.includes(target.type) && srcData.prompt && !target.data.prompt) {
         updated[idx] = { ...target, data: { ...target.data, prompt: srcData.prompt } }
+      }
+      // Also pass image through if TextPrompt received one from Reference
+      if (srcData.sourceImage && !target.data.sourceImage) {
+        if (target.type === 'imageGen' || target.type === 'mediaGen' || target.type === 'agent') {
+          updated[idx] = { ...updated[idx], data: {
+            ...updated[idx].data,
+            sourceImage: srcData.sourceImage,
+            sourceImageType: srcData.sourceImageType || 'image',
+          } }
+        }
       }
     }
 
@@ -147,12 +157,17 @@ function syncNodeDownstream(sourceId, nodes, edges) {
       if ((target.type === 'imageGen' || target.type === 'videoGen' || target.type === 'mediaGen') && srcData.mediaData && !target.data.sourceImage) {
         updated[idx] = { ...target, data: { ...target.data, sourceImage: srcData.mediaData } }
       }
-      // Reference → TextPrompt: 图转文 — always fills (allows multi-source)
+      // Reference → TextPrompt: 图转文 — push image + context to TextPrompt
       if (target.type === 'textPrompt' && srcData.mediaData) {
         const mediaType = srcData.mediaType === 'video' ? '视频' : '图片'
         const fileName = srcData.fileName ? ` (${srcData.fileName})` : ''
         updated[idx] = { ...target, data: { ...target.data,
-          prompt: `[${mediaType}素材${fileName}已连接]\\n请基于此${mediaType}进行创作...` } }
+          prompt: `[${mediaType}素材${fileName}已连接] 请基于此${mediaType}进行创作...`,
+          // Store image for further downstream pass-through
+          sourceImage: srcData.mediaData,
+          sourceImageType: srcData.mediaType || 'image',
+          sourceFileName: srcData.fileName || '',
+        } }
       }
       // Reference → Agent: 图转分析 — push image data + smart prompt
       if (target.type === 'agent' && srcData.mediaData) {
