@@ -30,11 +30,15 @@ export const AgentNode = memo(({ id, data }) => {
       const { callAgentStream } = await import('../../../lib/api')
       const promptWithLang = data.prompt && !/中文|Chinese|用中文|请用中文/.test(data.prompt)
         ? `请用中文回答：\n${data.prompt}` : data.prompt
-      // Pass source image for vision analysis (from Reference node)
+      // Vision support: auto-switch to vision model when image is attached
       const apiOpts = { signal: ctrl.signal }
       if (data.sourceImage) {
         apiOpts.imageBase64 = data.sourceImage
-        apiOpts.imageMime = data.sourceImageType === 'video' ? 'video/mp4' : 'image/png'
+        apiOpts.imageMime = 'image/png'
+        // Auto-switch to vision-capable model (Qwen VL Max / GPT-4o)
+        // Default DeepSeek doesn't support vision input
+        const visionProvider = useCanvasStore.getState()._visionProvider || 'qwen'
+        apiOpts.provider = visionProvider
       }
       let fullResponse = ''
       for await (const chunk of callAgentStream(promptWithLang, data.agentMode || 'director', apiOpts)) {
