@@ -154,7 +154,7 @@ function syncNodeDownstream(sourceId, nodes, edges) {
         updated[idx] = { ...target, data: { ...target.data,
           prompt: `[${mediaType}素材${fileName}已连接]\\n请基于此${mediaType}进行创作...` } }
       }
-      // Reference → Agent: 图转分析 — always fills (allows multi-source)
+      // Reference → Agent: 图转分析 — push image data + smart prompt
       if (target.type === 'agent' && srcData.mediaData) {
         const agentMode = target.data.agentMode || 'director'
         const modePrompts = {
@@ -168,7 +168,13 @@ function syncNodeDownstream(sourceId, nodes, edges) {
           post: '请分析这张图片的后期制作要点：调色方案、特效建议、声音设计方向',
         }
         const prompt = modePrompts[agentMode] || '请分析这张图片，反推提示词和视觉描述'
-        updated[idx] = { ...target, data: { ...target.data, prompt } }
+        updated[idx] = { ...target, data: {
+          ...target.data, prompt,
+          // Pass the actual image data for vision analysis
+          sourceImage: srcData.mediaData,
+          sourceImageType: srcData.mediaType || 'image',
+          sourceFileName: srcData.fileName || '',
+        } }
       }
     }
 
