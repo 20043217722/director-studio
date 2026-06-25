@@ -307,11 +307,12 @@ export const useCanvasStore = create(
       // `items.nodes` = [{type, position?, data?}], `items.edges` = [{source: index, target: index}]
       batchAddNodes: (items) => {
         const s = get()
-        if (s.nodes.length >= MAX_NODES) return
+        const nodeItems = items.nodes || []
+        // Guard: current + incoming must not exceed MAX_NODES
+        if (s.nodes.length >= MAX_NODES || s.nodes.length + nodeItems.length > MAX_NODES) return
+        if (!nodeItems.length) return
         get()._pushUndo()
         const ts = Date.now()
-        const nodeItems = items.nodes || []
-        if (!nodeItems.length) return
         const ids = nodeItems.map((_, i) => `n_${ts}_${i}_${Math.random().toString(36).slice(2, 5)}`)
         const newNodes = nodeItems.map((it, i) => ({
           id: ids[i],
@@ -342,7 +343,8 @@ export const useCanvasStore = create(
       autoBuild: (sourceId, targetType, targetData = {}, addPreview = false) => {
         const s = get()
         const sourceNode = s.nodes.find((n) => n.id === sourceId)
-        if (!sourceNode || s.nodes.length >= MAX_NODES) return
+        const addCount = addPreview ? 2 : 1
+        if (!sourceNode || s.nodes.length >= MAX_NODES || s.nodes.length + addCount > MAX_NODES) return
 
         s._pushUndo()
         const baseX = sourceNode.position.x + 340
@@ -409,11 +411,12 @@ export const useCanvasStore = create(
       },
 
       updateNodeData: (nodeId, data, { syncDownstream = true } = {}) => {
+        // Push undo for label changes (renaming is a user action worth undoing)
+        if (data.label !== undefined) get()._pushUndo()
         let updated = get().nodes.map((n) =>
           n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n)
         if (syncDownstream) {
           updated = syncNodeDownstream(nodeId, updated, get().edges)
-          // D5: Also sync upstream so editing TextPrompt updates connected targets
           updated = syncNodeUpstream(nodeId, updated, get().edges)
         }
         set({ nodes: updated })
@@ -430,6 +433,9 @@ export const useCanvasStore = create(
 
       // AbortController management for in-flight generations
       registerAbort: (nodeId, controller) => {
+        // Abort any previous in-flight generation for this node before registering new one
+        const prev = get()._abortControllers[nodeId]
+        if (prev) { try { prev.abort() } catch {} }
         set({ _abortControllers: { ...get()._abortControllers, [nodeId]: controller } })
       },
       unregisterAbort: (nodeId) => {
@@ -565,12 +571,16 @@ export const useCanvasStore = create(
       }),
 
       importCanvas: (state) => {
-        if (!state?.nodes) return
+        if (!state?.nodes || !Array.isArray(state.nodes)) {
+          console.warn('[Canvas] importCanvas: invalid nodes data, skipping')
+          return
+        }
         get()._pushUndo()
         set({
-          nodes: state.nodes.slice(0, MAX_NODES).map((n) => ({
-            ...n, data: { ...(nodeDefaults[n.type] || {}), ...n.data },
-          })),
+          nodes: state.nodes.slice(0, MAX_NODES).map((n) => {
+            if (!n || !n.id || !n.type) return null
+            return { ...n, data: { ...(nodeDefaults[n.type] || {}), ...(n.data || {}) } }
+          }).filter(Boolean),
           edges: (state.edges || []).map((e) => ({
             ...e, type: e.type || 'smoothstep', animated: true,
             style: e.style || { stroke: 'var(--accent)', strokeWidth: 2 },
@@ -588,7 +598,10 @@ export const useCanvasStore = create(
       storage: {
         getItem: (name) => {
           try { return JSON.parse(localStorage.getItem(name) || 'null') }
-          catch { return null }
+          catch {
+            console.warn('[Canvas] Corrupted localStorage data detected, resetting canvas state')
+            return null
+          }
         },
         setItem: (name, value) => {
           try {
