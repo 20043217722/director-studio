@@ -31,6 +31,22 @@ function onImageDragStart(e, img) {
   e.dataTransfer.effectAllowed = 'copy'
 }
 
+// Auto-create a Preview node downstream if none exists
+function ensurePreviewDownstream(sourceId) {
+  const s = useCanvasStore.getState()
+  const hasPreview = s.edges.some((e) => {
+    if (e.source !== sourceId) return false
+    const tgt = s.nodes.find((n) => n.id === e.target)
+    return tgt && tgt.type === 'preview'
+  })
+  if (hasPreview) return
+  // Auto-build preview
+  const srcNode = s.nodes.find((n) => n.id === sourceId)
+  if (!srcNode) return
+  const pos = { x: srcNode.position.x + 360, y: srcNode.position.y }
+  s.autoBuild(sourceId, 'preview', {}, false)
+}
+
 export const MediaGenNode = memo(({ id, data }) => {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData)
   const registerAbort = useCanvasStore((s) => s.registerAbort)
@@ -77,6 +93,8 @@ export const MediaGenNode = memo(({ id, data }) => {
         })
         if (ctrl.signal.aborted) return
         updateNodeData(id, { generatedImages: r.images || [], status: 'done' })
+        // Auto-create Preview node if no downstream preview exists
+        ensurePreviewDownstream(id)
       } else {
         const { generateVideo, pollVideoGeneration } = await import('../../../lib/canvasApi')
         const { jobId } = await generateVideo(data.prompt || data.sourceImage, {
@@ -97,6 +115,7 @@ export const MediaGenNode = memo(({ id, data }) => {
           updateNodeData(id, { progress: p, status: 'generating' })
           if (u.status === 'done') {
             updateNodeData(id, { generatedVideo: u, status: 'done', progress: 100 })
+            ensurePreviewDownstream(id)
             break
           }
         }

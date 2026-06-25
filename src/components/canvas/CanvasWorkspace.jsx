@@ -52,6 +52,13 @@ const QUICK_ADD_NODES = [
   { type: 'preview', label: '👁️ 预览输出' },
 ]
 
+// Node type labels for picker menus
+const TYPE_LABELS = {
+  textPrompt: '📝 文本提示词', imageGen: '🎨 图片生成', videoGen: '🎬 视频生成',
+  mediaGen: '🎨 媒体生成', reference: '🖼️ 参考素材', preview: '👁️ 预览输出',
+  agent: '🧠 AI智能体', pixelleVideo: '🎞️ 短视频',
+}
+
 // Edge insert node options
 const EDGE_INSERT_NODES = [
   { type: 'textPrompt', label: '📝 文本' },
@@ -104,6 +111,28 @@ function CanvasInner() {
     }
     window.addEventListener('keydown', handle)
     return () => window.removeEventListener('keydown', handle)
+  }, [])
+
+  // Smart handle click → show downstream node type picker
+  const onConnectStart = useCallback((_, { nodeId, handleId, handleType }) => {
+    if (handleType !== 'source') return
+    const s = useCanvasStore.getState()
+    const srcNode = s.nodes.find((n) => n.id === nodeId)
+    if (!srcNode) return
+    // Get valid downstream types for this source node
+    const allowed = validConnections[srcNode.type]
+    if (!allowed) return
+    const targetTypes = Object.keys(allowed)
+    if (!targetTypes.length) return
+    // Show picker near the handle position
+    setContextMenu({
+      type: 'handlePicker',
+      x: srcNode.position.x + 150,
+      y: srcNode.position.y + 50,
+      sourceNodeId: nodeId,
+      sourceHandleId: handleId,
+      targetTypes,
+    })
   }, [])
 
   // Drag-from-toolbar + drag-image-to-node handlers
@@ -205,6 +234,35 @@ function CanvasInner() {
     setContextMenu(null)
   }, [deleteEdge])
 
+  // Handle picker: auto-create node + edge from source handle
+  const handlePickerCreate = useCallback((sourceNodeId, targetType) => {
+    const s = useCanvasStore.getState()
+    const srcNode = s.nodes.find((n) => n.id === sourceNodeId)
+    if (!srcNode) return
+    const pos = { x: srcNode.position.x + 360, y: srcNode.position.y - 60 }
+    s.addNode(targetType, pos)
+    const newNode = s.nodes[s.nodes.length - 1]
+    if (newNode) {
+      // Auto-fill prompt from upstream (deep read)
+      if (srcNode.data?.prompt && !newNode.data.prompt) {
+        s.updateNodeData(newNode.id, { prompt: srcNode.data.prompt }, { syncDownstream: false })
+      }
+      if (srcNode.data?.response && !newNode.data.prompt) {
+        s.updateNodeData(newNode.id, { prompt: srcNode.data.response }, { syncDownstream: false })
+      }
+      // Create edge — data will sync on next render cycle
+      useCanvasStore.setState({
+        edges: [...s.edges, {
+          id: `e_${Date.now()}_picker`, source: sourceNodeId, target: newNode.id,
+          sourceHandle: 'output', targetHandle: targetType === 'preview' ? 'input' : 'prompt',
+          type: 'smoothstep', animated: true,
+          style: { stroke: 'var(--accent)', strokeWidth: 3, strokeLinecap: 'round' },
+        }]
+      })
+    }
+    setContextMenu(null)
+  }, [])
+
   const handleEdgeInsert = useCallback((edgeId, nodeType) => {
     insertNodeBetween(edgeId, nodeType)
     setContextMenu(null)
@@ -248,6 +306,7 @@ function CanvasInner() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onConnectStart={onConnectStart}
         onPaneClick={onPaneClick}
         onPaneContextMenu={onPaneContextMenu}
         onEdgeClick={onEdgeClick}
@@ -346,6 +405,17 @@ function CanvasInner() {
               <div className="menu-divider" />
               <MenuItem onClick={() => handleEdgeDelete(contextMenu.edgeId)}
                 label="✂️ 删除连线" danger />
+            </>
+          )}
+
+          {/* Handle picker: show valid downstream node types */}
+          {contextMenu.type === 'handlePicker' && (
+            <>
+              <div className="menu-label">➕ 创建下游节点</div>
+              {contextMenu.targetTypes.map((t) => (
+                <MenuItem key={t} onClick={() => handlePickerCreate(contextMenu.sourceNodeId, t)}
+                  label={TYPE_LABELS[t] || t} />
+              ))}
             </>
           )}
         </div>
