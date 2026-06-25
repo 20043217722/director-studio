@@ -28,6 +28,8 @@ export const PreviewNode = memo(({ data }) => {
     <div className="canvas-node preview-node" style={{ minWidth: 260, maxWidth: 420 }}>
       <Handle type="target" position={Position.Left} id="input"
         style={{ background: 'var(--brand)', border: '2px solid var(--bg-surface)', width: 12, height: 12 }} />
+      <Handle type="source" position={Position.Right} id="output"
+        style={{ background: 'var(--brand)', border: '2px solid var(--bg-surface)', width: 12, height: 12 }} />
 
       {/* --- Header --- */}
       <div className="node-header" style={{ borderLeftColor: 'var(--brand)', justifyContent: 'space-between' }}>
