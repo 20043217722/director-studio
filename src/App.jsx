@@ -2,7 +2,9 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { loadKeys, watchNetwork, callAgentStream, MODEL_PRESETS } from "./lib/api";
 import { parseFile, fileToBase64, fileToBase64Resized, fileToObjectURL, isImage } from "./lib/fileParser";
 import { updatePreferences, getLikedMessages, getPreferenceInjection } from "./lib/preferences";
+import { trackPageView, recordVisit } from "./lib/analytics";
 import Sidebar from "./components/Sidebar";
+import AdminDashboard from "./components/AdminDashboard";
 import ChatArea from "./components/ChatArea";
 import InputBar from "./components/InputBar";
 import ExportMenu from "./components/ExportMenu";
@@ -93,7 +95,9 @@ export default function App() {
   const [mode, setMode] = useState(() => localStorage.getItem("director_studio_last_mode") || "director");
   const [messages, setMessages] = useState(() => loadHistory(mode));
   const [loading, setLoading] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  useEffect(() => { trackPageView(); recordVisit(); }, []);
   const [provider, setProvider] = useState(() => localStorage.getItem("active_provider") || "deepseek");
   const [network, setNetwork] = useState(() => navigator.onLine ? "online" : "offline");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -233,9 +237,11 @@ export default function App() {
   useEffect(() => {
     function onKey(e) {
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
-      if (e.key === "/" && !settingsOpen) {
+      if (e.key === "/" && !settingsOpen && !showAdmin) {
         e.preventDefault();
         document.querySelector(".input-field")?.focus();
+        }
+        if (e.ctrlKey && e.shiftKey && e.key === "A") { e.preventDefault(); setShowAdmin(v => !v);
       }
     }
     window.addEventListener("keydown", onKey);
@@ -543,6 +549,7 @@ export default function App() {
         )}
       </div>
       {settingsOpen && <SettingsModal activeProvider={provider} onSave={handleSettingsSave} onClose={() => setSettingsOpen(false)} />}
+      {showAdmin && <AdminDashboard onClose={() => setShowAdmin(false)} />}
       {/* 快捷键面板 */}
       {shortcutOpen && (
         <>
