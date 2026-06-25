@@ -12,7 +12,7 @@ const EDGE_LABELS = {
   textPrompt: { imageGen: '📝 提示词', videoGen: '📝 提示词', agent: '📝 提示词', pixelleVideo: '📝 文本', mediaGen: '📝 提示词', textPrompt: '📝 链式提示' },
   imageGen: { preview: '🖼️ 图片', videoGen: '🖼️ 图→视频', agent: '🖼️ 视觉参考', mediaGen: '🖼️ 图→媒体', textPrompt: '🖼️ 迭代提示' },
   videoGen: { preview: '🎬 视频', mediaGen: '🎬 视频→媒体', textPrompt: '🎬 迭代提示' },
-  reference: { imageGen: '📎 参考图', videoGen: '📎 参考素材', mediaGen: '📎 参考素材' },
+  reference: { imageGen: '📎 参考图', videoGen: '📎 参考素材', mediaGen: '📎 参考素材', textPrompt: '📎 图转文', agent: '📎 AI分析' },
   agent: { preview: '📄 分析结果', textPrompt: '📄 反哺提示', agent: '📄 链式协作', imageGen: '📄 思路→图', videoGen: '📄 思路→视频', mediaGen: '📄 思路→媒体' },
   pixelleVideo: { preview: '🎞️ 成品视频' },
   mediaGen: { preview: '🎨 媒体输出', videoGen: '🖼️ 图→视频', agent: '🖼️ 视觉参考', textPrompt: '🎨 迭代提示', mediaGen: '🎨 链式生成' },
@@ -143,12 +143,21 @@ function syncNodeDownstream(sourceId, nodes, edges) {
     }
 
     if (sourceNode.type === 'reference') {
-      // Reference → ImageGen/VideoGen: push media as prompt source
-      if ((target.type === 'imageGen' || target.type === 'videoGen') && srcData.mediaData) {
-        updated[idx] = {
-          ...target,
-          data: { ...target.data, sourceImage: srcData.mediaData }
-        }
+      // Reference → ImageGen/VideoGen/MediaGen: push media as source image
+      if ((target.type === 'imageGen' || target.type === 'videoGen' || target.type === 'mediaGen') && srcData.mediaData && !target.data.sourceImage) {
+        updated[idx] = { ...target, data: { ...target.data, sourceImage: srcData.mediaData } }
+      }
+      // Reference → TextPrompt: 图转文 — push image as prompt context
+      if (target.type === 'textPrompt' && srcData.mediaData && !target.data.prompt) {
+        const mediaType = srcData.mediaType === 'video' ? '视频' : '图片'
+        const fileName = srcData.fileName ? ` (${srcData.fileName})` : ''
+        updated[idx] = { ...target, data: { ...target.data,
+          prompt: `[${mediaType}素材${fileName}已连接]\\n请基于此${mediaType}进行创作...` } }
+      }
+      // Reference → Agent: 图转分析 — push image for AI analysis
+      if (target.type === 'agent' && srcData.mediaData && !target.data.prompt) {
+        updated[idx] = { ...target, data: { ...target.data,
+          prompt: `请分析这张图片，反推提示词和视觉描述` } }
       }
     }
 

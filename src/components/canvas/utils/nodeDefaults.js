@@ -71,6 +71,7 @@ export const validConnections = {
   // 🖼️ 参考素材 → 下游
   reference: {
     imageGen: ['prompt'], videoGen: ['image'], mediaGen: ['prompt', 'image'],
+    textPrompt: ['prompt'], agent: ['prompt'],  // 图转文：参考图→提示词/智能体分析
   },
   // 👁️ 预览 → AI分析
   preview: {
