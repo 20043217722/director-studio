@@ -1452,6 +1452,23 @@ button, .agent-card, .mobile-tab, .update-badge, .provider-grid-btn,
 }
 
 /* ============================================
+   Agent / Text Node common styles
+   ============================================ */
+.agent-response { margin-top: 4px; }
+.response-toolbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 4px 6px; margin-bottom: 4px;
+}
+.response-text {
+  user-select: text !important;
+  cursor: text;
+}
+.response-text *, .response-text::selection { user-select: text !important; }
+
+/* All canvas node text areas are user-selectable */
+.canvas-node textarea { user-select: text !important; }
+
+/* ============================================
    Node Connection Line (libtv style)
    ============================================ */
 .react-flow__connection-line {

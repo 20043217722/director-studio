@@ -111,7 +111,7 @@ export const TextPromptNode = memo(({ id, data }) => {
         <textarea
           value={text}
           onChange={(e) => updateNodeData(id, { prompt: e.target.value })}
-          placeholder={`输入创作指令...&#10;&#10;例如:&#10;"生成一张16:9的赛博朋克风格海报，不要文字"&#10;"帮我设计一个古装女侠角色"&#10;"把这个场景用可灵生成5秒视频"`}
+          placeholder="输入创作指令... 赛博朋克海报16:9, 可灵5秒视频, 设计古装女侠"
           rows={4}
           className="node-textarea"
           onMouseDown={(e) => e.stopPropagation()}
