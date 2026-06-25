@@ -112,12 +112,13 @@ export const MediaGenNode = memo(({ id, data }) => {
           const p = u.progress || 0
           if (u.status !== 'done' && p - lastP < 5 && lastP >= 0) continue
           lastP = p
-          updateNodeData(id, { progress: p, status: 'generating' })
+          // Single atomic update: merge progress + video data into one call
           if (u.status === 'done') {
             updateNodeData(id, { generatedVideo: u, status: 'done', progress: 100 })
             ensurePreviewDownstream(id)
             break
           }
+          updateNodeData(id, { progress: p, status: 'generating', stage: u.stage })
         }
       }
     } catch (e) {

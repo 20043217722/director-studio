@@ -65,11 +65,12 @@ export const VideoGenNode = memo(({ id, data }) => {
         const p = update.progress || 0
         if (update.status !== 'done' && p - lastProgress < 5 && lastProgress >= 0) continue
         lastProgress = p
-        updateNodeData(id, { progress: p, status: 'generating' })
+        // Single atomic update — merge progress+video in one call on done
         if (update.status === 'done') {
           updateNodeData(id, { generatedVideo: update, status: 'done', progress: 100 })
           break
         }
+        updateNodeData(id, { progress: p, status: 'generating', stage: update.stage })
       }
     } catch (e) {
       if (e.name === 'AbortError' || controller.signal.aborted) return
