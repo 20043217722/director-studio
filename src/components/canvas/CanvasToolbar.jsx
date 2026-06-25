@@ -13,8 +13,8 @@ const NODE_TYPES = [
 ]
 
 const btnBase = {
-  padding: '6px 10px', borderRadius: 6, border: '1px solid transparent',
-  fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+  padding: '8px 14px', borderRadius: 8, border: '1px solid transparent',
+  fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
   background: 'transparent', color: 'var(--text-dim)',
 }
 
@@ -72,7 +72,8 @@ export function CanvasToolbar({ undo, redo, fitView }) {
       {/* Add Node */}
       <div style={{ position: 'relative' }} ref={dropdownRef}>
         <button onClick={() => setShowAdd(!showAdd)} style={{
-          ...btnBase, background: 'var(--accent)', color: '#000', border: 'none',
+          ...btnBase, background: 'var(--accent, #0EA5E9)', color: '#fff', border: 'none',
+          fontSize: 13, padding: '8px 18px',
         }}>+ 添加</button>
         {showAdd && (
           <div style={{
@@ -93,7 +94,7 @@ export function CanvasToolbar({ undo, redo, fitView }) {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   width: '100%', textAlign: 'left',
-                  padding: '7px 10px', fontSize: 12, border: 'none', borderRadius: 5,
+                  padding: '10px 14px', fontSize: 13, border: 'none', borderRadius: 6,
                   background: 'transparent', color: 'var(--text)', cursor: 'grab',
                   userSelect: 'none',
                 }}
