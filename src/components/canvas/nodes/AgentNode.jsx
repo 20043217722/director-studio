@@ -28,14 +28,18 @@ export const AgentNode = memo(({ id, data }) => {
     registerAbort(id, ctrl)
     try {
       const { callAgentStream } = await import('../../../lib/api')
+      // Ensure Chinese output — prepend language instruction if prompt doesn't already specify
+      const promptWithLang = data.prompt && !/中文|Chinese|用中文|请用中文/.test(data.prompt)
+        ? `请用中文回答：\n${data.prompt}` : data.prompt
       let fullResponse = ''
-      for await (const chunk of callAgentStream(data.prompt, data.agentMode || 'director', { signal: ctrl.signal })) {
+      for await (const chunk of callAgentStream(promptWithLang, data.agentMode || 'director', { signal: ctrl.signal })) {
         if (ctrl.signal.aborted) return
         fullResponse += chunk
         updateNodeData(id, { response: fullResponse, status: 'generating' })
       }
       if (ctrl.signal.aborted) return
-      updateNodeData(id, { status: 'done' })
+      // Auto-fill prompt textarea with response for immediate editing
+      updateNodeData(id, { status: 'done', prompt: fullResponse })
     } catch (e) {
       if (e.name === 'AbortError' || ctrl.signal.aborted) return
       updateNodeData(id, { status: 'error', errorMessage: e.message })
