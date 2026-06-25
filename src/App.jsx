@@ -5,6 +5,7 @@ import { updatePreferences, getLikedMessages, getPreferenceInjection } from "./l
 import { trackPageView, recordVisit } from "./lib/analytics";
 import Sidebar from "./components/Sidebar";
 import AdminDashboard from "./components/AdminDashboard";
+import AdminGate from "./components/AdminGate";
 import ChatArea from "./components/ChatArea";
 import InputBar from "./components/InputBar";
 import ExportMenu from "./components/ExportMenu";
@@ -96,6 +97,7 @@ export default function App() {
   const [messages, setMessages] = useState(() => loadHistory(mode));
   const [loading, setLoading] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [adminAuthed, setAdminAuthed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(() => { trackPageView(); recordVisit(); }, []);
   const [provider, setProvider] = useState(() => localStorage.getItem("active_provider") || "deepseek");
@@ -549,7 +551,8 @@ export default function App() {
         )}
       </div>
       {settingsOpen && <SettingsModal activeProvider={provider} onSave={handleSettingsSave} onClose={() => setSettingsOpen(false)} />}
-      {showAdmin && <AdminDashboard onClose={() => setShowAdmin(false)} />}
+      {showAdmin && !adminAuthed && <AdminGate onUnlock={() => setAdminAuthed(true)} />}
+      {showAdmin && adminAuthed && <AdminDashboard onClose={() => { setShowAdmin(false); setAdminAuthed(false) }} />}
       {/* 快捷键面板 */}
       {shortcutOpen && (
         <>
