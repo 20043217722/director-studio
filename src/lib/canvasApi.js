@@ -295,8 +295,8 @@ export async function generateVideo(promptOrImage, {
 export async function* pollVideoGeneration(jobId, {
   provider = 'sora',
   signal,
-  interval = 3000,
-  maxAttempts = 40,
+  interval = 5000,
+  maxAttempts = 80,
 } = {}) {
   const { key } = getResolvedKey(provider)
   if (!jobId) { yield { progress: 100, status: 'done' }; return }
@@ -305,16 +305,32 @@ export async function* pollVideoGeneration(jobId, {
   if (provider === 'agnes-video') {
     const baseEndpoint = `https://apihub.agnes-ai.com/agnesapi?video_id=${jobId}`
     const endpoint = getUserProxy() || baseEndpoint
+    let consecutiveFailures = 0
     for (let i = 0; i < maxAttempts; i++) {
       if (signal?.aborted) break
       await new Promise(r => setTimeout(r, interval))
+      // Retry on network errors up to 5 times before giving up
       const res = await fetch(endpoint, {
         headers: { 'Authorization': `Bearer ${key}` },
         signal,
       }).catch(() => null)
-      if (!res?.ok) continue
+      if (!res) {
+        consecutiveFailures++
+        if (consecutiveFailures > 5) throw new Error('视频生成中断：网络连接失败，请检查网络后重试')
+        yield { progress: Math.min(i * 1.5, 90), status: 'generating', stage: '重连中...' }
+        continue
+      }
+      consecutiveFailures = 0
+      if (!res.ok) {
+        if (res.status === 429) {
+          // Rate limited — wait longer
+          await new Promise(r => setTimeout(r, 8000))
+          continue
+        }
+        yield { progress: Math.min(i * 1.5, 90), status: 'generating', stage: '等待中...' }
+        continue
+      }
       const data = await res.json()
-      // Agnes video polling response: status + url when done
       const status = data.status || data.state || 'processing'
       if (status === 'completed' || status === 'done' || status === 'succeeded' || data.url || data.video_url) {
         yield { progress: 100, status: 'done', url: data.url || data.video_url }
@@ -323,10 +339,23 @@ export async function* pollVideoGeneration(jobId, {
       if (status === 'failed' || status === 'error') {
         throw new Error(data.error || data.message || 'Agnes 视频生成失败')
       }
-      const progress = Math.min(i * 2.5, 95)
-      yield { progress: Math.round(progress), status: 'generating' }
+      // Smarter progress: fast start, slow middle, fast end
+      let progress
+      const elapsed = i * (interval / 1000)
+      if (elapsed < 10) progress = Math.min(elapsed * 5, 30)        // 0-30% in first 10s
+      else if (elapsed < 60) progress = 30 + (elapsed - 10) * 0.8  // 30-70% in 10-60s
+      else progress = 70 + Math.min((elapsed - 60) * 0.4, 25)      // 70-95% in 60-120s+
+
+      // Stage labels for better UX
+      let stage = '生成中...'
+      if (elapsed < 5) stage = '排队中...'
+      else if (elapsed < 15) stage = '生成中...'
+      else if (elapsed < 60) stage = '渲染中...'
+      else stage = '即将完成...'
+
+      yield { progress: Math.round(Math.min(progress, 95)), status: 'generating', stage }
     }
-    throw new Error('Agnes 视频生成超时，请重试')
+    throw new Error('视频生成超时(6分钟)，请重试。长视频需要更长时间，可尝试缩短时长。')
   }
 
   // Sora 2 polling
@@ -356,13 +385,13 @@ export async function* pollVideoGeneration(jobId, {
 
   // Generic polling
   const endpoint = getProxy() || `https://api.seedance.com/v1/videos/${jobId}`
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < maxAttempts; i++) {
     if (signal?.aborted) break
     await new Promise(r => setTimeout(r, interval))
     const res = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${key}` }, signal }).catch(() => null)
     if (!res?.ok) continue
     const data = await res.json()
-    const progress = data.status === 'completed' ? 100 : Math.min(i * 3, 90)
+    const progress = data.status === 'completed' ? 100 : Math.min(i * 2, 90)
     yield { progress, status: data.status === 'completed' ? 'done' : 'generating' }
     if (data.status === 'completed' || data.url) { yield { progress: 100, status: 'done', url: data.url }; return }
     if (data.status === 'failed') throw new Error(data.error || '视频生成失败')
