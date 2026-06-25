@@ -147,17 +147,28 @@ function syncNodeDownstream(sourceId, nodes, edges) {
       if ((target.type === 'imageGen' || target.type === 'videoGen' || target.type === 'mediaGen') && srcData.mediaData && !target.data.sourceImage) {
         updated[idx] = { ...target, data: { ...target.data, sourceImage: srcData.mediaData } }
       }
-      // Reference → TextPrompt: 图转文 — push image as prompt context
-      if (target.type === 'textPrompt' && srcData.mediaData && !target.data.prompt) {
+      // Reference → TextPrompt: 图转文 — always fills (allows multi-source)
+      if (target.type === 'textPrompt' && srcData.mediaData) {
         const mediaType = srcData.mediaType === 'video' ? '视频' : '图片'
         const fileName = srcData.fileName ? ` (${srcData.fileName})` : ''
         updated[idx] = { ...target, data: { ...target.data,
           prompt: `[${mediaType}素材${fileName}已连接]\\n请基于此${mediaType}进行创作...` } }
       }
-      // Reference → Agent: 图转分析 — push image for AI analysis
-      if (target.type === 'agent' && srcData.mediaData && !target.data.prompt) {
-        updated[idx] = { ...target, data: { ...target.data,
-          prompt: `请分析这张图片，反推提示词和视觉描述` } }
+      // Reference → Agent: 图转分析 — always fills (allows multi-source)
+      if (target.type === 'agent' && srcData.mediaData) {
+        const agentMode = target.data.agentMode || 'director'
+        const modePrompts = {
+          character: '请基于这张参考图，进行人物造型设计：分析面部特征、服装风格、配饰细节，输出7层人物框架',
+          scene: '请基于这张参考图，设计场景：分析空间构成、光影、色彩体系、建筑风格，输出10维场景框架',
+          lens: '请分析这张图片的视觉DNA，反推完整的提示词：描述主题、风格、光线、构图、色彩，输出可用于Midjourney/DALL-E的提示词',
+          designer: '请基于这张参考图，进行美术指导分析：视觉概念、色彩方案、场景服装道具设计',
+          director: '请分析这张图片的叙事元素：情绪氛围、角色关系、镜头语言建议',
+          doctor: '请分析这张图片中的叙事结构，为剧本提供改进建议',
+          seedance: '请基于这张参考图，进行逐幕情绪动作拆解，生成Seedance视频提示词',
+          post: '请分析这张图片的后期制作要点：调色方案、特效建议、声音设计方向',
+        }
+        const prompt = modePrompts[agentMode] || '请分析这张图片，反推提示词和视觉描述'
+        updated[idx] = { ...target, data: { ...target.data, prompt } }
       }
     }
 
