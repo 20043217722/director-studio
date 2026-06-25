@@ -9,13 +9,14 @@ const MAX_NODES = 100
 
 // Edge label by data type flowing through the connection
 const EDGE_LABELS = {
-  textPrompt: { imageGen: '📝 提示词', videoGen: '📝 提示词', agent: '📝 提示词', pixelleVideo: '📝 文本' },
-  imageGen: { preview: '🖼️ 图片', videoGen: '🖼️ 图→视频', agent: '🖼️ 视觉参考' },
-  videoGen: { preview: '🎬 视频' },
-  reference: { imageGen: '📎 参考图', videoGen: '📎 参考素材' },
-  agent: { preview: '📄 分析结果' },
+  textPrompt: { imageGen: '📝 提示词', videoGen: '📝 提示词', agent: '📝 提示词', pixelleVideo: '📝 文本', mediaGen: '📝 提示词', textPrompt: '📝 链式提示' },
+  imageGen: { preview: '🖼️ 图片', videoGen: '🖼️ 图→视频', agent: '🖼️ 视觉参考', mediaGen: '🖼️ 图→媒体', textPrompt: '🖼️ 迭代提示' },
+  videoGen: { preview: '🎬 视频', mediaGen: '🎬 视频→媒体', textPrompt: '🎬 迭代提示' },
+  reference: { imageGen: '📎 参考图', videoGen: '📎 参考素材', mediaGen: '📎 参考素材' },
+  agent: { preview: '📄 分析结果', textPrompt: '📄 反哺提示', agent: '📄 链式协作', imageGen: '📄 思路→图', videoGen: '📄 思路→视频', mediaGen: '📄 思路→媒体' },
   pixelleVideo: { preview: '🎞️ 成品视频' },
-  mediaGen: { preview: '🎨 媒体输出', videoGen: '🖼️ 图→视频', agent: '🖼️ 视觉参考' },
+  mediaGen: { preview: '🎨 媒体输出', videoGen: '🖼️ 图→视频', agent: '🖼️ 视觉参考', textPrompt: '🎨 迭代提示', mediaGen: '🎨 链式生成' },
+  preview: { agent: '👁️ 预览分析' },
 }
 
 function getEdgeLabel(sourceType, targetType) {
@@ -69,11 +70,10 @@ function syncNodeDownstream(sourceId, nodes, edges) {
 
     // Data flow rules by source → target type
     if (sourceNode.type === 'textPrompt') {
-      // TextPrompt → ImageGen/VideoGen/Agent: push prompt text
-      if (target.type === 'imageGen' || target.type === 'videoGen' || target.type === 'agent' || target.type === 'pixelleVideo') {
-        if (srcData.prompt && !target.data.prompt) {
-          updated[idx] = { ...target, data: { ...target.data, prompt: srcData.prompt } }
-        }
+      // TextPrompt → ImageGen/VideoGen/Agent/PixelleVideo/MediaGen/TextPrompt: push prompt
+      const promptTargets = ['imageGen', 'videoGen', 'agent', 'pixelleVideo', 'mediaGen', 'textPrompt']
+      if (promptTargets.includes(target.type) && srcData.prompt && !target.data.prompt) {
+        updated[idx] = { ...target, data: { ...target.data, prompt: srcData.prompt } }
       }
     }
 
@@ -99,6 +99,31 @@ function syncNodeDownstream(sourceId, nodes, edges) {
             data: { ...target.data, sourceImage: img.url || img.base64 }
           }
         }
+      }
+      // ImageGen → TextPrompt: push the original prompt for iteration
+      if (target.type === 'textPrompt' && srcData.prompt && !target.data.prompt) {
+        updated[idx] = { ...target, data: { ...target.data, prompt: srcData.prompt } }
+      }
+      // ImageGen → Agent: push prompt for AI analysis of the generated image
+      if (target.type === 'agent' && srcData.prompt && !target.data.prompt) {
+        updated[idx] = { ...target, data: { ...target.data, prompt: `分析这张图片: ${srcData.prompt}` } }
+      }
+    }
+
+    // Preview → Agent: push image/video URL for AI analysis
+    if (sourceNode.type === 'preview' && target.type === 'agent') {
+      const content = srcData.outputContent
+      const mediaUrl = typeof content === 'string' ? content : content?.url
+      if (mediaUrl && !target.data.prompt) {
+        const mediaType = srcData.outputType === 'video' ? '视频' : '图片'
+        updated[idx] = {
+          ...target,
+          data: { ...target.data, prompt: `分析这张${mediaType}: ${mediaUrl}` }
+        }
+      }
+      // Also push response text if available
+      if (srcData.response && !target.data.prompt) {
+        updated[idx] = { ...target, data: { ...target.data, prompt: srcData.response } }
       }
     }
 
@@ -132,8 +157,21 @@ function syncNodeDownstream(sourceId, nodes, edges) {
       if (target.type === 'preview' && srcData.response) {
         updated[idx] = {
           ...target,
-          data: { ...target.data, outputType: 'image', outputContent: null, response: srcData.response }
+          data: { ...target.data, outputType: 'agent', outputContent: null, status: srcData.status,
+            response: srcData.response }
         }
+      }
+      // Agent → TextPrompt: push response as prompt for further refinement
+      if (target.type === 'textPrompt' && srcData.response && !target.data.prompt) {
+        updated[idx] = { ...target, data: { ...target.data, prompt: srcData.response } }
+      }
+      // Agent → ImageGen/VideoGen/MediaGen: push response as prompt
+      if ((target.type === 'imageGen' || target.type === 'videoGen' || target.type === 'mediaGen') && srcData.response && !target.data.prompt) {
+        updated[idx] = { ...target, data: { ...target.data, prompt: srcData.response } }
+      }
+      // Agent → Agent: chain agent response to next agent prompt
+      if (target.type === 'agent' && srcData.response && !target.data.prompt) {
+        updated[idx] = { ...target, data: { ...target.data, prompt: srcData.response } }
       }
     }
 
@@ -168,6 +206,10 @@ function syncNodeDownstream(sourceId, nodes, edges) {
           }
         }
       }
+      // MediaGen → TextPrompt: push the prompt that was used for generation
+      if (target.type === 'textPrompt' && srcData.prompt && !target.data.prompt) {
+        updated[idx] = { ...target, data: { ...target.data, prompt: srcData.prompt } }
+      }
       // MediaGen (image mode) → VideoGen: push source image
       if (target.type === 'videoGen' && srcData.mediaType !== 'video' && srcData.generatedImages?.length) {
         const img = srcData.generatedImages[0]
@@ -178,6 +220,11 @@ function syncNodeDownstream(sourceId, nodes, edges) {
       // MediaGen → Agent: push prompt
       if (target.type === 'agent' && srcData.prompt && !target.data.prompt) {
         updated[idx] = { ...target, data: { ...target.data, prompt: srcData.prompt } }
+      }
+      // MediaGen → MediaGen: push image as source for chain generation
+      if (target.type === 'mediaGen' && srcData.generatedImages?.length && !target.data.sourceImage) {
+        const img = srcData.generatedImages[0]
+        updated[idx] = { ...target, data: { ...target.data, sourceImage: img.url || img.base64 } }
       }
     }
   }

@@ -51,14 +51,48 @@ export const NODE_ALIASES = {
 
 // Valid connections
 export const validConnections = {
-  textPrompt: { imageGen: ['prompt'], videoGen: ['prompt'], agent: ['prompt'], pixelleVideo: ['prompt'], mediaGen: ['prompt'] },
-  imageGen: { preview: ['input'], videoGen: ['image'], agent: ['prompt'], mediaGen: ['prompt', 'image'] },
-  videoGen: { preview: ['input'], mediaGen: ['prompt', 'image'] },
-  reference: { imageGen: ['prompt'], videoGen: ['image'], mediaGen: ['prompt', 'image'] },
-  preview: {},
-  agent: { preview: ['input'] },
+  // 📝 文本提示词 → 万物之始
+  textPrompt: {
+    imageGen: ['prompt'], videoGen: ['prompt'], agent: ['prompt'],
+    pixelleVideo: ['prompt'], mediaGen: ['prompt'],
+    textPrompt: ['prompt'],   // 链式提示
+  },
+  // 🎨 图片生成 → 下游
+  imageGen: {
+    preview: ['input'], videoGen: ['image'], agent: ['prompt'],
+    mediaGen: ['prompt', 'image'],
+    textPrompt: ['prompt'],   // 图片结果→提示词迭代
+  },
+  // 🎬 视频生成 → 下游
+  videoGen: {
+    preview: ['input'], mediaGen: ['prompt', 'image'],
+    textPrompt: ['prompt'],
+  },
+  // 🖼️ 参考素材 → 下游
+  reference: {
+    imageGen: ['prompt'], videoGen: ['image'], mediaGen: ['prompt', 'image'],
+  },
+  // 👁️ 预览 → AI分析
+  preview: {
+    agent: ['prompt'],         // 预览结果→AI分析
+  },
+  // 🧠 AI智能体 → 万物互联
+  agent: {
+    preview: ['input'],
+    textPrompt: ['prompt'],    // Agent响应→新提示词
+    agent: ['prompt'],         // Agent链式协作
+    imageGen: ['prompt'],      // Agent思路→生成图片
+    videoGen: ['prompt'],      // Agent分镜→生成视频
+    mediaGen: ['prompt'],      // Agent设计→媒体生成
+  },
+  // 🎞️ 短视频 → 预览
   pixelleVideo: { preview: ['input'] },
-  mediaGen: { preview: ['input'], videoGen: ['image'], agent: ['prompt'] },
+  // 🎨 媒体生成 → 多向下游
+  mediaGen: {
+    preview: ['input'], videoGen: ['image'], agent: ['prompt'],
+    textPrompt: ['prompt'],    // 生成结果→提示词迭代
+    mediaGen: ['prompt', 'image'],  // 链式生成(图→视频等)
+  },
 }
 
 // ===== 图片生成模型 (keyReuse = 复用已有聊天 Key) =====
