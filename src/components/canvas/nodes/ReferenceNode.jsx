@@ -2,6 +2,42 @@ import { memo, useCallback, useState } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { useCanvasStore } from '../utils/canvasStore'
 
+/** Compress image to max 1024px, JPEG quality 0.8 → typically reduces 10MB→200KB */
+function compressImage(file) {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith('image/')) {
+      // Video or other — read directly without compression
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result)
+      reader.readAsDataURL(file)
+      return
+    }
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const MAX = 1024
+      let { width, height } = img
+      if (width > MAX || height > MAX) {
+        const ratio = Math.min(MAX / width, MAX / height)
+        width = Math.round(width * ratio)
+        height = Math.round(height * ratio)
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, width, height)
+      canvas.toBlob((blob) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result)
+        reader.readAsDataURL(blob)
+      }, 'image/jpeg', 0.8)
+    }
+    img.src = url
+  })
+}
+
 export const ReferenceNode = memo(({ id, data }) => {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData)
   const [dragOver, setDragOver] = useState(false)
@@ -11,11 +47,7 @@ export const ReferenceNode = memo(({ id, data }) => {
     const isVideo = file.type.startsWith('video/')
     if (!isImage && !isVideo) return
 
-    const base64 = await new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result)
-      reader.readAsDataURL(file)
-    })
+    const base64 = await compressImage(file)
 
     updateNodeData(id, {
       mediaType: isImage ? 'image' : 'video',

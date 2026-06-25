@@ -30,12 +30,18 @@ export const AgentNode = memo(({ id, data }) => {
       const { callAgentStream } = await import('../../../lib/api')
       const promptWithLang = data.prompt && !/中文|Chinese|用中文|请用中文/.test(data.prompt)
         ? `请用中文回答：\n${data.prompt}` : data.prompt
-      // Vision support: auto-detect best available vision model
+      // Vision support: auto-detect best vision model, support multi-image
       const apiOpts = { signal: ctrl.signal }
       if (data.sourceImage) {
-        apiOpts.imageBase64 = data.sourceImage
-        apiOpts.imageMime = 'image/png'
-        // Priority: Agnes (free) → Qwen → OpenAI → Gemini (all vision-capable)
+        // Single image (backwards compat) or multiple images from different refs
+        if (data.sourceImages?.length > 1) {
+          apiOpts.imageBase64s = data.sourceImages.map((img) => img.data)
+          apiOpts.imageMimes = data.sourceImages.map((img) => img.type === 'video' ? 'video/mp4' : 'image/jpeg')
+        } else {
+          apiOpts.imageBase64 = data.sourceImage
+          apiOpts.imageMime = 'image/jpeg'
+        }
+        // Priority: Agnes (free) → Qwen → OpenAI → Gemini
         const keys = JSON.parse(localStorage.getItem('api_keys') || '{}')
         const visionPriority = ['agnes', 'qwen', 'openai', 'gemini']
         const bestVision = visionPriority.find((p) => keys[p])

@@ -169,26 +169,24 @@ function syncNodeDownstream(sourceId, nodes, edges) {
           sourceFileName: srcData.fileName || '',
         } }
       }
-      // Reference → Agent: 图转分析 — push image data + smart prompt
+      // Reference → Agent: 图转分析 — auto-compressed, multi-image support
       if (target.type === 'agent' && srcData.mediaData) {
         const agentMode = target.data.agentMode || 'director'
         const modePrompts = {
-          character: '请基于这张参考图，进行人物造型设计：分析面部特征、服装风格、配饰细节，输出7层人物框架',
-          scene: '请基于这张参考图，设计场景：分析空间构成、光影、色彩体系、建筑风格，输出10维场景框架',
-          lens: '请分析这张图片的视觉DNA，反推完整的提示词：描述主题、风格、光线、构图、色彩，输出可用于Midjourney/DALL-E的提示词',
-          designer: '请基于这张参考图，进行美术指导分析：视觉概念、色彩方案、场景服装道具设计',
-          director: '请分析这张图片的叙事元素：情绪氛围、角色关系、镜头语言建议',
-          doctor: '请分析这张图片中的叙事结构，为剧本提供改进建议',
-          seedance: '请基于这张参考图，进行逐幕情绪动作拆解，生成Seedance视频提示词',
-          post: '请分析这张图片的后期制作要点：调色方案、特效建议、声音设计方向',
+          character: '请基于参考图进行人物造型设计：输出7层人物框架',
+          scene: '请基于参考图设计场景：输出10维场景框架',
+          lens: '请分析图片视觉DNA，反推完整提示词',
+          designer: '请基于参考图进行美术指导分析',
+          director: '请分析图片的叙事元素',
+          doctor: '请分析图片中的叙事结构',
+          seedance: '请基于参考图进行逐幕情绪拆解',
+          post: '请分析图片的后期制作要点',
         }
-        const prompt = modePrompts[agentMode] || '请分析这张图片，反推提示词和视觉描述'
+        const prompt = modePrompts[agentMode] || '请分析图片，反推提示词和视觉描述'
         updated[idx] = { ...target, data: {
           ...target.data, prompt,
-          // Pass the actual image data for vision analysis
           sourceImage: srcData.mediaData,
           sourceImageType: srcData.mediaType || 'image',
-          sourceFileName: srcData.fileName || '',
         } }
       }
     }
