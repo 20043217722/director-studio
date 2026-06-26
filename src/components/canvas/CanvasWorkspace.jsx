@@ -18,6 +18,7 @@ import { NodeConfigPanel } from './NodeConfigPanel'
 import { CanvasWelcome } from './CanvasWelcome'
 import { CanvasInputBar } from './CanvasInputBar'
 import { validateConnection } from './utils/canvasStore'
+import { animateMenuEnter } from '../../lib/canvasAnimations'
 
 // Compute connected node IDs for highlighting
 function getConnectedNodeIds(nodeId, edges) {
@@ -91,6 +92,18 @@ function CanvasInner() {
   const connectedNodeIds = useMemo(() =>
     selectedNodeId ? getConnectedNodeIds(selectedNodeId, edges) : new Set(),
     [selectedNodeId, edges])
+
+  // Animate context menu + rename modal on appear
+  const menuRef = useRef(null)
+  useEffect(() => {
+    if (contextMenu && menuRef.current) animateMenuEnter(menuRef.current)
+  }, [contextMenu])
+  useEffect(() => {
+    if (renameModal) {
+      const el = document.querySelector('.rename-modal')
+      if (el) animateMenuEnter(el)
+    }
+  }, [renameModal])
 
   // Close context menu on any click
   const closeMenu = useCallback(() => setContextMenu(null), [])
@@ -358,7 +371,7 @@ function CanvasInner() {
 
       {/* --- Right-click Context Menu --- */}
       {contextMenu && (
-        <div className="canvas-context-menu" style={{
+        <div className="canvas-context-menu" ref={menuRef} style={{
           position: 'fixed', left: contextMenu.x, top: contextMenu.y, zIndex: 50,
           background: 'var(--bg-elevated)', border: '1px solid var(--border)',
           borderRadius: 8, padding: 4, minWidth: 160,

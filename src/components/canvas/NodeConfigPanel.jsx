@@ -1,10 +1,14 @@
+import { useEffect, useRef } from 'react'
 import { useCanvasStore } from './utils/canvasStore'
 import { AGENT_MODES, IMAGE_MODELS, VIDEO_MODELS } from './utils/nodeDefaults'
+import { animatePanelEnter } from '../../lib/canvasAnimations'
 
 const TYPE_ICONS = { textPrompt: '📝', imageGen: '🎨', videoGen: '🎬', mediaGen: '🎨', reference: '🖼️', preview: '👁️', agent: '🧠', pixelleVideo: '🎞️' }
 
 export function NodeConfigPanel() {
   const { selectedNodeId, nodes, updateNodeData, deleteNode, deselectNode } = useCanvasStore()
+  const panelRef = useRef(null)
+  useEffect(() => { if (selectedNodeId && panelRef.current) animatePanelEnter(panelRef.current) }, [selectedNodeId])
   if (!selectedNodeId) return null
 
   const node = nodes.find((n) => n.id === selectedNodeId)
@@ -16,7 +20,7 @@ export function NodeConfigPanel() {
   const isMediaGen = type === 'mediaGen'
 
   return (
-    <div className="config-panel" style={{
+    <div className="config-panel" ref={panelRef} style={{
       position: 'absolute', top: 0, right: 0, bottom: 0, zIndex: 9,
       width: 300, overflowY: 'auto',
       background: 'var(--glass-bg)', backdropFilter: 'var(--glass-blur)',
