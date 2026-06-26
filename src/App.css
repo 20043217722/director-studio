@@ -1049,11 +1049,34 @@ button, .agent-card, .mobile-tab, .update-badge, .provider-grid-btn,
   box-shadow: var(--shadow-panel);
   font-size: 12px;
   transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  animation: nodeAppear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes nodeAppear {
+  from { transform: scale(0.7); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 .canvas-node:hover {
   box-shadow: var(--shadow-hover);
-  transform: translateY(-2px);
+  transform: translateY(-3px) scale(1.02);
   border-color: var(--border-glow);
+}
+
+/* Node dragging state */
+.react-flow__node.dragging .canvas-node {
+  transform: scale(1.05);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+  transition: box-shadow 0.05s, transform 0.05s;
+}
+
+/* Node generation complete — celebration pulse */
+.node-celebrate .canvas-node {
+  animation: celebrate 0.6s ease;
+}
+@keyframes celebrate {
+  0% { box-shadow: 0 0 0 0 var(--accent-glow); transform: scale(1); }
+  30% { box-shadow: 0 0 0 8px transparent; transform: scale(1.04); }
+  60% { box-shadow: 0 0 0 0 transparent; transform: scale(0.98); }
+  100% { box-shadow: var(--shadow-panel); transform: scale(1); }
 }
 .node-header {
   padding: 10px 14px;
@@ -1176,6 +1199,14 @@ button, .agent-card, .mobile-tab, .update-badge, .provider-grid-btn,
 .react-flow__edge-path {
   transition: stroke 0.3s ease, stroke-width 0.2s ease;
 }
+/* New edge draw-in animation */
+.react-flow__edge {
+  animation: edgeSpawn 0.4s ease;
+}
+@keyframes edgeSpawn {
+  from { opacity: 0; stroke-dashoffset: 100; }
+  to { opacity: 1; stroke-dashoffset: 0; }
+}
 .react-flow__edge.animated .react-flow__edge-path {
   stroke-dasharray: 10 5;
   animation: edgeFlow 2.5s linear infinite;
@@ -1196,29 +1227,46 @@ button, .agent-card, .mobile-tab, .update-badge, .provider-grid-btn,
   filter: drop-shadow(0 0 8px var(--accent-glow));
 }
 
-/* Handle — larger, more visible with glow */
+/* Edge label bounce-in */
+.react-flow__edge-label {
+  animation: labelIn 0.3s ease 0.15s both;
+}
+@keyframes labelIn {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Handle — glowing connection points */
 .react-flow__handle {
   width: 14px !important;
   height: 14px !important;
-  transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease !important;
-  opacity: 0.85;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease, box-shadow 0.2s ease !important;
+  opacity: 0.7;
+  border-width: 2px !important;
 }
 .react-flow__handle:hover {
-  transform: scale(1.6) !important;
+  transform: scale(2) !important;
   opacity: 1;
-  box-shadow: 0 0 10px var(--accent-glow) !important;
+  box-shadow: 0 0 16px var(--accent-glow) !important;
+  cursor: crosshair;
 }
 .react-flow__handle-connecting {
-  box-shadow: 0 0 12px var(--accent-glow) !important;
-  animation: handlePulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 20px var(--accent-glow) !important;
+  animation: handlePulse 1s ease-in-out infinite;
+  opacity: 1 !important;
 }
 .react-flow__handle-valid {
-  box-shadow: 0 0 14px var(--accent-glow) !important;
-  border-color: var(--accent, #0EA5E9) !important;
+  box-shadow: 0 0 20px var(--accent-music) !important;
+  border-color: var(--accent-music) !important;
+  animation: handleGlow 0.8s ease-in-out infinite alternate;
 }
 @keyframes handlePulse {
-  0%, 100% { box-shadow: 0 0 6px var(--accent-glow); }
-  50% { box-shadow: 0 0 18px var(--accent-glow); }
+  0%, 100% { box-shadow: 0 0 8px var(--accent-glow); }
+  50% { box-shadow: 0 0 24px var(--accent-glow); }
+}
+@keyframes handleGlow {
+  0% { box-shadow: 0 0 8px var(--accent-music); background: var(--accent-music); }
+  100% { box-shadow: 0 0 22px var(--accent-music); background: #c084fc; }
 }
 .react-flow__handle {
   transition: transform 0.15s, opacity 0.15s;
