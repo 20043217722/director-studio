@@ -52,6 +52,94 @@ export function validateConnection(sourceNode, targetNode, targetHandle) {
   return true
 }
 
+// ============================================
+// 结构化输出解析 — 从 Agent 响应中提取各平台提示词
+// ============================================
+function extractStructuredBlocks(text) {
+  if (!text) return { prompts: {}, negatives: {}, continuity: null, metadata: null }
+  const blocks = { prompts: {}, negatives: {}, continuity: null, metadata: null }
+  // Extract prompt blocks: <!--PROMPT:platform--> content <!--/PROMPT:platform-->
+  const promptRe = /<!--PROMPT:(\w+)-->([\s\S]*?)<!--\/PROMPT:\1-->/g
+  let match
+  while ((match = promptRe.exec(text)) !== null) {
+    blocks.prompts[match[1]] = match[2].trim()
+  }
+  // Extract negative prompt blocks: <!--NEGATIVE:platform--> content <!--/NEGATIVE:platform-->
+  const negRe = /<!--NEGATIVE:(\w+)-->([\s\S]*?)<!--\/NEGATIVE:\1-->/g
+  while ((match = negRe.exec(text)) !== null) {
+    blocks.negatives[match[1]] = match[2].trim()
+  }
+  // Extract continuity lock: <!--LOCK:continuity--> content <!--/LOCK:continuity-->
+  const lockRe = /<!--LOCK:continuity-->([\s\S]*?)<!--\/LOCK:continuity-->/
+  const lockMatch = lockRe.exec(text)
+  if (lockMatch) blocks.continuity = lockMatch[1].trim()
+  // Extract metadata block
+  const metaRe = /<!--METADATA-->([\s\S]*?)<!--\/METADATA-->/
+  const metaMatch = metaRe.exec(text)
+  if (metaMatch) {
+    const lines = metaMatch[1].trim().split('\n').filter(Boolean)
+    blocks.metadata = {}
+    lines.forEach(line => {
+      const [k, ...v] = line.split(':')
+      if (k && v.length) blocks.metadata[k.trim()] = v.join(':').trim()
+    })
+  }
+  return blocks
+}
+
+// 根据下游节点类型选择最佳提示词（含负向提示词匹配）
+function extractBestPrompt(text, targetType) {
+  const blocks = extractStructuredBlocks(text)
+  if (!blocks.prompts || Object.keys(blocks.prompts).length === 0) return null
+
+  // 视频生成节点 → 优先视频平台格式
+  if (targetType === 'videoGen' || targetType === 'mediaGen') {
+    const videoOrder = ['seedance', 'kling', 'runway', 'sora', 'hailuo', 'wan', 'pika']
+    for (const p of videoOrder) {
+      if (blocks.prompts[p]) return blocks.prompts[p]
+    }
+  }
+  // 图片生成节点 → 优先图片平台格式
+  if (targetType === 'imageGen') {
+    if (blocks.prompts['midjourney']) return blocks.prompts['midjourney']
+    if (blocks.prompts['seedream']) return blocks.prompts['seedream']
+    if (blocks.prompts['dalle']) return blocks.prompts['dalle']
+  }
+  // Agent/TextPrompt → 取第一个可用提示词
+  if (blocks.prompts['seedance']) return blocks.prompts['seedance']
+  if (blocks.prompts['kling']) return blocks.prompts['kling']
+  if (blocks.prompts['runway']) return blocks.prompts['runway']
+
+  // Fallback: return any first block
+  const first = Object.values(blocks.prompts)[0]
+  return first || null
+}
+
+// 提取最佳负向提示词（匹配 bestPrompt 的平台）
+function extractBestNegative(text, targetType) {
+  const blocks = extractStructuredBlocks(text)
+  if (!blocks.negatives || Object.keys(blocks.negatives).length === 0) return null
+
+  if (targetType === 'videoGen' || targetType === 'mediaGen') {
+    const videoOrder = ['seedance', 'kling', 'runway', 'sora', 'hailuo', 'wan', 'pika']
+    for (const p of videoOrder) {
+      if (blocks.negatives[p]) return blocks.negatives[p]
+    }
+  }
+  if (targetType === 'imageGen') {
+    if (blocks.negatives['midjourney']) return blocks.negatives['midjourney']
+    if (blocks.negatives['dalle']) return blocks.negatives['dalle']
+  }
+  const first = Object.values(blocks.negatives)[0]
+  return first || null
+}
+
+// 提取连续性锁头（多镜一致性锚点）
+function extractContinuityLock(text) {
+  const blocks = extractStructuredBlocks(text)
+  return blocks.continuity
+}
+
 function syncNodeDownstream(sourceId, nodes, edges) {
   // Propagate source node's data to all connected downstream nodes
   const sourceNode = nodes.find(n => n.id === sourceId)
@@ -175,12 +263,13 @@ function syncNodeDownstream(sourceId, nodes, edges) {
         const modePrompts = {
           character: '请基于参考图进行人物造型设计：输出7层人物框架',
           scene: '请基于参考图设计场景：输出10维场景框架',
-          lens: '请分析图片视觉DNA，反推完整提示词',
+          lens: '请分析图片视觉DNA，反推完整提示词，输出多平台提示词块',
           designer: '请基于参考图进行美术指导分析',
           director: '请分析图片的叙事元素',
           doctor: '请分析图片中的叙事结构',
           seedance: '请基于参考图进行逐幕情绪拆解',
           post: '请分析图片的后期制作要点',
+          cinematographer: '请基于参考图进行摄影指导分析：输出镜头方案+灯光方案+多平台提示词块',
         }
         const prompt = modePrompts[agentMode] || '请分析图片，反推提示词和视觉描述'
         updated[idx] = { ...target, data: {
@@ -200,15 +289,27 @@ function syncNodeDownstream(sourceId, nodes, edges) {
             response: srcData.response }
         }
       }
-      // Agent → TextPrompt: push response as prompt for further refinement
+      // Agent → TextPrompt: push response for human editing
       if (target.type === 'textPrompt' && srcData.response && !target.data.prompt) {
-        updated[idx] = { ...target, data: { ...target.data, prompt: srcData.response } }
+        const best = extractBestPrompt(srcData.response, 'textPrompt')
+        const lock = extractContinuityLock(srcData.response)
+        updated[idx] = { ...target, data: { ...target.data,
+          prompt: best || srcData.response,
+          continuityLock: lock || undefined,
+        } }
       }
-      // Agent → ImageGen/VideoGen/MediaGen: push response as prompt
+      // Agent → ImageGen/VideoGen/MediaGen: extract platform-specific prompt + negative
       if ((target.type === 'imageGen' || target.type === 'videoGen' || target.type === 'mediaGen') && srcData.response && !target.data.prompt) {
-        updated[idx] = { ...target, data: { ...target.data, prompt: srcData.response } }
+        const best = extractBestPrompt(srcData.response, target.type)
+        const neg = extractBestNegative(srcData.response, target.type)
+        const lock = extractContinuityLock(srcData.response)
+        updated[idx] = { ...target, data: { ...target.data,
+          prompt: best || srcData.response,
+          negativePrompt: neg || undefined,
+          continuityLock: lock || undefined,
+        } }
       }
-      // Agent → Agent: chain agent response to next agent prompt
+      // Agent → Agent: chain full response for context
       if (target.type === 'agent' && srcData.response && !target.data.prompt) {
         updated[idx] = { ...target, data: { ...target.data, prompt: srcData.response } }
       }

@@ -137,4 +137,5 @@ export const AGENT_MODES = [
   { id: 'character', name: '👤 人物造型', desc: '七层框架 · 高精度角色' },
   { id: 'scene', name: '🏛️ 场景设计', desc: '十维场景生成' },
   { id: 'lens', name: '🔍 视觉解析师', desc: '反向提示词 · 视觉DNA' },
+  { id: 'cinematographer', name: '📷 摄影指导', desc: '镜头语法 · 布光方案 · 运镜动机' },
 ]
