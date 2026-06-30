@@ -497,7 +497,7 @@ export default function App() {
           {updateMsg && <button onClick={installPwa} className="update-badge px-2 py-0.5 cursor-pointer hidden sm:block">{updateMsg}</button>}
           <ExportMenu onExport={handleExport} disabled={loading || messages.length === 0} />
           <button onClick={clearHistory} className="p-1.5 rounded-lg opacity-25 hover:opacity-60 transition-opacity text-xs" title="清空记录">🗑</button>
-          <button onClick={() => setSettingsOpen(true)} className="p-1.5 rounded-lg opacity-40 hover:opacity-80 transition-opacity text-sm" title="设置">⚙</button>
+          <button onClick={() => setSettingsOpen(true)} style={{padding:'6px 10px',borderRadius:6,border:'1px solid var(--border)',background:'var(--bg-card)',color:'var(--text)',cursor:'pointer',fontSize:13,fontWeight:600}} title="设置">⚙ 设置</button>
         </header>
         {mode === "canvas" ? (
           <CanvasWorkspace />
