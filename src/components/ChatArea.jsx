@@ -1,4 +1,63 @@
-import { useMemo } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
+
+// Multi-format export button
+function ExportButton({ text }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    setTimeout(() => document.addEventListener('click', close), 0);
+    return () => document.removeEventListener('click', close);
+  }, [open]);
+
+  const download = (text, filename, mime) => {
+    const blob = new Blob([text], { type: mime + ';charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
+  };
+
+  const exportMD = () => download(text, 'agent-output.md', 'text/markdown');
+
+  const exportWord = () => {
+    const html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>body{font-family:SimSun;font-size:14px;line-height:1.8;padding:40px}h1{font-size:20px}h2{font-size:17px}h3{font-size:15px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #999;padding:6px}code{background:#f0f0f0;padding:2px 4px}strong{color:#C47482}</style></head><body>' + text.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>').replace(/^# (.+)$/gm, '<h1>$1</h1>').replace(/^## (.+)$/gm, '<h2>$1</h2>').replace(/^### (.+)$/gm, '<h3>$1</h3>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/^- (.+)$/gm, '<li>$1</li>') + '</body></html>';
+    download(html, 'agent-output.doc', 'application/msword');
+  };
+
+  const printPDF = () => {
+    const w = window.open('', '_blank');
+    const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>导演工作室·导出</title><style>body{font-family:"Microsoft YaHei",sans-serif;font-size:14px;line-height:1.8;max-width:800px;margin:40px auto;padding:20px;color:#1E3A5F}h1{font-size:22px;border-bottom:2px solid #0EA5E9;padding-bottom:8px}h2{font-size:18px;color:#0EA5E9}h3{font-size:15px}table{border-collapse:collapse;width:100%;margin:12px 0}td,th{border:1px solid #ccc;padding:8px}th{background:#f0f7ff}code{background:#f0f0f0;padding:2px 6px;border-radius:3px}strong{color:#C47482}@media print{body{margin:0;padding:20px}}</style></head><body>' + text.replace(/\n\n/g, '<p></p>').replace(/\n/g, '<br>').replace(/^# (.+)$/gm, '<h1>$1</h1>').replace(/^## (.+)$/gm, '<h2>$1</h2>').replace(/^### (.+)$/gm, '<h3>$1</h3>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>') + '</body></html>';
+    w.document.write(html); w.document.close();
+    setTimeout(() => w.print(), 500);
+  };
+
+  return (
+    <span ref={ref} style={{position:'relative'}}>
+      <button onClick={() => setOpen(!open)}
+        className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/70"
+        title="导出文档">📥</button>
+      {open && (
+        <div style={{position:'absolute',top:'100%',right:0,marginTop:4,zIndex:50,
+          background:'var(--bg-elevated)',border:'1px solid var(--border)',borderRadius:6,padding:2,minWidth:130,
+          boxShadow:'var(--shadow-panel)'}}>
+          <button onClick={() => { exportMD(); setOpen(false); }}
+            style={{display:'block',width:'100%',textAlign:'left',padding:'5px 10px',fontSize:11,border:'none',borderRadius:4,background:'transparent',color:'var(--text)',cursor:'pointer'}}>
+            📝 Markdown (.md)
+          </button>
+          <button onClick={() => { exportWord(); setOpen(false); }}
+            style={{display:'block',width:'100%',textAlign:'left',padding:'5px 10px',fontSize:11,border:'none',borderRadius:4,background:'transparent',color:'var(--text)',cursor:'pointer'}}>
+            📄 Word 文档 (.doc)
+          </button>
+          <button onClick={() => { printPDF(); setOpen(false); }}
+            style={{display:'block',width:'100%',textAlign:'left',padding:'5px 10px',fontSize:11,border:'none',borderRadius:4,background:'transparent',color:'var(--text)',cursor:'pointer'}}>
+            🖨️ 打印为 PDF
+          </button>
+        </div>
+      )}
+    </span>
+  );
+}
 
 function escapeHtml(text) {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -158,13 +217,7 @@ export default function ChatArea({ mode, messages, loading, onUndo, onRegenerate
                   <button onClick={() => copyText(m.text)} className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/70" title="复制">📋</button>
                 )}
                 {m.role === "assistant" && !m.error && (
-                  <button onClick={() => {
-                    const blob = new Blob([m.text], { type: 'text/markdown;charset=utf-8' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url; a.download = 'agent-output-' + Date.now() + '.md';
-                    a.click(); URL.revokeObjectURL(url);
-                  }} className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/70" title="下载 Markdown">📥</button>
+                  <ExportButton text={m.text} />
                 )}
                 {m.role === "assistant" && !m.error && onRegenerate && (
                   <button onClick={() => onRegenerate(m.id)} className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/70" title="重新生成">🔄</button>
