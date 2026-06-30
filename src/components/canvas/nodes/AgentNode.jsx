@@ -231,11 +231,25 @@ export const AgentNode = memo(({ id, data }) => {
       </div>
 
       <div className="node-body">
-        {/* Agent picker */}
+        {/* Agent picker — grouped by creative phase */}
         <select value={data.agentMode || 'director'}
           onChange={(e) => updateNodeData(id, { agentMode: e.target.value, response: '', status: 'idle' })}
           className="node-select">
-          {AGENT_MODES.map((a) => (<option key={a.id} value={a.id}>{a.name}</option>))}
+          <optgroup label="📝 前期创意">
+            {['director','doctor'].map(id => { const a = AGENT_MODES.find(m => m.id === id); return a ? <option key={id} value={id}>{a.name}</option> : null })}
+          </optgroup>
+          <optgroup label="🎨 视觉设计">
+            {['character','scene','designer'].map(id => { const a = AGENT_MODES.find(m => m.id === id); return a ? <option key={id} value={id}>{a.name}</option> : null })}
+          </optgroup>
+          <optgroup label="📷 拍摄方案">
+            {['cinematographer','seedance'].map(id => { const a = AGENT_MODES.find(m => m.id === id); return a ? <option key={id} value={id}>{a.name}</option> : null })}
+          </optgroup>
+          <optgroup label="🎧 后期制作">
+            {['sound','colorist','post'].map(id => { const a = AGENT_MODES.find(m => m.id === id); return a ? <option key={id} value={id}>{a.name}</option> : null })}
+          </optgroup>
+          <optgroup label="🔍 分析工具">
+            {['lens'].map(id => { const a = AGENT_MODES.find(m => m.id === id); return a ? <option key={id} value={id}>{a.name}</option> : null })}
+          </optgroup>
         </select>
 
         {/* Prompt input */}
@@ -363,7 +377,7 @@ export const AgentNode = memo(({ id, data }) => {
         {data.status === 'error' && <div className="node-error">{data.errorMessage}</div>}
 
         {/* Pipeline runner: show when agent is done and has downstream agents */}
-        {data.status === 'done' && hasResponse && <PipelineButton id={id} onRun={handleRunPipeline} />}
+        {data.status === 'done' && hasResponse && <><PipelineButton id={id} onRun={handleRunPipeline} /><SuggestionBar agentMode={data.agentMode || 'director'} id={id} data={data} /></>}
       </div>
 
       <Handle type="source" position={Position.Right} id="output"
@@ -496,6 +510,46 @@ function PipelineButton({ id, onRun }) {
     >
       {running ? '⏳ 管线执行中...' : `🔗 运行管线: ${labels}`}
     </button>
+  )
+}
+
+// Agent mode → next-step suggestions
+const NEXT_STEPS = {
+  director: [{ act: 'connect', to: 'mediaGen', label: '🎨 媒体生成 生成画面' }, { act: 'chain', to: 'agent', mode: 'cinematographer', label: '📷 摄影指导 细化镜头' }],
+  doctor: [{ act: 'chain', to: 'agent', mode: 'director', label: '🎬 导演 基于修改重出分镜' }],
+  character: [{ act: 'connect', to: 'mediaGen', label: '🎨 生成角色视觉' }, { act: 'chain', to: 'agent', mode: 'cinematographer', label: '📷 摄影指导 设计角色布光' }],
+  scene: [{ act: 'connect', to: 'mediaGen', label: '🎨 生成场景图' }, { act: 'chain', to: 'agent', mode: 'cinematographer', label: '📷 摄影指导 设计场景拍摄' }],
+  designer: [{ act: 'chain', to: 'agent', mode: 'cinematographer', label: '📷 摄影指导 转化视觉方案' }],
+  cinematographer: [{ act: 'connect', to: 'mediaGen', label: '🎨 一键生成镜头' }, { act: 'expand', label: '🎬 展开为分镜镜头' }],
+  seedance: [{ act: 'chain', to: 'agent', mode: 'cinematographer', label: '📷 摄影指导 设计镜头方案' }],
+  lens: [{ act: 'chain', to: 'agent', mode: 'cinematographer', label: '📷 摄影指导 基于DNA设计' }, { act: 'connect', to: 'mediaGen', label: '🎨 用提取的提示词生成' }],
+  sound: [{ act: 'chain', to: 'agent', mode: 'cinematographer', label: '📷 基于声音方案细化视觉' }],
+  colorist: [{ act: 'chain', to: 'agent', mode: 'cinematographer', label: '📷 基于色彩方案调光' }],
+  post: [{ act: 'connect', to: 'mediaGen', label: '🎨 生成最终画面' }],
+}
+
+function SuggestionBar({ agentMode, id, data }) {
+  const suggestions = NEXT_STEPS[agentMode] || [{ act: 'connect', to: 'mediaGen', label: '🎨 生成画面' }]
+  if (!data.response || data.status !== 'done') return null
+
+  return (
+    <div style={{
+      fontSize: 10, padding: '4px 8px', borderRadius: 6, marginTop: 6,
+      background: 'rgba(14,165,233,0.04)', border: '1px solid rgba(14,165,233,0.1)',
+    }}>
+      <div style={{ fontWeight: 600, color: 'var(--accent)', marginBottom: 3 }}>💡 建议下一步：</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        {suggestions.map((s, i) => (
+          <span key={i} style={{
+            padding: '2px 6px', borderRadius: 4, fontSize: 9,
+            background: 'var(--bg-root)', color: 'var(--text-secondary)',
+          }}>{s.label}</span>
+        ))}
+      </div>
+      <div style={{ color: 'var(--text-muted)', fontSize: 9, marginTop: 2 }}>
+        从右侧 Handle 拖线到目标节点即可创建连接
+      </div>
+    </div>
   )
 }
 

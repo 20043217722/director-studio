@@ -1224,26 +1224,38 @@ blurry/deformed/ugly/low quality/text/watermark
 
 ### 🔊 声音策略概述（1句）
 
-### 🎧 逐镜声音方案
-| 镜号 | 环境音景 | 拟音关键 | 对白空间 | 配乐入场/退场 | 声音透视 |
+### ⏱ 逐镜声音时间轴（强制 — 每个镜头标注时间轴）
+| 镜号 | 时长s | 0→N秒声音事件 | 音量曲线(dB) | 转场方式 |
+
+每镜至少标注3个时间点(起始/关键事件/结束)，格式：
+镜1 / 8s：0s 雨声渐入(-24→-18dB) → 2s 脚步声近(-12dB·木地板·高跟鞋·慢) → 5s 小提琴弱起(p·E小调) → 7.5s 雨声渐出(-18→-∞dB)
+
+### 🎧 各镜声音参数
+| 镜号 | 环境音景 | 拟音关键 | 对白空间(RT60) | 配乐入场s/退场s | 声音主角 | 动态范围 |
 
 ### 🎵 配乐情绪曲线
-- 整体风格：(3个词)
-- 推荐乐器/风格参考：
-- 关键情绪转换点：
+- 整体风格：(3词)·BPM范围·调性(key)
+- 推荐乐器：
+- 关键情绪转换点(标注秒数)：
+- 静默段落：(哪些时刻无配乐·为什么)
 
-### 🔑 各平台声音提示词
+### 🔊 音量动态自动化
+- 全片响度目标：-16 LUFS(流媒体) / -24 LUFS(影院) / -14 LUFS(社交媒体)
+- 对白归一化：-24dB RMS·对白电平一致性
+- 关键Fade时间点：[时间] [从XdB→YdB] [曲线类型:线性/ease-in/ease-out]
+
+### 🔑 各平台声音提示词（含时长参数）
 
 <!--PROMPT:runway_audio-->
-[English·20-40 words·ambient first·specific sound sources·spatial location]
+[English·20-40 words] [duration: Ns] [ambient: specific sources + spatial location] [foley: materials + timing] [mood]
 <!--/PROMPT:runway_audio-->
 
-<!--PROMPT:elevenlabs-->
-[English·15-30 words·sound type·duration·spatial character·mood]
-<!--/PROMPT:elevenlabs-->
+<!--PROMPT:elevenlabs_sfx-->
+[English·15-30 words] [duration_seconds: N] [sound type: Foley/Ambient/Impact] [spatial: close/medium/far] [mood keywords]
+<!--/PROMPT:elevenlabs_sfx-->
 
 <!--PROMPT:suno_music-->
-[Style: cinematic/ambient/orchestral/electronic] [Mood progression] [Key instruments] [Tempo BPM] [Dynamics arc]
+Style: [cinematic/ambient/orchestral/electronic] | Tempo: [BPM] | Key: [C minor etc.] | Mood: [progression] | Instruments: [lead + accompaniment] | Structure: [intro/verse/chorus/bridge/outro] | Dynamics: [pp→mf→ff→pp]
 <!--/PROMPT:suno_music-->
 
 ## 质量闸门

@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useSyncExternalStore } from 'react'
+import { memo, useState, useCallback, useEffect, useSyncExternalStore } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { useCanvasStore } from '../utils/canvasStore'
 import Lightbox from '../Lightbox'
@@ -153,6 +153,21 @@ export const MediaGenNode = memo(({ id, data }) => {
       unregisterAbort(id)
     }
   }
+
+  // Listen for retry event from Preview node
+  useEffect(() => {
+    const handler = (e) => {
+      const s = useCanvasStore.getState()
+      const isUpstream = s.edges.some(
+        edge => edge.source === id && edge.target === e.detail?.previewId
+      )
+      if (isUpstream && !genLoading && data.prompt) {
+        handleGenerate()
+      }
+    }
+    window.addEventListener('preview-retry', handler)
+    return () => window.removeEventListener('preview-retry', handler)
+  }, [id, genLoading, data.prompt])
 
   // --- Download ---
   const handleDownload = useCallback((img, e) => {
