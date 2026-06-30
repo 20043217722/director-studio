@@ -232,25 +232,21 @@ export const AgentNode = memo(({ id, data }) => {
       </div>
 
       <div className="node-body">
-        {/* Agent picker — grouped by creative phase */}
+        {/* Agent picker — all 11 agents */}
         <select value={data.agentMode || 'director'}
           onChange={(e) => updateNodeData(id, { agentMode: e.target.value, response: '', status: 'idle' })}
           className="node-select">
-          <optgroup label="📝 前期创意">
-            {['director','doctor'].map(id => { const a = AGENT_MODES.find(m => m.id === id); return a ? <option key={id} value={id}>{a.name}</option> : null })}
-          </optgroup>
-          <optgroup label="🎨 视觉设计">
-            {['character','scene','designer'].map(id => { const a = AGENT_MODES.find(m => m.id === id); return a ? <option key={id} value={id}>{a.name}</option> : null })}
-          </optgroup>
-          <optgroup label="📷 拍摄方案">
-            {['cinematographer','seedance'].map(id => { const a = AGENT_MODES.find(m => m.id === id); return a ? <option key={id} value={id}>{a.name}</option> : null })}
-          </optgroup>
-          <optgroup label="🎧 后期制作">
-            {['sound','colorist','post'].map(id => { const a = AGENT_MODES.find(m => m.id === id); return a ? <option key={id} value={id}>{a.name}</option> : null })}
-          </optgroup>
-          <optgroup label="🔍 分析工具">
-            {['lens'].map(id => { const a = AGENT_MODES.find(m => m.id === id); return a ? <option key={id} value={id}>{a.name}</option> : null })}
-          </optgroup>
+          <option value="director">{AGENT_MODES.find(m=>m.id==='director')?.name||'🎬 导演'}</option>
+          <option value="doctor">{AGENT_MODES.find(m=>m.id==='doctor')?.name||'📋 剧本医生'}</option>
+          <option value="character">{AGENT_MODES.find(m=>m.id==='character')?.name||'👤 人物造型'}</option>
+          <option value="scene">{AGENT_MODES.find(m=>m.id==='scene')?.name||'🏛️ 场景设计'}</option>
+          <option value="designer">{AGENT_MODES.find(m=>m.id==='designer')?.name||'🎨 美术指导'}</option>
+          <option value="cinematographer">{AGENT_MODES.find(m=>m.id==='cinematographer')?.name||'📷 摄影指导'}</option>
+          <option value="seedance">{AGENT_MODES.find(m=>m.id==='seedance')?.name||'📖 剧幕文戏分析'}</option>
+          <option value="sound">{AGENT_MODES.find(m=>m.id==='sound')?.name||'🔊 声音设计'}</option>
+          <option value="colorist">{AGENT_MODES.find(m=>m.id==='colorist')?.name||'🎨 调色师'}</option>
+          <option value="post">{AGENT_MODES.find(m=>m.id==='post')?.name||'🎛️ 后期总监'}</option>
+          <option value="lens">{AGENT_MODES.find(m=>m.id==='lens')?.name||'🔍 视觉解析师'}</option>
         </select>
 
         {/* Prompt input */}
