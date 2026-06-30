@@ -12,15 +12,15 @@
 <link rel="apple-touch-icon" href="/director-studio/icon-192.png"/>
 <title>导演工作室</title>
 <!-- BUILD_TIMESTAMP replaced at build -->
-  <script type="module" crossorigin src="/director-studio/assets/index-B2YmLARg.js"></script>
-  <link rel="stylesheet" crossorigin href="/director-studio/assets/index-CmwRE6En.css">
+  <script type="module" crossorigin src="/director-studio/assets/index-B2YmLARg.js"?v=1782806141181></script>
+  <link rel="stylesheet" crossorigin href="/director-studio/assets/index-CmwRE6En.css"?v=1782806141181>
 </head>
 <body>
 <div id="root"></div>
 <script>
 // ===== 强制刷新系统 — 每次部署自动清除所有缓存 =====
 (function(){
-  var BUILD = '1782805785514';
+  var BUILD = '1782806141181';
   var key = '_ds_build_ver';
 
   // Step 1: Check if we need to upgrade
@@ -43,14 +43,14 @@
         })
       );
     }
-    // Step 3: Store new version and reload
-    Promise.all(tasks).then(function() {
+    // Step 3: Store new version and force-reload bypassing all caches
+    var reloadClean = function() {
       try { localStorage.setItem(key, BUILD); } catch(e) {}
-      location.reload(true);
-    }).catch(function() {
-      try { localStorage.setItem(key, BUILD); } catch(e) {}
-      location.reload(true);
-    });
+      // Add unique query to bypass browser/CDN cache
+      var sep = location.href.indexOf('?') === -1 ? '?' : '&';
+      location.href = location.href.split('#')[0].split('?')[0] + sep + '_t=' + BUILD;
+    };
+    Promise.all(tasks).then(reloadClean).catch(reloadClean);
   } else {
     // Already on latest — register SW normally
     if ('serviceWorker' in navigator) {
