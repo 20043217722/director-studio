@@ -136,41 +136,6 @@ export const AgentNode = memo(({ id, data }) => {
     updateNodeData(id, { status: 'idle', errorMessage: '' })
   }, [id, updateNodeData])
 
-  // Pipeline runner: fire downstream agent execution
-  const handleRunPipeline = useCallback(async () => {
-    const s = useCanvasStore.getState()
-    const downstreamAgents = s.edges
-      .filter(e => e.source === id)
-      .map(e => s.nodes.find(n => n.id === e.target))
-      .filter(n => n && n.type === 'agent')
-    if (downstreamAgents.length === 0) return
-
-    // First ensure current agent has run
-    if (!data.response || data.status !== 'done') {
-      await handleRun()
-    }
-
-    // Fire custom event for each downstream agent to pick up
-    downstreamAgents.forEach((agent, i) => {
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('pipeline-run', {
-          detail: { nodeId: agent.id, delay: i * 500 }
-        }))
-      }, i * 300)
-    })
-  }, [id, data.response, data.status, handleRun])
-
-  // Listen for pipeline execution trigger
-  useEffect(() => {
-    const handler = (e) => {
-      if (e.detail?.nodeId === id && data.prompt && !genLoading && data.status !== 'generating') {
-        setTimeout(() => handleRun(), e.detail.delay || 0)
-      }
-    }
-    window.addEventListener('pipeline-run', handler)
-    return () => window.removeEventListener('pipeline-run', handler)
-  }, [id, data.prompt, genLoading, data.status, handleRun])
-
   const handleRun = async () => {
     if (!data.prompt) return
     setGenLoading(true)
@@ -213,6 +178,42 @@ export const AgentNode = memo(({ id, data }) => {
       updateNodeData(id, { status: 'error', errorMessage: e.message })
     } finally { setGenLoading(false); unregisterAbort(id) }
   }
+
+
+  // Pipeline runner: fire downstream agent execution
+  const handleRunPipeline = useCallback(async () => {
+    const s = useCanvasStore.getState()
+    const downstreamAgents = s.edges
+      .filter(e => e.source === id)
+      .map(e => s.nodes.find(n => n.id === e.target))
+      .filter(n => n && n.type === 'agent')
+    if (downstreamAgents.length === 0) return
+
+    // First ensure current agent has run
+    if (!data.response || data.status !== 'done') {
+      await handleRun()
+    }
+
+    // Fire custom event for each downstream agent to pick up
+    downstreamAgents.forEach((agent, i) => {
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('pipeline-run', {
+          detail: { nodeId: agent.id, delay: i * 500 }
+        }))
+      }, i * 300)
+    })
+  }, [id, data.response, data.status, handleRun])
+
+  // Listen for pipeline execution trigger
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.detail?.nodeId === id && data.prompt && !genLoading && data.status !== 'generating') {
+        setTimeout(() => handleRun(), e.detail.delay || 0)
+      }
+    }
+    window.addEventListener('pipeline-run', handler)
+    return () => window.removeEventListener('pipeline-run', handler)
+  }, [id, data.prompt, genLoading, data.status, handleRun])
 
   return (
     <div className="canvas-node agent-node" style={{ minWidth: 300, maxWidth: 450 }}>
