@@ -351,8 +351,8 @@ function CanvasInner() {
           return validateConnection(src, tgt, connection.targetHandle)
         }}
       >
-        <Background gap={24} size={1.5} color="var(--border)" />
-        <Background gap={96} size={2.5} color="var(--border)" />
+        <Background gap={24} size={2} color="var(--border)" />
+        <Background gap={96} size={2} color="var(--border)" />
         <Controls style={{
           background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 8,
         }} />

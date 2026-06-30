@@ -250,9 +250,12 @@ export const MediaGenNode = memo(({ id, data }) => {
 
       {/* Image mode: empty placeholder */}
       {isImage && !data.generatedImages?.length && data.status !== 'generating' && (
-        <div className="media-placeholder" style={{ minHeight: 80 }}>
-          <span style={{ fontSize: 28 }}>🎨</span>
-          <span>输入提示词，点击生成</span>
+        <div className="media-placeholder" style={{ minHeight: 90, borderRadius: 10,
+          background: 'linear-gradient(135deg, var(--bg-root), var(--bg-elevated))',
+          border: '2px dashed var(--border)', gap: 8 }}>
+          <span style={{ fontSize: 32, opacity: 0.5 }}>🎨</span>
+          <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>输入提示词，点击生成</span>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>支持从上游节点拖入参考图片</span>
         </div>
       )}
 
@@ -278,21 +281,25 @@ export const MediaGenNode = memo(({ id, data }) => {
               </div>
             </div>
           ) : data.status !== 'generating' ? (
-            <div className="media-placeholder" style={{ minHeight: 80 }}>
-              <span style={{ fontSize: 28 }}>🎬</span>
-              <span>输入提示词，点击生成</span>
+            <div className="media-placeholder" style={{ minHeight: 90, borderRadius: 10,
+              background: 'linear-gradient(135deg, var(--bg-root), var(--bg-elevated))',
+              border: '2px dashed var(--border)', gap: 8 }}>
+              <span style={{ fontSize: 32, opacity: 0.5 }}>🎬</span>
+              <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>输入提示词，点击生成</span>
+              <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>图生视频：从上游图片节点拖入</span>
             </div>
           ) : null}
 
           {data.status === 'generating' && (
-            <div style={{ padding: '4px 0 8px' }}>
-              <div style={{ background: 'var(--border)', borderRadius: 5, height: 8, marginBottom: 4 }}>
+            <div style={{ padding: '6px 0 10px' }}>
+              <div style={{ background: 'var(--border)', borderRadius: 6, height: 12, marginBottom: 6, overflow: 'hidden' }}>
                 <div style={{ width: `${data.progress || 0}%`, height: '100%',
-                  background: 'linear-gradient(90deg, var(--accent-sfx), #f97316)',
-                  borderRadius: 5, transition: 'width 0.8s' }} />
+                  background: 'linear-gradient(90deg, var(--accent-sfx), #fb923c, #f97316)',
+                  borderRadius: 6, transition: 'width 0.8s ease',
+                  boxShadow: '0 0 12px rgba(249,115,22,0.3)' }} />
               </div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>
-                {data.progress >= 95 ? '即将完成...' : `生成中 ${data.progress || 0}%`}
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'center' }}>
+                {data.progress >= 95 ? '✨ 即将完成...' : `⏳ 生成中 ${data.progress || 0}%`}
               </div>
             </div>
           )}
@@ -348,7 +355,14 @@ export const MediaGenNode = memo(({ id, data }) => {
       <div style={{ display: 'flex', gap: 6 }}>
         <button className="node-btn node-btn-primary"
           onClick={handleGenerate} disabled={genLoading || (!data.prompt && (isImage || !data.sourceImage))}
-          style={{ flex: 1, background: isImage ? 'var(--accent-music)' : 'var(--accent-sfx)', color: '#fff',
+          style={{ flex: 1,
+            background: isImage
+              ? 'linear-gradient(135deg, var(--accent-music), #7c3aed)'
+              : 'linear-gradient(135deg, var(--accent-sfx), #f97316)',
+            color: '#fff', fontWeight: 700, fontSize: 13, letterSpacing: '0.02em',
+            boxShadow: isImage
+              ? '0 2px 12px rgba(139,92,246,0.25)'
+              : '0 2px 12px rgba(249,115,22,0.25)',
             opacity: (genLoading || !data.prompt) ? 0.5 : 1 }}>
           {genLoading
             ? (isImage ? '⏳ 生成中...' : `⏳ ${data.progress || 0}%`)
