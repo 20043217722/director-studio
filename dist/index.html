@@ -11,36 +11,48 @@
 <link rel="manifest" href="/director-studio/manifest.json"/>
 <link rel="apple-touch-icon" href="/director-studio/icon-192.png"/>
 <title>导演工作室</title>
+<!-- BUILD_TIMESTAMP replaced at build -->
   <script type="module" crossorigin src="/director-studio/assets/index-B2YmLARg.js"></script>
   <link rel="stylesheet" crossorigin href="/director-studio/assets/index-CmwRE6En.css">
 </head>
 <body>
 <div id="root"></div>
 <script>
-// Self-cleaning: kill all old SW + caches, then register fresh
+// ===== 强制刷新系统 — 每次部署自动清除所有缓存 =====
 (function(){
-  var cleaned = sessionStorage.getItem('_sw_cleaned_v3');
-  if (!cleaned) {
+  var BUILD = '1782805785514';
+  var key = '_ds_build_ver';
+
+  // Step 1: Check if we need to upgrade
+  var current = (function(){ try { return localStorage.getItem(key); } catch(e) { return null; } })();
+
+  if (current !== BUILD) {
+    // Step 2: Nuke all caches and service workers
+    var tasks = [];
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(regs) {
-        return Promise.all(regs.map(function(r) { return r.unregister(); }));
-      }).then(function() {
-        if ('caches' in window) {
-          return caches.keys().then(function(keys) {
-            return Promise.all(keys.map(function(k) { return caches.delete(k); }));
-          });
-        }
-      }).then(function() {
-        sessionStorage.setItem('_sw_cleaned_v3', '1');
-        location.reload();
-      }).catch(function() {
-        sessionStorage.setItem('_sw_cleaned_v3', '1');
-        location.reload();
-      });
-    } else {
-      sessionStorage.setItem('_sw_cleaned_v3', '1');
+      tasks.push(
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          return Promise.all(regs.map(function(r) { return r.unregister(); }));
+        })
+      );
     }
+    if ('caches' in window) {
+      tasks.push(
+        caches.keys().then(function(keys) {
+          return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+        })
+      );
+    }
+    // Step 3: Store new version and reload
+    Promise.all(tasks).then(function() {
+      try { localStorage.setItem(key, BUILD); } catch(e) {}
+      location.reload(true);
+    }).catch(function() {
+      try { localStorage.setItem(key, BUILD); } catch(e) {}
+      location.reload(true);
+    });
   } else {
+    // Already on latest — register SW normally
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').catch(function(){});
     }
