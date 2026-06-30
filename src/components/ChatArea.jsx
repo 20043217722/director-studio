@@ -157,6 +157,15 @@ export default function ChatArea({ mode, messages, loading, onUndo, onRegenerate
                 {m.role === "assistant" && !m.error && (
                   <button onClick={() => copyText(m.text)} className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/70" title="复制">📋</button>
                 )}
+                {m.role === "assistant" && !m.error && (
+                  <button onClick={() => {
+                    const blob = new Blob([m.text], { type: 'text/markdown;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = 'agent-output-' + Date.now() + '.md';
+                    a.click(); URL.revokeObjectURL(url);
+                  }} className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/70" title="下载 Markdown">📥</button>
+                )}
                 {m.role === "assistant" && !m.error && onRegenerate && (
                   <button onClick={() => onRegenerate(m.id)} className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/70" title="重新生成">🔄</button>
                 )}

@@ -12,6 +12,7 @@ import ExportMenu from "./components/ExportMenu";
 import SettingsModal from "./components/SettingsModal";
 import ThemeSwitcher, { getEffectiveTheme } from "./components/ThemeSwitcher";
 import MobileTabBar from "./components/MobileTabBar";
+import { loadSessionHistory, saveSessionHistory } from "./lib/sessionStore";
 import AgentIcon from "./components/AgentIcon";
 import CanvasWorkspace from "./components/canvas/CanvasWorkspace";
 
@@ -33,55 +34,6 @@ const AGENTS = [
   { id: "canvas", name: "无限画布", desc: "节点式AI工作流 · 文生图 · 图生视频 · 多模型聚合" },
 ];
 
-const HISTORY_PREFIX = "director_studio_history_";
-const MAX_HISTORY = 100; // 从200降到100，减少localStorage压力
-const MAX_HISTORY_SIZE = 2 * 1024 * 1024; // 每模式最多2MB
-
-function getHistoryKey(mode) { return HISTORY_PREFIX + mode; }
-function loadHistory(mode) {
-  try {
-    const raw = localStorage.getItem(getHistoryKey(mode));
-    if (raw) { const arr = JSON.parse(raw); if (Array.isArray(arr)) return arr; }
-  } catch (_) {}
-  return [];
-}
-function saveHistory(mode, msgs) {
-  try {
-    // 只保存关键字段，减少体积
-    let slim = msgs.slice(-MAX_HISTORY).map(({ id, role, text, error, time, liked }) => ({ id, role, text, error, time, liked: liked || false }));
-    let json = JSON.stringify(slim);
-    // 超容时持续裁剪到一半
-    while (json.length > MAX_HISTORY_SIZE && slim.length > 10) {
-      slim = slim.slice(Math.floor(slim.length / 2));
-      json = JSON.stringify(slim);
-    }
-    // 逐模式存储前先检查全局容量
-    const allKeys = Object.keys(localStorage).filter(k => k.startsWith(HISTORY_PREFIX));
-    if (allKeys.length > 0 && json.length > MAX_HISTORY_SIZE / 2) {
-      // 清理其他模式的旧数据
-      for (const k of allKeys) {
-        if (k !== getHistoryKey(mode)) {
-          try {
-            const old = localStorage.getItem(k);
-            if (old && old.length > MAX_HISTORY_SIZE) {
-              const arr = JSON.parse(old);
-              localStorage.setItem(k, JSON.stringify(arr.slice(-30)));
-            }
-          } catch (_) {}
-        }
-      }
-    }
-    localStorage.setItem(getHistoryKey(mode), json);
-  } catch (e) {
-    // localStorage 满时清空所有历史
-    console.warn("localStorage 存储失败，清理旧数据");
-    try {
-      Object.keys(localStorage).filter(k => k.startsWith(HISTORY_PREFIX)).forEach(k => localStorage.removeItem(k));
-      const slim = msgs.slice(-20).map(({ id, role, text, error, time }) => ({ id, role, text, error, time }));
-      localStorage.setItem(getHistoryKey(mode), JSON.stringify(slim));
-    } catch (_) {}
-  }
-}
 
 export default function App() {
   const msgIdRef = useRef(0);
@@ -97,8 +49,10 @@ export default function App() {
     }
   }, []);
   const [mode, setMode] = useState(() => localStorage.getItem("director_studio_last_mode") || "director");
-  const [messages, setMessages] = useState(() => loadHistory(mode));
+  const [messages, setMessages] = useState(() => loadSessionHistory(mode));
   const [loading, setLoading] = useState(false);
+  const sessionsRef = useRef({});
+  const [activeTabs, setActiveTabs] = useState(() => [localStorage.getItem("director_studio_last_mode") || "director"]);
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminAuthed, setAdminAuthed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -144,22 +98,37 @@ export default function App() {
   useEffect(() => { if (toast) { const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); } }, [toast]);
 
   // Auto-save history per-mode
-  useEffect(() => { saveHistory(mode, messages); }, [messages, mode]);
+  useEffect(() => { saveSessionHistory(mode, messages); }, [messages, mode]);
 
   // Save last active mode
   useEffect(() => { localStorage.setItem("director_studio_last_mode", mode); }, [mode]);
 
   function switchMode(newMode) {
+    const cur = sessionsRef.current[mode] || {};
+    sessionsRef.current[mode] = { ...cur, messages, loading, sendingRef: sendingRef.current };
+    saveSessionHistory(mode, messages);
     if (newMode === mode) return;
-    if (loading && !window.confirm("当前智能体正在回复中，切换将丢失回复内容。确定切换吗？")) return;
-    // 停止当前生成
-    if (abortRef.current) abortRef.current.abort();
-    saveHistory(mode, messages);
-    setMessages(loadHistory(newMode));
+    const saved = sessionsRef.current[newMode];
+    setMessages(saved?.messages || loadSessionHistory(newMode));
     setMode(newMode);
-    setLoading(false);
-    abortRef.current = null;
-    sendingRef.current = false;
+    setLoading(saved?.loading || false);
+    sendingRef.current = saved?.sendingRef || false;
+    setActiveTabs(prev => prev.includes(newMode) ? prev : [...prev, newMode]);
+  }
+
+  function closeTab(tabMode) {
+    const tabs = activeTabs.filter(t => t !== tabMode);
+    if (tabs.length === 0) return;
+    if (tabMode === mode) {
+      const nextMode = tabs[0];
+      const saved = sessionsRef.current[nextMode];
+      saveSessionHistory(mode, messages);
+      setMessages(saved?.messages || loadSessionHistory(nextMode));
+      setMode(nextMode);
+      setLoading(saved?.loading || false);
+      sendingRef.current = saved?.sendingRef || false;
+    }
+    setActiveTabs(tabs);
   }
 
   function clearHistory() {
@@ -534,6 +503,28 @@ export default function App() {
           <CanvasWorkspace />
         ) : (
           <>
+            {/* Agent tabs */}
+            <div style={{display:"flex",gap:2,padding:"2px 6px",overflowX:"auto",background:"var(--bg-root)",borderBottom:"1px solid var(--border)",minHeight:30,alignItems:"flex-end"}}>
+              {activeTabs.map(t => {
+                const ag = AGENTS.find(a => a.id === t);
+                const isActive = mode === t;
+                return (
+                  <button key={t} onClick={() => switchMode(t)}
+                    style={{
+                      padding:"3px 8px",fontSize:11,fontWeight:isActive?700:500,
+                      borderRadius:"4px 4px 0 0",border:"none",cursor:"pointer",
+                      background:isActive?"var(--bg-card)":"transparent",
+                      color:isActive?"var(--text)":"var(--text-muted)",
+                      whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:3,
+                      borderBottom:isActive?"2px solid var(--accent)":"2px solid transparent"
+                    }}>
+                    {ag?.name||t}
+                    {activeTabs.length>1 && <span onClick={(e)=>{e.stopPropagation();closeTab(t)}} style={{fontSize:9,opacity:.4}}>x</span>}
+                  </button>
+                );
+              })}
+              <span style={{fontSize:9,color:"var(--text-muted)",padding:"3px 6px",flex:1,textAlign:"right"}}>点击Agent加标签 | 各标签独立</span>
+            </div>
             <div className="flex-1 overflow-y-auto relative" ref={chatContainerRef} onScroll={handleChatScroll}>
               {loading && <div className="typing-progress sticky top-0 z-10 w-full" />}
               <ChatArea mode={mode} messages={messages} loading={loading} onUndo={undoMessage} onRegenerate={regenerate} onRetry={handleSend} onToggleLike={toggleLike} />
