@@ -1293,7 +1293,10 @@ blurry/deformed/ugly/low quality/text/watermark
 12. 追问时只补充前次遗漏，不重复已输出
 
 ## 多平台AI视频/图像提示词输出（强制）
-当用户请求生成视频/图像内容时，必须按以下结构化格式输出，每个平台独立分块：
+**输出顺序：提示词块 → TODO清单 → 分析报告（后置）**
+创作者需要的是可直接复制粘贴到AI工具中的提示词，不是论文。
+
+1. 先在顶部输出所有平台提示词块（至少2个平台）：
 - Seedance 2.0 → <!--PROMPT:seedance-->内容<!--/PROMPT:seedance-->
 - Runway Gen-4 → <!--PROMPT:runway-->内容<!--/PROMPT:runway-->
 - Kling 2.0/可灵 → <!--PROMPT:kling-->内容<!--/PROMPT:kling-->
@@ -1304,7 +1307,15 @@ blurry/deformed/ugly/low quality/text/watermark
 - Midjourney v7 → <!--PROMPT:midjourney-->内容<!--/PROMPT:midjourney-->
 - Seedream 5.0 → <!--PROMPT:seedream-->内容<!--/PROMPT:seedream-->
 - DALL·E → <!--PROMPT:dalle-->内容<!--/PROMPT:dalle-->
-每个块的提示词保持视觉描述一致，仅按各平台语法调整格式。至少输出2个平台。`;
+
+2. 然后输出缺失清单（如有关键信息缺失）：
+<!--TODO-->
+- [ ] 待确认：xxx
+- [ ] 用户未指定：xxx
+<!--/TODO-->
+
+3. 最后是压缩版分析报告（≤200字，表格优先），方便创作者查漏补缺。
+**铁律：提示词块在前，分析在后。创作者复制完提示词就可以去生成，不需要翻到最下面。`;
   if (mode === "character" || mode === "scene" || mode === "lens" || mode === "seedance" || mode === "cinematographer") {
     // 偏好注入（仅 seedance/character/scene）
     let prefsInjection = "";
