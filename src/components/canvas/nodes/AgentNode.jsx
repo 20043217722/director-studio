@@ -19,12 +19,11 @@ const PLATFORM_META = {
 
 // Extract structured blocks from agent response
 function parseResponseBlocks(text) {
-  if (!text) return { prompts: [], negatives: {}, continuity: null, todo: null, tldr: null }
+  if (!text) return { prompts: [], negatives: {}, continuity: null, todo: null }
   const prompts = []
   const negatives = {}
   let continuity = null
   let todo = null
-  let tldr = null
 
   // Prompt blocks
   const promptRe = /<!--PROMPT:(\w+)-->([\s\S]*?)<!--\/PROMPT:\1-->/g
@@ -46,7 +45,7 @@ function parseResponseBlocks(text) {
   const todoMatch = todoRe.exec(text)
   if (todoMatch) todo = todoMatch[1].trim().split('\n').filter(Boolean)
 
-  return { prompts, negatives, continuity, todo, tldr }
+  return { prompts, negatives, continuity, todo }
 }
 
 // Separate full response from structured blocks for "analysis only" view
@@ -82,7 +81,6 @@ export const AgentNode = memo(({ id, data }) => {
     [data.response]
   )
   const hasPrompts = prompts.length > 0
-  const hasAnalysis = analysisText.length > 20
 
   const handleCancel = useCallback(() => {
     useCanvasStore.getState().abortGeneration(id)
@@ -128,13 +126,6 @@ export const AgentNode = memo(({ id, data }) => {
       updateNodeData(id, { status: 'error', errorMessage: e.message })
     } finally { setGenLoading(false); unregisterAbort(id) }
   }
-
-  const copyText = useCallback(async (text, label) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      // Brief flash - handled by per-card state
-    } catch {}
-  }, [])
 
   return (
     <div className="canvas-node agent-node" style={{ minWidth: 300, maxWidth: 450 }}>
@@ -221,7 +212,7 @@ export const AgentNode = memo(({ id, data }) => {
                   const neg = negatives[p.platform]
                   return (
                     <PromptCard key={i} platform={p.platform} content={p.content}
-                      meta={meta} negative={neg} onCopy={copyText} />
+                      meta={meta} negative={neg} />
                   )
                 })}
 
@@ -289,7 +280,7 @@ export const AgentNode = memo(({ id, data }) => {
 })
 
 // === Prompt Card Component ===
-function PromptCard({ platform, content, meta, negative, onCopy }) {
+function PromptCard({ platform, content, meta, negative }) {
   const [copied, setCopied] = useState(false)
   const [showNeg, setShowNeg] = useState(false)
   const maxPreview = 150
@@ -310,7 +301,7 @@ function PromptCard({ platform, content, meta, negative, onCopy }) {
       {/* Card header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '4px 8px', background: `${meta.color}15`, borderBottom: '1px solid ${meta.color}20',
+        padding: '4px 8px', background: `${meta.color}15`, borderBottom: `1px solid ${meta.color}20`,
       }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: meta.color }}>
           {meta.label}
