@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useMemo } from 'react'
+import { memo, useState, useCallback, useMemo, useEffect } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { useCanvasStore } from '../utils/canvasStore'
 import { AGENT_MODES } from '../utils/nodeDefaults'
@@ -135,6 +135,41 @@ export const AgentNode = memo(({ id, data }) => {
     setGenLoading(false)
     updateNodeData(id, { status: 'idle', errorMessage: '' })
   }, [id, updateNodeData])
+
+  // Pipeline runner: fire downstream agent execution
+  const handleRunPipeline = useCallback(async () => {
+    const s = useCanvasStore.getState()
+    const downstreamAgents = s.edges
+      .filter(e => e.source === id)
+      .map(e => s.nodes.find(n => n.id === e.target))
+      .filter(n => n && n.type === 'agent')
+    if (downstreamAgents.length === 0) return
+
+    // First ensure current agent has run
+    if (!data.response || data.status !== 'done') {
+      await handleRun()
+    }
+
+    // Fire custom event for each downstream agent to pick up
+    downstreamAgents.forEach((agent, i) => {
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('pipeline-run', {
+          detail: { nodeId: agent.id, delay: i * 500 }
+        }))
+      }, i * 300)
+    })
+  }, [id, data.response, data.status, handleRun])
+
+  // Listen for pipeline execution trigger
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.detail?.nodeId === id && data.prompt && !genLoading && data.status !== 'generating') {
+        setTimeout(() => handleRun(), e.detail.delay || 0)
+      }
+    }
+    window.addEventListener('pipeline-run', handler)
+    return () => window.removeEventListener('pipeline-run', handler)
+  }, [id, data.prompt, genLoading, data.status, handleRun])
 
   const handleRun = async () => {
     if (!data.prompt) return
@@ -326,6 +361,9 @@ export const AgentNode = memo(({ id, data }) => {
         )}
 
         {data.status === 'error' && <div className="node-error">{data.errorMessage}</div>}
+
+        {/* Pipeline runner: show when agent is done and has downstream agents */}
+        {data.status === 'done' && hasResponse && <PipelineButton id={id} onRun={handleRunPipeline} />}
       </div>
 
       <Handle type="source" position={Position.Right} id="output"
@@ -415,6 +453,48 @@ function ShotExpandButton({ id, response, data }) {
       }}
     >
       {expanded ? `✅ 已创建 ${shots.length} 个镜头` : `🎬 一键展开 ${shots.length} 个镜头`}
+    </button>
+  )
+}
+
+// === Pipeline Runner Button ===
+function PipelineButton({ id, onRun }) {
+  const [running, setRunning] = useState(false)
+  // Check for downstream agent nodes
+  const downAgents = useCanvasStore(s => {
+    return s.edges
+      .filter(e => e.source === id)
+      .map(e => s.nodes.find(n => n.id === e.target))
+      .filter(n => n && n.type === 'agent')
+  })
+
+  if (downAgents.length === 0) return null
+
+  const labels = downAgents.map(a => {
+    const mode = AGENT_MODES.find(m => m.id === a.data?.agentMode)
+    return mode?.name || 'Agent'
+  }).join(' → ')
+
+  const handleClick = async () => {
+    setRunning(true)
+    await onRun()
+    setTimeout(() => setRunning(false), 1500)
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={running}
+      style={{
+        width: '100%', padding: '6px 0', fontSize: 11, fontWeight: 700,
+        borderRadius: 6, border: `1px dashed var(--brand)`,
+        background: running ? 'var(--brand)' : 'transparent',
+        color: running ? '#fff' : 'var(--brand)',
+        cursor: running ? 'default' : 'pointer',
+        transition: 'all 0.2s', marginTop: 4,
+      }}
+    >
+      {running ? '⏳ 管线执行中...' : `🔗 运行管线: ${labels}`}
     </button>
   )
 }

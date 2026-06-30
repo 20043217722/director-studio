@@ -56,8 +56,13 @@ export function validateConnection(sourceNode, targetNode, targetHandle) {
 // 结构化输出解析 — 从 Agent 响应中提取各平台提示词
 // ============================================
 function extractStructuredBlocks(text) {
-  if (!text) return { prompts: {}, negatives: {}, continuity: null, metadata: null }
-  const blocks = { prompts: {}, negatives: {}, continuity: null, metadata: null }
+  if (!text) return { prompts: {}, negatives: {}, continuity: null, metadata: null, handoffs: {} }
+  const blocks = { prompts: {}, negatives: {}, continuity: null, metadata: null, handoffs: {} }
+  // Extract handoff blocks: <!--HANDOFF:mode--> content <!--/HANDOFF:mode-->
+  const handoffRe = /<!--HANDOFF:(\w+)-->([\s\S]*?)<!--\/HANDOFF:\1-->/g
+  while ((match = handoffRe.exec(text)) !== null) {
+    blocks.handoffs[match[1]] = match[2].trim()
+  }
   // Extract prompt blocks: <!--PROMPT:platform--> content <!--/PROMPT:platform-->
   const promptRe = /<!--PROMPT:(\w+)-->([\s\S]*?)<!--\/PROMPT:\1-->/g
   let match
@@ -138,6 +143,45 @@ function extractBestNegative(text, targetType) {
 function extractContinuityLock(text) {
   const blocks = extractStructuredBlocks(text)
   return blocks.continuity
+}
+
+// 构建 Agent 管线握手上下文 — 将上游 Agent 输出压缩为下游 Agent 的上下文
+function buildAgentHandoff(upstreamResponse, downstreamMode, upstreamMode) {
+  if (!upstreamResponse) return null
+  const blocks = extractStructuredBlocks(upstreamResponse)
+
+  // Priority 1: Explicit handoff block for this downstream mode
+  if (blocks.handoffs[downstreamMode]) {
+    return `[上游 ${upstreamMode} Agent 的握手上下文]\n${blocks.handoffs[downstreamMode]}\n\n请基于以上上游分析结果继续你的工作。`
+  }
+
+  // Priority 2: Generic handoff
+  if (blocks.handoffs['all'] || blocks.handoffs['any']) {
+    const h = blocks.handoffs['all'] || blocks.handoffs['any']
+    return `[上游 Agent 握手上下文]\n${h}\n\n请基于以上信息继续。`
+  }
+
+  // Priority 3: Auto-generate from continuity lock + TODO
+  const parts = []
+  if (blocks.continuity) {
+    parts.push(`[连续性锁头]\n${blocks.continuity.slice(0, 400)}`)
+  }
+  if (blocks.prompts && Object.keys(blocks.prompts).length > 0) {
+    const firstPrompt = Object.values(blocks.prompts)[0]
+    parts.push(`[关键提示词摘录]\n${firstPrompt.slice(0, 300)}`)
+  }
+  if (parts.length > 0) {
+    parts.push('请基于以上上游分析结果继续你的专业工作。')
+    return parts.join('\n\n')
+  }
+
+  // Fallback: truncated response
+  const stripped = upstreamResponse
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+    .slice(0, 600)
+  return stripped ? `[上游 Agent 输出摘要]\n${stripped}\n\n请基于以上信息继续。` : null
 }
 
 function syncNodeDownstream(sourceId, nodes, edges) {
@@ -309,9 +353,13 @@ function syncNodeDownstream(sourceId, nodes, edges) {
           continuityLock: lock || undefined,
         } }
       }
-      // Agent → Agent: chain full response for context
+      // Agent → Agent: pipeline handoff — inject upstream context
       if (target.type === 'agent' && srcData.response && !target.data.prompt) {
-        updated[idx] = { ...target, data: { ...target.data, prompt: srcData.response } }
+        const handoffCtx = buildAgentHandoff(srcData.response, target.data.agentMode || 'director', srcData.agentMode || 'director')
+        updated[idx] = { ...target, data: { ...target.data,
+          prompt: handoffCtx || srcData.response,
+          upstreamContext: srcData.response.slice(0, 500), // truncated for reference
+        } }
       }
     }
 
