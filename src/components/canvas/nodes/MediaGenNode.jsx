@@ -73,12 +73,36 @@ export const MediaGenNode = memo(({ id, data }) => {
     updateNodeData(id, { status: 'idle', errorMessage: '' })
   }, [id, updateNodeData])
 
+  // --- Version helpers ---
+  const imageVersions = data.imageVersions || []
+  const videoVersions = data.videoVersions || []
+  const [currentImgVer, setCurrentImgVer] = useState(imageVersions.length > 0 ? imageVersions.length - 1 : 0)
+  const [currentVidVer, setCurrentVidVer] = useState(videoVersions.length > 0 ? videoVersions.length - 1 : 0)
+
+  // Build display list: versions + current (if any)
+  const allImageVersions = [...imageVersions]
+  if (data.generatedImages?.length > 0 && !imageVersions.includes(data.generatedImages)) {
+    allImageVersions.push(data.generatedImages)
+  }
+  const allVideoVersions = [...videoVersions]
+  if (data.generatedVideo?.url && !videoVersions.includes(data.generatedVideo)) {
+    allVideoVersions.push(data.generatedVideo)
+  }
+
   // --- Generate ---
   const handleGenerate = async () => {
     // Video mode can use sourceImage (img2vid) without prompt; image mode requires prompt
     if (!data.prompt && (isImage || !data.sourceImage)) return
     setGenLoading(true)
-    updateNodeData(id, { status: 'generating', progress: 0, errorMessage: '' })
+    // Save current to versions before generating new
+    const versPatch = {}
+    if (isImage && data.generatedImages?.length > 0) {
+      versPatch.imageVersions = [...(data.imageVersions || []), data.generatedImages]
+    }
+    if (isVideo && data.generatedVideo?.url) {
+      versPatch.videoVersions = [...(data.videoVersions || []), data.generatedVideo]
+    }
+    updateNodeData(id, { ...versPatch, status: 'generating', progress: 0, errorMessage: '' })
     const ctrl = new AbortController()
     registerAbort(id, ctrl)
 
@@ -180,6 +204,15 @@ export const MediaGenNode = memo(({ id, data }) => {
         </span>
       </div>
 
+      {/* Version indicator (image mode) */}
+      {isImage && allImageVersions.length > 1 && (
+        <VersionNav current={currentImgVer} total={allImageVersions.length}
+          onChange={(v) => {
+            setCurrentImgVer(v)
+            updateNodeData(id, { generatedImages: allImageVersions[v] || data.generatedImages })
+          }} />
+      )}
+
       {/* Image mode: gallery */}
       {isImage && data.generatedImages?.length > 0 && (
         <div className="img-gallery" style={{ marginBottom: 8 }}>
@@ -206,6 +239,15 @@ export const MediaGenNode = memo(({ id, data }) => {
           <span style={{ fontSize: 28 }}>🎨</span>
           <span>输入提示词，点击生成</span>
         </div>
+      )}
+
+      {/* Version indicator (video mode) */}
+      {isVideo && allVideoVersions.length > 1 && (
+        <VersionNav current={currentVidVer} total={allVideoVersions.length}
+          onChange={(v) => {
+            setCurrentVidVer(v)
+            updateNodeData(id, { generatedVideo: allVideoVersions[v] || data.generatedVideo })
+          }} />
       )}
 
       {/* Video mode: player or progress */}
@@ -327,5 +369,30 @@ export const MediaGenNode = memo(({ id, data }) => {
     </div>
   )
 })
+
+// === Version Navigation Component ===
+function VersionNav({ current, total, onChange }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+      padding: '2px 6px', marginBottom: 4, borderRadius: 4,
+      background: 'var(--bg-root)', fontSize: 10,
+    }}>
+      <button onClick={() => onChange(Math.max(0, current - 1))} disabled={current <= 0}
+        style={navBtnStyle}>◀</button>
+      <span style={{ fontWeight: 600, color: 'var(--text)' }}>
+        v{current + 1}/{total}
+      </span>
+      <button onClick={() => onChange(Math.min(total - 1, current + 1))} disabled={current >= total - 1}
+        style={navBtnStyle}>▶</button>
+    </div>
+  )
+}
+
+const navBtnStyle = {
+  background: 'transparent', border: '1px solid var(--border)',
+  borderRadius: 3, padding: '0px 4px', cursor: 'pointer',
+  fontSize: 9, color: 'var(--text-muted)',
+}
 
 const handleStyle = (c) => ({ background: c, border: '2px solid var(--bg-surface)', width: 12, height: 12 })

@@ -3,6 +3,54 @@ import { Handle, Position } from '@xyflow/react'
 import { useCanvasStore } from '../utils/canvasStore'
 import { AGENT_MODES } from '../utils/nodeDefaults'
 
+// Extract numbered shot prompts from agent response
+function extractShots(text) {
+  if (!text) return []
+  const shots = []
+  // Pattern 1: Structured shot blocks with <!--PROMPT:...--> markers
+  const promptRe = /<!--PROMPT:(\w+)-->([\s\S]*?)<!--\/PROMPT:\1-->/g
+  let match
+  while ((match = promptRe.exec(text)) !== null) {
+    const content = match[2].trim()
+    // Check if it contains shot numbers like 镜1, 镜2, Shot 1, P1, 拍1
+    const shotNums = content.match(/(?:镜|Shot\s*|P)(\d+)/gi)
+    if (shotNums) {
+      // This block likely contains multiple shots — split by shot number
+      const parts = content.split(/(?=(?:镜\d+|Shot\s*\d+|P\d+|拍\d+))/)
+      for (const part of parts) {
+        const cleaned = part.trim()
+        if (cleaned && cleaned.length > 10) {
+          shots.push({ platform: match[1], prompt: cleaned })
+        }
+      }
+    } else if (content.length > 10) {
+      shots.push({ platform: match[1], prompt: content })
+    }
+  }
+  // Pattern 2: Table-style shot numbering (| 1 | ... | 2 | ...)
+  if (shots.length === 0) {
+    const tableShots = text.match(/\|\s*(\d+)\s*\|[^|]+\|([^|]+)\|/g)
+    if (tableShots) {
+      tableShots.forEach(row => {
+        const cols = row.split('|').map(c => c.trim()).filter(Boolean)
+        if (cols.length >= 2) {
+          shots.push({ platform: 'seedance', prompt: cols.slice(1).join(' | ') })
+        }
+      })
+    }
+  }
+  // Pattern 3: Plain text with shot numbering
+  if (shots.length === 0) {
+    const lines = text.split('\n')
+    for (const line of lines) {
+      if (/(?:镜\d+|Shot\s*\d+|P\d+|拍\d+)/i.test(line) && line.length > 15) {
+        shots.push({ platform: 'seedance', prompt: line.trim() })
+      }
+    }
+  }
+  return shots
+}
+
 // Platform display config (badge + color)
 const PLATFORM_META = {
   seedance:  { label: '🎬 Seedance', color: '#8b5cf6' },
@@ -96,8 +144,12 @@ export const AgentNode = memo(({ id, data }) => {
     registerAbort(id, ctrl)
     try {
       const { callAgentStream } = await import('../../../lib/api')
+      const { buildBibleContext } = await import('../../../lib/projectBible')
+      // Inject project bible context for consistency
+      const bibleCtx = buildBibleContext()
+      const promptWithBible = bibleCtx ? `${bibleCtx}\n\n用户问题：${data.prompt}` : data.prompt
       const promptWithLang = data.prompt && !/中文|Chinese|用中文|请用中文/.test(data.prompt)
-        ? `请用中文回答：\n${data.prompt}` : data.prompt
+        ? `请用中文回答：\n${promptWithBible}` : promptWithBible
       const apiOpts = { signal: ctrl.signal }
       if (data.sourceImage) {
         if (data.sourceImages?.length > 1) {
@@ -228,6 +280,9 @@ export const AgentNode = memo(({ id, data }) => {
                     ))}
                   </div>
                 )}
+
+                {/* 🎬 One-click multi-shot expansion */}
+                <ShotExpandButton id={id} response={data.response} data={data} />
               </div>
             )}
 
@@ -278,6 +333,91 @@ export const AgentNode = memo(({ id, data }) => {
     </div>
   )
 })
+
+// === Multi-Shot Expand Button ===
+function ShotExpandButton({ id, response, data }) {
+  const [expanded, setExpanded] = useState(false)
+
+  const shots = useMemo(() => extractShots(response || ''), [response])
+  if (shots.length === 0) return null
+
+  const handleExpand = () => {
+    const s = useCanvasStore.getState()
+    const srcNode = s.nodes.find(n => n.id === id)
+    if (!srcNode) return
+    const baseX = srcNode.position.x
+    const baseY = srcNode.position.y + 350
+
+    // Check MAX_NODES (add 2 per shot: mediaGen + preview)
+    if (s.nodes.length + shots.length * 2 > 100) {
+      alert('节点数已达上限 (100)，请先清理画布')
+      return
+    }
+
+    const now = Date.now()
+    const rnd = () => Math.random().toString(36).slice(2, 7)
+    const newNodes = [...s.nodes]
+    const newEdges = [...s.edges]
+
+    shots.forEach((shot, i) => {
+      const genId = `n_exp_${now}_${i}_${rnd()}`
+      const col = i % 3, row = Math.floor(i / 3)
+      const pos = { x: baseX + col * 320, y: baseY + row * 350 }
+
+      // Create MediaGen node
+      newNodes.push({
+        id: genId, type: 'mediaGen',
+        position: pos,
+        data: { label: shot.platform === 'seedance' ? '镜头' + (i + 1) : 'Shot ' + (i + 1), prompt: shot.prompt, mediaType: 'video' },
+      })
+      // Edge from agent to this gen node
+      newEdges.push({
+        id: `e_exp_${now}_${i}`,
+        source: id, sourceHandle: 'output',
+        target: genId, targetHandle: 'prompt',
+        type: 'smoothstep', animated: true,
+        style: { stroke: 'var(--accent)', strokeWidth: 3, strokeLinecap: 'round' },
+      })
+
+      // Create preview node
+      const previewId = `n_pre_${now}_${i}_${rnd()}`
+      newNodes.push({
+        id: previewId, type: 'preview',
+        position: { x: pos.x + 340, y: pos.y },
+        data: { label: '预览 ' + (i + 1), outputType: 'video' },
+      })
+      newEdges.push({
+        id: `e_pre_${now}_${i}`,
+        source: genId, sourceHandle: 'output',
+        target: previewId, targetHandle: 'input',
+        type: 'smoothstep', animated: true,
+        style: { stroke: 'var(--accent-sfx)', strokeWidth: 2, strokeLinecap: 'round' },
+      })
+    })
+
+    useCanvasStore.setState({ nodes: newNodes, edges: newEdges })
+
+    setExpanded(true)
+    setTimeout(() => setExpanded(false), 2000)
+  }
+
+  return (
+    <button
+      onClick={handleExpand}
+      disabled={expanded}
+      style={{
+        width: '100%', padding: '7px 0', fontSize: 11, fontWeight: 700,
+        borderRadius: 6, border: '1px dashed var(--accent-music)',
+        background: expanded ? 'var(--accent-music)' : 'transparent',
+        color: expanded ? '#fff' : 'var(--accent-music)',
+        cursor: expanded ? 'default' : 'pointer',
+        transition: 'all 0.2s',
+      }}
+    >
+      {expanded ? `✅ 已创建 ${shots.length} 个镜头` : `🎬 一键展开 ${shots.length} 个镜头`}
+    </button>
+  )
+}
 
 // === Prompt Card Component ===
 function PromptCard({ platform, content, meta, negative }) {

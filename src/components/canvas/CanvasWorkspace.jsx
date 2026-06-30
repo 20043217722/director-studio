@@ -17,6 +17,7 @@ import { CanvasToolbar } from './CanvasToolbar'
 import { NodeConfigPanel } from './NodeConfigPanel'
 import { CanvasWelcome } from './CanvasWelcome'
 import { CanvasInputBar } from './CanvasInputBar'
+import { ProjectBiblePanel } from './ProjectBiblePanel'
 import { validateConnection } from './utils/canvasStore'
 import { animateMenuEnter } from '../../lib/canvasAnimations'
 
@@ -464,6 +465,7 @@ function CanvasInner() {
       )}
 
       <CanvasToolbar undo={undo} redo={redo} fitView={fitView} />
+      <ProjectBiblePanel />
       <NodeConfigPanel />
       <CanvasInputBar />
       {nodes.length === 0 && <CanvasWelcome />}
