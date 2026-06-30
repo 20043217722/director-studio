@@ -1,22 +1,33 @@
-const CACHE = "director-studio-v1";
-const ASSETS = ["/", "/index.html", "/manifest.json"];
+const CACHE = "director-studio-v3";
+const ASSETS = ["/director-studio/", "/director-studio/index.html", "/director-studio/manifest.json"];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
+  self.skipWaiting();
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS).catch(() => {})));
+});
+
+self.addEventListener("activate", (e) => {
+  e.waitUntil(
+    Promise.all([
+      self.clients.claim(),
+      caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))),
+    ])
+  );
 });
 
 self.addEventListener("fetch", (e) => {
+  const url = new URL(e.request.url);
+  if (e.request.destination === "document" || url.pathname.endsWith(".html")) {
+    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+    return;
+  }
   e.respondWith(
     caches.match(e.request).then((r) => r || fetch(e.request).then((res) => {
-      if (res.ok && (e.request.url.includes("/assets/") || e.request.url.endsWith(".js") || e.request.url.endsWith(".css"))) {
+      if (res.ok) {
         const clone = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, clone));
       }
       return res;
     }))
   );
-});
-
-self.addEventListener("activate", (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))));
 });
