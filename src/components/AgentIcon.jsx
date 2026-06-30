@@ -60,6 +60,53 @@ const ICONS = {
     {tag:"line",x1:"10",y1:"5",x2:"10",y2:"6.5"},
     {tag:"line",x1:"10",y1:"13.5",x2:"10",y2:"15"},
   ]},
+  cinematographer: { viewBox: "0 0 24 24", elements: [
+    // Camera body
+    {tag:"rect",x:"4",y:"7",width:"16",height:"12",rx:"2.5"},
+    // Lens
+    {tag:"circle",cx:"12",cy:"13",r:"4.5"},
+    {tag:"circle",cx:"12",cy:"13",r:"2.5"},
+    {tag:"circle",cx:"12",cy:"13",r:".8"},
+    // Viewfinder
+    {tag:"rect",x:"9",y:"4",width:"6",height:"3",rx:"1"},
+    // Flash
+    {tag:"rect",x:"16",y:"5",width:"3",height:"1.5",rx:".5"},
+    // Aperture marks
+    {tag:"line",x1:"9",y1:"9.5",x2:"9.5",y2:"10"},
+    {tag:"line",x1:"14.5",y1:"16",x2:"15",y2:"16.5"},
+    {tag:"line",x1:"8.5",y1:"16.5",x2:"9",y2:"16"},
+    {tag:"line",x1:"15",y1:"10",x2:"15.5",y2:"9.5"},
+  ]},
+  sound: { viewBox: "0 0 24 24", elements: [
+    // Speaker body
+    {tag:"rect",x:"4",y:"8",width:"5",height:"8",rx:"1"},
+    {tag:"polygon",points:"9,10 14,6 14,18 9,14"},
+    // Sound waves
+    {tag:"path",d:"M16 9.5c1.5 1 2.5 2.8 2.5 4.5s-1 3.5-2.5 4.5"},
+    {tag:"path",d:"M18.5 7c2 1.3 3.5 3.5 3.5 5.5s-1.5 4.2-3.5 5.5"},
+    // EQ bars
+    {tag:"line",x1:"6",y1:"10",x2:"6",y2:"10.5"},
+    {tag:"line",x1:"7",y1:"9.5",x2:"7",y2:"11"},
+  ]},
+  colorist: { viewBox: "0 0 24 24", elements: [
+    // Color wheel
+    {tag:"circle",cx:"12",cy:"12",r:"9"},
+    {tag:"circle",cx:"12",cy:"12",r:"5.5"},
+    {tag:"circle",cx:"12",cy:"12",r:"2"},
+    // Color segments
+    {tag:"path",d:"M12 3a9 9 0 0 1 0 18"},
+    {tag:"path",d:"M12 3a9 9 0 0 0-4.5 1.2"},
+    {tag:"path",d:"M3 12h4.5"},
+    {tag:"path",d:"M18 12h3"},
+    {tag:"path",d:"M7.5 7.5l3 3"},
+    // Swatches
+    {tag:"rect",x:"3",y:"19",width:"4",height:"3",rx:".5"},
+    {tag:"rect",x:"8",y:"20",width:"4",height:"3",rx:".5"},
+    {tag:"rect",x:"13",y:"19",width:"4",height:"3",rx:".5"},
+    {tag:"rect",x:"18",y:"20",width:"4",height:"3",rx:".5"},
+    // Center dot
+    {tag:"circle",cx:"12",cy:"12",r:".6"},
+  ]},
   canvas: { viewBox: "0 0 24 24", elements: [
     {tag:"circle",cx:"5",cy:"5",r:"1.2"},
     {tag:"circle",cx:"12",cy:"5",r:"1.3"},
