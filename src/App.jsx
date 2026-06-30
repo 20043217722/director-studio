@@ -19,14 +19,17 @@ import CanvasWorkspace from "./components/canvas/CanvasWorkspace";
 document.documentElement.setAttribute("data-theme", getEffectiveTheme());
 
 const AGENTS = [
-  { id: "director", name: "导演", desc: "分镜设计 · 剧本创作 · 预算通告" },
-  { id: "doctor",   name: "剧本医生", desc: "四层诊断 · 逐句修改" },
-  { id: "designer", name: "美术指导", desc: "视觉概念 · 色彩体系 · 场景服装" },
-  { id: "post",     name: "后期总监", desc: "剪辑策略 · 调色方案 · 声音设计" },
-  { id: "seedance", name: "剧幕文戏分析", desc: "逐幕逐拍情绪动作拆解 · Seedance/Kling/Runway 表演提示词" },
-  { id: "character", name: "人物造型", desc: "高精度角色设计 · 七层专业框架" },
-  { id: "scene", name: "场景设计", desc: "十维场景生成 · 全风格全氛围覆盖" },
-  { id: "lens", name: "视觉解析师", desc: "反向提示词工程 · 视觉元素拆解 · 多平台适配" },
+  { group: '📝 前期创意', id: "director", name: "导演", desc: "分镜设计 · 剧本创作 · 预算通告" },
+  { group: '📝 前期创意', id: "doctor",   name: "剧本医生", desc: "四层诊断 · 逐句修改" },
+  { group: '🎨 视觉设计', id: "character", name: "人物造型", desc: "高精度角色设计 · 七层专业框架" },
+  { group: '🎨 视觉设计', id: "scene", name: "场景设计", desc: "十维场景生成 · 全风格全氛围覆盖" },
+  { group: '🎨 视觉设计', id: "designer", name: "美术指导", desc: "视觉概念 · 色彩体系 · 场景服装" },
+  { group: '📷 拍摄方案', id: "cinematographer", name: "摄影指导", desc: "镜头语法 · 布光方案 · 运镜动机" },
+  { group: '📷 拍摄方案', id: "seedance", name: "剧幕文戏分析", desc: "逐幕逐拍情绪动作拆解 · 表演提示词" },
+  { group: '🎧 后期制作', id: "sound", name: "声音设计", desc: "音景 · 拟音 · 配乐情绪曲线" },
+  { group: '🎧 后期制作', id: "colorist", name: "调色师", desc: "色彩管线 · LUT · 场景过渡" },
+  { group: '🎧 后期制作', id: "post", name: "后期总监", desc: "剪辑策略 · 调色方案 · 声音设计" },
+  { group: '🔍 分析工具', id: "lens", name: "视觉解析师", desc: "反向提示词工程 · 视觉元素拆解 · 多平台适配" },
   { id: "canvas", name: "无限画布", desc: "节点式AI工作流 · 文生图 · 图生视频 · 多模型聚合" },
 ];
 
