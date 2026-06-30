@@ -20,8 +20,8 @@ import CanvasWorkspace from "./components/canvas/CanvasWorkspace";
 document.documentElement.setAttribute("data-theme", getEffectiveTheme());
 
 const AGENTS = [
-  { group: '📝 前期创意', id: "director", name: "导演", desc: "分镜设计 · 剧本创作 · 预算通告" },
-  { group: '📝 前期创意', id: "doctor",   name: "剧本医生", desc: "四层诊断 · 逐句修改" },
+  { group: '📝 前期创意', id: "director", name: "导演", desc: "故事创意 · 逐镜分镜 · AIGC提示词 · 跨Agent协作" },
+  { group: '📝 前期创意', id: "doctor",   name: "剧本医生", desc: "四层诊断 · AIGC适配标注 · 角色视觉追踪" },
   { group: '🎨 视觉设计', id: "character", name: "人物造型", desc: "高精度角色设计 · 七层专业框架" },
   { group: '🎨 视觉设计', id: "scene", name: "场景设计", desc: "十维场景生成 · 全风格全氛围覆盖" },
   { group: '🎨 视觉设计', id: "designer", name: "美术指导", desc: "视觉概念 · 色彩体系 · 场景服装" },
