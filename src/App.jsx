@@ -486,18 +486,18 @@ export default function App() {
       </div>
       <div className="flex-1 flex flex-col min-w-0">
         <header className="app-header flex items-center px-3 gap-2 shrink-0">
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-1 text-lg opacity-50 hover:opacity-80">☰</button>
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-1 text-lg opacity-60 hover:opacity-100">☰</button>
           <AgentIcon id={currentAgent?.id} active />
-          <span className="sidebar-brand text-sm hidden sm:inline" style={{ color: "var(--gold)" }}>{currentAgent?.name}</span>
-          <span className="hidden md:inline text-xs opacity-30 truncate">{currentAgent?.desc}</span>
+          <span className="sidebar-brand text-sm hidden sm:inline" style={{ color: "var(--gold)", fontWeight: 700, letterSpacing: "0.02em" }}>{currentAgent?.name}</span>
+          <span className="hidden md:inline text-xs opacity-55 truncate">{currentAgent?.desc}</span>
           <div className="flex-1" />
           <ThemeSwitcher />
-          <span className="provider-badge hidden sm:inline ml-2">{preset?.name || provider}</span>
+          <span className="provider-badge hidden sm:inline ml-2" style={{fontWeight:600,fontSize:11}}>{preset?.name || provider}</span>
           <span className={`net-dot shrink-0 ${network === "online" ? "online" : "offline"}`} title={network === "online" ? "在线" : "离线"} />
           {updateMsg && <button onClick={installPwa} className="update-badge px-2 py-0.5 cursor-pointer hidden sm:block">{updateMsg}</button>}
-          <ExportMenu onExport={handleExport} disabled={loading || messages.length === 0} />
-          <button onClick={clearHistory} className="p-1.5 rounded-lg opacity-25 hover:opacity-60 transition-opacity text-xs" title="清空记录">🗑</button>
-          <button onClick={() => setSettingsOpen(true)} style={{padding:'6px 10px',borderRadius:6,border:'1px solid var(--border)',background:'var(--bg-card)',color:'var(--text)',cursor:'pointer',fontSize:13,fontWeight:600}} title="设置">⚙ 设置</button>
+          <ExportMenu onExport={handleExport} disabled={loading} />
+          <button onClick={clearHistory} className="p-1.5 rounded-lg opacity-45 hover:opacity-80 transition-opacity text-sm" title="清空记录">🗑</button>
+          <button onClick={() => setSettingsOpen(true)} style={{padding:'6px 12px',borderRadius:6,border:'1px solid var(--border-glow)',background:'var(--bg-card)',color:'var(--text)',cursor:'pointer',fontSize:13,fontWeight:600}} title="设置">⚙ 设置</button>
         </header>
         {mode === "canvas" ? (
           <CanvasWorkspace />

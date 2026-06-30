@@ -6,7 +6,7 @@ export default function ExportMenu({ onExport, disabled }) {
   return (
     <div className="relative">
       <button onClick={() => setOpen(!open)} disabled={disabled}
-        className="btn-ghost text-xs disabled:opacity-20" aria-expanded={open} aria-haspopup="menu">
+        className="btn-ghost text-xs" style={disabled ? {opacity:0.4} : {}} aria-expanded={open} aria-haspopup="menu">
         📥 导出
       </button>
       {open && (
