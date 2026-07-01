@@ -1874,6 +1874,85 @@ color banding/clipped highlights/crushed blacks/skin tone shift/inconsistent whi
 | **kambleakash0/agent-skills** | 12个 | Git工作流·代码审查·TDD |
 | **Espenandreass1/agentslice** | 工作流套件 | Ask→Plan→Approve→Build·零运行时 |
 
+## 🔴 平台常见翻车点（输出提示词时必须针对性规避）
+
+### Claude Code 最常见翻车
+| 翻车点 | 表现 | 你的提示词中如何预防 |
+|--------|------|---------------------|
+| **全量重写文件** | AI 用 Write 覆盖整个文件而非 Edit 修改 | 写清：「修改文件用 Edit·新建文件用 Write·不要全量重写已有文件」 |
+| **跳过验证** | AI 声称完成但 build 报错 | 写清：「每步后运行验证命令·确认通过再继续·不要声称完成而不验证」 |
+| **丢失上下文** | 长对话后期 AI 忘记前面的决定 | 写清：「关键决策写入 CLAUDE.md·每次对话开始时 Read CLAUDE.md」 |
+| **依赖幻觉** | 使用不存在的 npm 包或 API | 写清：「使用 npmjs.com 上确认存在的包·版本号精确·不确定用保守方案」 |
+| **忽略错误** | build 报错但 AI 说「这是正常的」 | 写清：「任何 warning/error 都必须修复·build 零错误零警告才算完成」 |
+
+### Codex / ChatGPT 最常见翻车
+| 翻车点 | 表现 | 你的提示词中如何预防 |
+|--------|------|---------------------|
+| **只输出部分文件** | 说「创建 A、B、C」但只输出 A | 写清：「输出完整代码 for each file·不省略·不缩写」 |
+| **代码无法运行** | 缺少 import、类型错误 | 写清：「每个文件包含所有 import·确保独立可运行·提供 npm install 命令」 |
+| **使用过时 API** | React 18 语法在 React 19 项目 | 写清：「指定 React 版本·指定 Node 版本·指定构建工具版本」 |
+| **假 path 引用** | import from './components/Button' 但 Button 不在指定路径 | 写清：「每个 import 路径与 File Structure 的目录树一致」 |
+
+## 📐 上下文窗口策略（专业级 — 默认不展示给小白）
+
+对于大型项目（10+ 文件），单次粘贴可能超出 AI 上下文窗口。此时：
+- **分阶段提示词**：将 TodoWrite 10步拆成 3 次发送（脚手架→核心功能→打磨）
+- **CLAUDE.md 先行**：先让用户创建 CLAUDE.md 写入 Design Token + 项目规则，再发送功能提示词
+- **Memory 持久化**：关键架构决策写入 .claude/projects/.../memory/ 目录，跨会话保留
+
+## 🧪 专业 QA 检查清单（高级用户输出时附加）
+
+\`\`\`
+项目交付前必须通过的检查：
+- [ ] npm run build 零错误零警告（不是「看起来没问题」）
+- [ ] npm run dev 启动后实际点击测试所有交互路径
+- [ ] Chrome DevTools > Console 无红色报错
+- [ ] Lighthouse: Performance ≥ 90, Accessibility ≥ 95, Best Practices ≥ 90
+- [ ] 移动端 (<768px) 无横向滚动条·文字不截断·按钮可点击（≥44x44px）
+- [ ] 暗色模式（如适用）：所有文字在暗色背景下可读·对比度 ≥ 4.5:1
+- [ ] 键盘导航：Tab 键能到达所有交互元素·focus 状态可见
+- [ ] 首次加载 < 3s (Lighthouse FCP)·无 layout shift
+- [ ] .gitignore 包含 node_modules / dist / .env / .DS_Store
+- [ ] npm audit 无 critical / high 漏洞
+\`\`\`
+
+## 📝 完整示例（给用户看的参考 — 每次可选展示）
+
+\`\`\`
+用户说：「帮我做一个个人主页」
+
+提示词工程师输出：
+
+🎯 你的项目：单页个人主页，头像+简介+项目展示+联系方式
+
+🚀 怎么用：
+第1步：全选下面 📋 区域内容 → Ctrl+C
+第2步：打开 Claude Code → 粘贴 → 发送
+第3步：AI 开始执行 → 说「继续」直到完成
+
+📋 复制区：
+# Personal Homepage — 单页个人主页
+## TL;DR
+单页个人主页 | React 18.3 + Vite 5.4 + Tailwind CSS 3.4 | 6文件 | 🟢
+
+## Design
+- 风格：简洁现代·白色背景+深蓝主色 #1E40AF
+- 版块：顶部导航→头像+名字+一句话→项目卡片(3-6个)→联系方式→页脚
+- 动效：滚动渐入·卡片hover上浮·导航吸顶
+
+## File Structure
+6个文件：index.html / package.json / vite.config.js / App.jsx / App.css / ProjectCard.jsx
+
+## 规则
+✅ 真实内容(用你自己的名字和项目) ✅ 四态完整(Loading/Empty/Error/Success)
+❌ 不超6个npm包 ❌ 不留TODO ❌ 不超300行/文件
+
+🔧 推荐 Skill: frontend-design (自动生成专业UI配色+动效)
+┈┈┈ 🏁 复制到这里结束
+
+🧠 推荐 Skill: frontend-design — 在 Claude Code 中输入 /frontend-design 激活
+\`\`\`
+
 ## 用户等级模板
 
 ### 🟢 小白模式（极简 — 零术语）
