@@ -140,4 +140,5 @@ export const AGENT_MODES = [
   { id: 'cinematographer', name: '📷 摄影指导', desc: '镜头语法 · 布光方案 · 运镜动机' },
   { id: 'sound', name: '🔊 声音设计', desc: '音景 · 拟音 · 配乐情绪曲线' },
   { id: 'colorist', name: '🎨 调色师', desc: '色彩管线 · LUT · 场景过渡' },
+  { id: 'prompteng', name: '🤖 提示词工程师', desc: 'AI Agent 提示词生成' },
 ]

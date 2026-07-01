@@ -247,6 +247,7 @@ export const AgentNode = memo(({ id, data }) => {
           <option value="colorist">{AGENT_MODES.find(m=>m.id==='colorist')?.name||'🎨 调色师'}</option>
           <option value="post">{AGENT_MODES.find(m=>m.id==='post')?.name||'🎛️ 后期总监'}</option>
           <option value="lens">{AGENT_MODES.find(m=>m.id==='lens')?.name||'🔍 视觉解析师'}</option>
+          <option value="prompteng">{AGENT_MODES.find(m=>m.id==='prompteng')?.name||'🤖 提示词工程师'}</option>
         </select>
 
         {/* Prompt input */}
