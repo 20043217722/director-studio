@@ -124,11 +124,28 @@ export function getPreferenceInjection(mode) {
   const agentPrefs = prefs[mode];
 
   if (!agentPrefs || agentPrefs.likedMessageCount < MIN_LIKES_FOR_INJECTION) {
-    return ""; // 不够点赞数，不注入
+    return "";
   }
 
   const parts = [];
 
+  // prompteng-specific preferences
+  if (mode === "prompteng") {
+    if (agentPrefs.topPlatforms?.length > 0) {
+      parts.push(`- 偏好目标平台: ${agentPrefs.topPlatforms.join(" / ")}`);
+    }
+    if (agentPrefs.topDetailLevels?.length > 0) {
+      parts.push(`- 偏好输出模式: ${agentPrefs.topDetailLevels.join(" / ")}`);
+    }
+    if (agentPrefs.recentLikedSnippets?.length > 0) {
+      const sample = agentPrefs.recentLikedSnippets[agentPrefs.recentLikedSnippets.length - 1];
+      parts.push(`- 参考模板: 用户喜欢类似这样的回复 — "${sample.slice(0, 120)}..."`);
+    }
+    if (parts.length === 0) return "";
+    return `\n\n## 用户偏好记忆\n用户已对 ${agentPrefs.likedMessageCount} 条提示词工程师回复点赞。请根据以下偏好定制本次输出：\n${parts.join("\n")}\n优先使用用户偏好的平台和模式，除非用户本次明确指定了不同的选择。`;
+  }
+
+  // visual/creative agent preferences (existing)
   if (agentPrefs.topStyles?.length > 0) {
     parts.push(`- 偏好风格: ${agentPrefs.topStyles.join(" / ")}`);
   }

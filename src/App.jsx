@@ -15,6 +15,7 @@ import MobileTabBar from "./components/MobileTabBar";
 import { loadSessionHistory, saveSessionHistory } from "./lib/sessionStore";
 import AgentIcon from "./components/AgentIcon";
 import CanvasWorkspace from "./components/canvas/CanvasWorkspace";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Init theme on load
 document.documentElement.setAttribute("data-theme", getEffectiveTheme());
@@ -480,6 +481,7 @@ export default function App() {
   const preset = MODEL_PRESETS[provider];
 
   return (
+    <ErrorBoundary>
     <div className="flex overflow-hidden" style={{ background: "var(--bg-root)", height: "100dvh" }}>
       {sidebarOpen && <div className="fixed inset-0 bg-black/40 z-20 lg:hidden" onClick={() => setSidebarOpen(false)} />}
       <div className={`sidebar fixed lg:relative z-30 h-full transition-transform duration-250 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
@@ -581,5 +583,6 @@ export default function App() {
         </div>
       )}
     </div>
+    </ErrorBoundary>
   );
 }

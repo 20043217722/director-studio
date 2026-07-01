@@ -6,6 +6,7 @@ const INTENTS = [
   { key: 'image', label: '🎨', patterns: [/生成图|画.*图|文生图|生成.*图|图生图|配图|插图|海报|生成一张|画一张|create image|^\/image/i, /sd|dall.e|midjourney|flux|seedream/i] },
   { key: 'video', label: '🎬', patterns: [/生成视频|做.*视频|文生视频|图生视频|生成一段|短视频|create video|^\/video/i, /可灵|kling|seedance|runway|sora|wan/i] },
   { key: 'agent', label: '🧠', patterns: [/分析|设计角色|设计场景|解析|诊断|拆解|帮我写|帮我设计|帮我分析|写.*剧本|设计.*人物|^\/agent/i] },
+  { key: 'prompteng', label: '🤖', patterns: [/提示词|prompt|帮我.*提示|写.*提示词|做.*项目|创建.*网站|做.*app|帮我做|帮我创建|帮我制作|^\/prompt/i] },
 ]
 
 function detectIntent(text) {
