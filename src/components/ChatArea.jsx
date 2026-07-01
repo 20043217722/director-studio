@@ -130,8 +130,22 @@ function renderMarkdown(text) {
   return `<p>${html}</p>`;
 }
 
-function copyText(text) {
-  navigator.clipboard?.writeText(text).catch(() => {});
+function copyText(text, e) {
+  navigator.clipboard?.writeText(text).then(() => {
+    // Show toast feedback
+    const toast = document.createElement('div');
+    toast.textContent = '✅ 已复制到剪贴板';
+    Object.assign(toast.style, {
+      position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
+      background: 'var(--bg-elevated)', color: 'var(--text)', padding: '8px 20px',
+      borderRadius: '20px', fontSize: '13px', fontWeight: 600, zIndex: 999,
+      border: '1px solid var(--border-glow)', boxShadow: 'var(--shadow-md)',
+      animation: 'fadeInUp 0.3s ease-out',
+    });
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; }, 1500);
+    setTimeout(() => toast.remove(), 2000);
+  }).catch(() => {});
 }
 
 // 各智能体欢迎页配置
@@ -147,6 +161,13 @@ const WELCOME = {
   cinematographer: { title: "摄影指导", desc: "镜头语法 · 布光方案 · 7平台策略 · 运镜时序", tips: ["📷 为关键场景设计灯光方案+7平台视频提示词", "🎥 设计运镜方案+镜头内时序(0s→Ns)+连续性锁", "💡 分析场景光线→输出Kling/Runway/Sora差异化策略"] },
   sound:     { title: "声音设计", desc: "音景 · 拟音 · 配乐 · AI音频提示词", tips: ["🔊 为场景设计逐镜声音方案+ElevenLabs/Suno提示词", "🎵 设计配乐情绪曲线+BPM+Key+出入点", "🔇 规划静默段落→标注叙事功能+持续时间"] },
   colorist:  { title: "调色师", desc: "色彩方案 · LUT · 场景过渡 · AIGC色彩提示词", tips: ["🎨 为全片设计色彩方案+色温弧线+连续性锁", "🎞️ 设计场景间色彩过渡+肤色保护+暗部高光规范", "📊 输出Seedance/Midjourney色彩提示词+负向约束"] },
+  prompteng: { title: "提示词工程师", desc: "为 Claude Code / Cursor / Codex / Windsurf / Copilot 生成一步到位的精确提示词 — 消除 AI Agent 的猜测和返工", tips: [
+    "🌐 制作个人主页网站 → 输出 Claude Code 完整提示词（Design Token + TodoWrite + 四态矩阵）",
+    "📱 做一个 Todo App → 输出 Cursor .cursorrules + 分步构建指令",
+    "🔧 写 Python CLI 工具 → 输出 Codex 结构化指令 + 错误恢复手册",
+    "🐛 帮我调试 Bug → 输出诊断式提示词（症状→根因→修复→回归）",
+    "🔄 修改现有项目 → 输出增量修改提示词（先读代码→精确Edit→不动无关文件）"
+  ], platforms: ["Claude Code", "Cursor", "Codex", "Windsurf", "Copilot"] },
 };
 
 function formatTime() {
@@ -159,9 +180,53 @@ export default function ChatArea({ mode, messages, loading, onUndo, onRegenerate
 
   const empty = useMemo(() => (
     <div className="empty-state flex items-center justify-center h-full px-5" style={{ color: "var(--text-muted)" }}>
-      <div className="text-center max-w-sm">
+      <div className="text-center" style={{ maxWidth: mode === "prompteng" ? 500 : 360 }}>
         <h2 className="text-xl mb-2 tracking-wider font-bold" style={{ color: "var(--brand)" }}>{w.title}</h2>
-        <p className="text-xs opacity-40 mb-6">{w.desc}</p>
+        <p className="text-xs mb-4" style={{ opacity: 0.55, lineHeight: 1.6 }}>{w.desc}</p>
+
+        {/* Platform badges (prompteng only) */}
+        {w.platforms && (
+          <div className="flex flex-wrap justify-center gap-1.5 mb-5">
+            {w.platforms.map((p) => (
+              <span key={p} className="text-[10px] px-2 py-0.5 rounded-full"
+                style={{ background: "var(--bg-hover)", border: "1px solid var(--border)", color: "var(--text-secondary)", fontWeight: 600 }}>
+                {p}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Scene categories (prompteng only) */}
+        {mode === "prompteng" && (
+          <div className="grid grid-cols-2 gap-2 mb-5">
+            {[
+              { icon: "🌐", label: "从零新建", desc: "完整项目模板", color: "var(--accent-music)" },
+              { icon: "🔄", label: "修改现有", desc: "增量精确编辑", color: "var(--accent-clone)" },
+              { icon: "🐛", label: "调试Bug", desc: "诊断式修复", color: "var(--accent-sfx)" },
+              { icon: "⚡", label: "单文件", desc: "轻量快速", color: "var(--accent-tts)" },
+            ].map((s, i) => (
+              <div key={i} className="quick-start-card px-3 py-2.5 rounded-lg text-left cursor-pointer"
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
+                onClick={() => {
+                  const ta = document.querySelector(".input-field");
+                  if (ta) {
+                    const prompts = {
+                      "从零新建": "帮我制作一个个人主页网站，包含头像、简介、项目展示、联系方式",
+                      "修改现有": "帮我在现有React项目中添加暗色模式切换功能",
+                      "调试Bug": "帮我调试：npm run build 报错 'Cannot find module'",
+                      "单文件": "帮我写一个倒计时组件，支持暂停/继续/重置",
+                    };
+                    ta.value = prompts[s.label] || s.label;
+                    ta.dispatchEvent(new Event("input", { bubbles: true })); ta.focus();
+                  }
+                }}>
+                <div className="text-sm mb-0.5" style={{ fontWeight: 700, color: "var(--text)" }}>{s.icon} {s.label}</div>
+                <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>{s.desc}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="text-xs space-y-2">
           {w.tips.map((tip, i) => (
             <div key={i} className="px-3 py-2 rounded-lg text-left cursor-pointer transition-all hover:opacity-80"
@@ -175,10 +240,10 @@ export default function ChatArea({ mode, messages, loading, onUndo, onRegenerate
           ))}
         </div>
         <div className="motif-line my-8 mx-auto" style={{ width: 120 }} />
-        <div className="text-[10px] opacity-20">输入需求 · 上传文件 · 开始创作</div>
+        <div className="text-[10px] opacity-20">输入需求 · 自动识别场景 · 生成精确提示词</div>
       </div>
     </div>
-  ), [w]);
+  ), [w, mode]);
 
   if (messages.length === 0 && !loading) return empty;
 

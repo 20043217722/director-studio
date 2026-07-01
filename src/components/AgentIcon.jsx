@@ -128,6 +128,26 @@ const ICONS = {
     {tag:"line",x1:"6",y1:"6",x2:"10.5",y2:"10.5"},
     {tag:"line",x1:"13.5",y1:"13.5",x2:"18",y2:"18"},
     {tag:"rect",x:"1.5",y:"1.5",width:"21",height:"21",rx:"3"},
+  ]},
+  prompteng: { viewBox: "0 0 24 24", elements: [
+    // Document body (prompt output)
+    {tag:"path",d:"M6 3h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"},
+    // Document fold
+    {tag:"path",d:"M15 3v5h5"},
+    // Code lines on document
+    {tag:"line",x1:"8",y1:"10",x2:"16",y2:"10"},
+    {tag:"line",x1:"8",y1:"13",x2:"14",y2:"13"},
+    {tag:"line",x1:"8",y1:"16",x2:"15",y2:"16"},
+    // Cog/gear (engineering) - on top right
+    {tag:"circle",cx:"18",cy:"6",r:"3"},
+    {tag:"circle",cx:"18",cy:"6",r:"1.2"},
+    // Gear teeth (4 spokes)
+    {tag:"line",x1:"18",y1:"2.5",x2:"18",y2:"3.5"},
+    {tag:"line",x1:"18",y1:"8.5",x2:"18",y2:"9.5"},
+    {tag:"line",x1:"14.5",y1:"6",x2:"15.5",y2:"6"},
+    {tag:"line",x1:"20.5",y1:"6",x2:"21.5",y2:"6"},
+    // AI spark star (top)
+    {tag:"path",d:"M12 1l.8 2.5L15 4l-2.2.5L12 7l-.8-2.5L9 4l2.2-.5z"},
   ]}
 };
 

@@ -31,6 +31,7 @@ const AGENTS = [
   { group: '🎧 后期制作', id: "colorist", name: "调色师", desc: "色彩方案 · LUT · 场景过渡 · 色彩连续性锁" },
   { group: '🎧 后期制作', id: "post", name: "后期总监", desc: "剪辑策略 · 转场设计 · AIGC后期方案 · VFX规划" },
   { group: '🔍 分析工具', id: "lens", name: "视觉解析师", desc: "视觉DNA提取 · 8平台提示词 · 微表情解码 · 反幻觉" },
+  { group: '🤖 AI工程', id: "prompteng", name: "提示词工程师", desc: "为Claude Code/Cursor/Codex等AI Agent生成一步到位的精确提示词" },
   { id: "canvas", name: "无限画布", desc: "节点式AI工作流 · 文生图 · 图生视频 · 多模型聚合" },
 ];
 
