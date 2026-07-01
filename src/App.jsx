@@ -91,7 +91,7 @@ export default function App() {
     setUserScrolledUp(!atBottom);
   }
 
-  useEffect(() => { scrollToBottom(); }, [messages]);
+  useEffect(() => { if (messages.length > 0) scrollToBottom(); }, [messages]);
 
   // Toast 自动消失
   function showToast(text, type = "info") {
