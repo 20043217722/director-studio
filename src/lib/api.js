@@ -1816,28 +1816,63 @@ color banding/clipped highlights/crushed blacks/skin tone shift/inconsistent whi
 \`\`\`
 ---
 
-## Claude Code Skills 知识库（根据项目类型推荐）
+## Claude Code Skills 生态（GitHub 1400+ Skills — 按项目类型精选）
 
-| 项目类型 | 推荐 Skill | 激活方式 | 为什么推荐 |
-|---------|-----------|---------|----------|
-| 网站/落地页 | **frontend-design** | 对话中输入 "use frontend-design skill" | 自动生成专业UI·含配色+排版+动效 |
-| UI组件/后台 | **ui-styling** | 对话中输入 "use ui-styling skill" | shadcn/ui组件·Tailwind·无障碍 |
-| Logo/品牌 | **design** | 对话中输入 "use design skill" | Logo生成·品牌色·设计Token |
-| 海报/Banner | **banner-design** | 对话中输入 "use banner-design skill" | 多风格Banner·社交媒体尺寸 |
-| 动画/交互 | **frontend-design** | 对话中输入 "use frontend-design skill" | 含动画曲线·页面过渡 |
-| 演示文稿 | **slides** | 对话中输入 "use slides skill" | HTML演示·Chart.js图表 |
-| 全栈项目 | **frontend-design** + Claude Code 默认能力 | 同时使用 | 前端专业UI + 后端逻辑 |
+### 🔥 必装 Skill 套装（所有项目默认推荐）
+| Skill | 一句话 | 安装 |
+|-------|--------|------|
+| **superpowers** | 软件开发全流程：brainstorming→TDD→code-review→verification | \`claude plugins install superpowers@anthropic-agent\` |
+| **claude-mem** | 跨会话记忆·SQLite+向量数据库·下次打开记得你 | \`claude plugins install claude-mem\` |
+| **agent-browser** | Token高效浏览器自动化·200-400 tokens/页 | \`claude plugins install agent-browser\` |
 
-## 开源模板库（推荐给用户参考）
+### 🎨 视觉设计类
+| 项目类型 | 推荐 Skill | 触发方式 |
+|---------|-----------|---------|
+| 网站/落地页/动画 | **frontend-design** (564K+安装·50种风格) | \`/frontend-design\` 或 "用 frontend-design skill" |
+| UI组件/后台面板 | **ui-styling** (shadcn/ui+Tailwind+无障碍) | \`/ui-styling\` |
+| Logo/品牌/VI | **design** (55种Logo风格·品牌Token) | \`/design\` 或 "design logo" |
+| 海报/Banner | **banner-design** (22种风格·多平台尺寸) | \`/banner-design\` |
+| 演示文稿 | **slides** (Chart.js·设计Token·响应式) | \`/slides\` |
+| 设计系统 | **design-system** (三层Token·组件规范) | \`/design-system\` |
 
-| 场景 | 推荐资源 |
-|------|---------|
-| 个人主页 | Next.js Portfolio Starter / HTML5UP 模板 |
-| 企业网站 | Tailwind UI / shadcn/ui Blocks |
-| Dashboard | Tremor / AdminLTE |
-| 博客 | Astro Blog Starter / Next.js Blog |
-| 文档站 | Nextra / VitePress / Docusaurus |
-| Landing Page | Tailwind UI Hero Sections |
+### 🏗️ 工程流程类 (Superpowers 套装)
+| 场景 | 推荐 Skill | 说明 |
+|------|-----------|------|
+| 需求不清晰·先讨论 | **brainstorming** | 苏格拉底式追问·一题一答·输出设计文档 |
+| 需要详细计划 | **writing-plans** | 2-5分钟粒度·精确文件路径·验证命令 |
+| 多文件功能开发 | **subagent-driven-development** | 每个子任务独立上下文·合并审查 |
+| 多任务并行 | **dispatching-parallel-agents** | 前端+后端+测试同时跑·Git worktree隔离 |
+| 写测试先行 | **test-driven-development** | RED-GREEN-REFACTOR·不过测不写代码 |
+| 修Bug | **systematic-debugging** | 根因分析·4阶段·先复现再修 |
+| 代码审查 | **requesting-code-review** | 自动多维度审查·CRITICAL/WARN/INFO |
+| 声称完成前 | **verification-before-completion** | 必须跑验证命令·看exit code才说完成 |
+| 分支收尾 | **finishing-a-development-branch** | 测试→摘要→Merge/PR/Discard四选一 |
+
+### 🛠️ 专业工具类
+| 场景 | 推荐工具 | 说明 |
+|------|---------|------|
+| 全栈SaaS | **T3 Stack** (28.9K⭐) | Next.js+tRPC+Tailwind+Prisma·\`npx create-t3-app@latest\` |
+| Admin面板 | **Shadcn Admin** (11.1K⭐) | shadcn/ui+React+Vite·开箱即用 |
+| CRUD后台 | **Refine** (34.8K⭐) | React meta-framework·auth+权限内置 |
+| 技术博客 | **Tailwind Next.js Starter Blog** (10.5K⭐) | MDX+Tailwind+RSS·评论系统 |
+| 开发者主页 | **Magic UI Portfolio** (1.4K⭐) | 编辑1个resume.tsx·一键部署 |
+| Landing Page | **Cruip Open React** (4.6K⭐) | RSC+Tailwind v4+免费Figma |
+| 文档站 | **Nextra / VitePress** | Markdown→文档·GitHub Pages部署 |
+| Chrome插件 | **Plasmo Framework** | React+热重载·一键发布 |
+| 全栈电商 | **Medusa.js** (26K⭐) | 开源Shopify替代·模块化 |
+| 低代码 | **ToolJet** (34K⭐) | 开源Retool替代·拖拽建后台 |
+
+### 🔗 跨平台 Skill 仓库（用户可自行安装更多）
+| 仓库 | Skills数 | 用途 |
+|------|---------|------|
+| **obra/superpowers** | 20个 | 软件工程全流程 (230K⭐) |
+| **alirezarezvani/claude-skills** | 345个 | 17领域·30+Agent·70+命令 (5.2K⭐) |
+| **Kevinchamplin/claude-skills** | 9个 | 精心策划·UX/Token/审查 |
+| **Archive228/loopkit** | 33个 | 9个track·调试/安全/前端/测试 |
+| **casualuser/awesome-agent-skills** | 1000+ | 官方+社区·多Agent兼容 |
+| **Gald3r-Labs/gald3r** | 100+ | 22 Agent·21工具兼容·跨会话记忆 |
+| **kambleakash0/agent-skills** | 12个 | Git工作流·代码审查·TDD |
+| **Espenandreass1/agentslice** | 工作流套件 | Ask→Plan→Approve→Build·零运行时 |
 
 ## 用户等级模板
 
