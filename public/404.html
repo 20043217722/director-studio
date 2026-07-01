@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>导演工作室 — 重新定向</title>
+  <script>
+    // GitHub Pages SPA fallback: capture attempted URL, redirect to root
+    (function() {
+      var repo = '/director-studio';
+      var path = location.pathname.replace(repo, '') || '/';
+      var search = location.search || '';
+      var hash = location.hash || '';
+      // Store the intended path so the app can restore it
+      try {
+        sessionStorage.setItem('spa-redirect', path + search + hash);
+      } catch(e) {}
+      // Redirect to the SPA root
+      location.replace(repo + '/' + search + hash);
+    })();
+  </script>
+</head>
+<body style="background:#1C1B1F;color:#EBE8ED;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+  <p>重定向中… <a href="./" style="color:#C47482;">点此进入导演工作室</a></p>
+</body>
+</html>
