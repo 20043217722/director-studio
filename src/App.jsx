@@ -482,7 +482,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-    <div className="flex overflow-hidden" style={{ background: "var(--bg-root)", height: "100dvh" }}>
+    <div className="flex overflow-hidden" style={{ position: "fixed", inset: 0, background: "var(--bg-root)" }}>
       {sidebarOpen && <div className="fixed inset-0 bg-black/40 z-20 lg:hidden" onClick={() => setSidebarOpen(false)} />}
       <div className={`sidebar fixed lg:relative z-30 h-full transition-transform duration-250 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
         <Sidebar agents={AGENTS} active={mode} onSelect={(id) => { switchMode(id); setSidebarOpen(false); }} onClose={() => setSidebarOpen(false)} />
