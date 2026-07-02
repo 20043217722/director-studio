@@ -251,7 +251,10 @@ body {
 /* ============================================
    MARKDOWN
    ============================================ */
-.msg-content { line-height: 1.7; font-size: 0.9rem; }
+.msg-content { line-height: 1.7; font-size: 0.9rem; user-select: text !important; -webkit-user-select: text !important; cursor: text; }
+.msg-content * { user-select: text !important; -webkit-user-select: text !important; }
+.msg-content ::selection { background: var(--primary-soft); color: #fff; }
+.msg-content ::-moz-selection { background: var(--primary-soft); color: #fff; }
 .msg-content h1, .msg-content h2, .msg-content h3 {
   color: var(--primary-soft); margin-top: 1em; margin-bottom: 0.4em;
   font-weight: 600; letter-spacing: -0.01em;
