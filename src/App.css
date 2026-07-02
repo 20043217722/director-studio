@@ -98,7 +98,8 @@
    BASE
    ============================================ */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html, body, #root { height: 100%; margin: 0; padding: 0; }
+html, body, #root { height: 100%; min-height: 100vh; margin: 0; padding: 0; overflow: hidden; }
+body { background: var(--bg-root); }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
