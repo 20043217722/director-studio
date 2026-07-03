@@ -20,9 +20,9 @@ function buildVersionPlugin() {
     transformIndexHtml(html) {
       return html
         .replaceAll("BUILD_VER", ts)
-        // Add cache-buster to module scripts to defeat browser HTTP cache
-        .replace(/(src="\/director-studio\/assets\/[^"]+\.js")/g, `$1?v=${ts}`)
-        .replace(/(href="\/director-studio\/assets\/[^"]+\.css")/g, `$1?v=${ts}`);
+        // Add cache-buster INSIDE quotes to defeat browser HTTP cache
+        .replace(/(src="\/director-studio\/assets\/[^"]+\.js)"/g, `$1?v=${ts}"`)
+        .replace(/(href="\/director-studio\/assets\/[^"]+\.css)"/g, `$1?v=${ts}"`);
     },
     closeBundle() {
       // Copy index.html → 404.html for GitHub Pages SPA routing
