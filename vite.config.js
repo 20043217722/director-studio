@@ -8,11 +8,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Gitee Pages / GitHub Pages 用 /<repo>/ 作为 base，本地开发用 ./
-const BASE = process.env.DEPLOY === "pages" ? "/director-studio/" : "./";
-
-// Inject build version + cache-bust all asset references
-// Also copies index.html → 404.html for GitHub Pages SPA fallback
+// 统一使用 ./ 相对路径 — dev 和 GitHub Pages 均正确解析
 function buildVersionPlugin() {
   const ts = String(Date.now());
   return {
@@ -20,13 +16,9 @@ function buildVersionPlugin() {
     transformIndexHtml(html) {
       return html
         .replaceAll("BUILD_VER", ts)
-        // Add cache-buster to module scripts to defeat browser HTTP cache
-        .replace(/(src="\/director-studio\/assets\/[^"]+\.js")/g, `$1?v=${ts}`)
-        .replace(/(href="\/director-studio\/assets\/[^"]+\.css")/g, `$1?v=${ts}`);
+        .replaceAll("/director-studio/", "./");
     },
     closeBundle() {
-      // Copy index.html → 404.html for GitHub Pages SPA routing
-      // This ensures refreshing on any path loads the SPA instead of showing GitHub's 404
       const dist = path.resolve(__dirname, "dist");
       const src = path.join(dist, "index.html");
       const dst = path.join(dist, "404.html");
@@ -40,7 +32,7 @@ function buildVersionPlugin() {
 
 export default defineConfig({
   plugins: [react(), basicSsl(), buildVersionPlugin()],
-  base: BASE,
+  base: "./",
   server: {
     port: 5174,
     https: true,
