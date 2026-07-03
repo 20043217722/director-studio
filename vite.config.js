@@ -51,26 +51,6 @@ export default defineConfig({
     outDir: "dist",
     target: "es2020",
     minify: "esbuild",
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          // ReactFlow 画布 → 独立chunk·懒加载·不进画布不下载
-          if (id.includes("node_modules/@xyflow")) return "vendor-flow";
-          // Agent 提示词 → 独立chunk·不常变·浏览器强缓存
-          if (id.includes("src/lib/agentPrompts")) return "agent-prompts";
-          // 其他依赖自动处理
-        },
-        // 资源文件命名: 哈希用于缓存破坏
-        chunkFileNames: "assets/[name]-[hash].js",
-        entryFileNames: "assets/[name]-[hash].js",
-        assetFileNames: "assets/[name]-[hash].[ext]",
-      },
-    },
-    // 提高 chunk 大小警告阈值
-    chunkSizeWarningLimit: 600,
-    // 启用 CSS 代码分割
-    cssCodeSplit: true,
-    // 资源内联阈值 (4KB以下内联为base64·减少HTTP请求)
-    assetsInlineLimit: 4096,
+    chunkSizeWarningLimit: 1000,
   },
 });
