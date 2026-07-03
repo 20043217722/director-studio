@@ -53,13 +53,12 @@ export default defineConfig({
     minify: "esbuild",
     rollupOptions: {
       output: {
-        manualChunks: {
-          // 分离 React 核心 (~120KB)
-          "vendor-react": ["react", "react-dom", "react/jsx-runtime"],
-          // 分离 ReactFlow 画布 (懒加载·仅画布模式使用)
-          "vendor-flow": ["@xyflow/react"],
-          // 分离 Agent 提示词 (~80KB·不常变·强缓存·独立chunk利用浏览器缓存)
-          "agent-prompts": ["./src/lib/agentPrompts.js"],
+        manualChunks(id) {
+          // ReactFlow 画布 → 独立chunk·懒加载·不进画布不下载
+          if (id.includes("node_modules/@xyflow")) return "vendor-flow";
+          // Agent 提示词 → 独立chunk·不常变·浏览器强缓存
+          if (id.includes("src/lib/agentPrompts")) return "agent-prompts";
+          // 其他依赖自动处理
         },
         // 资源文件命名: 哈希用于缓存破坏
         chunkFileNames: "assets/[name]-[hash].js",
