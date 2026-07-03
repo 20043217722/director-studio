@@ -47,5 +47,31 @@ export default defineConfig({
     host: "0.0.0.0",
     proxy: {},
   },
-  build: { outDir: "dist" },
+  build: {
+    outDir: "dist",
+    target: "es2020",
+    minify: "esbuild",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // 分离 React 核心 (~120KB)
+          "vendor-react": ["react", "react-dom", "react/jsx-runtime"],
+          // 分离 ReactFlow 画布 (懒加载·仅画布模式使用)
+          "vendor-flow": ["@xyflow/react"],
+          // 分离 Agent 提示词 (~80KB·不常变·强缓存·独立chunk利用浏览器缓存)
+          "agent-prompts": ["./src/lib/agentPrompts.js"],
+        },
+        // 资源文件命名: 哈希用于缓存破坏
+        chunkFileNames: "assets/[name]-[hash].js",
+        entryFileNames: "assets/[name]-[hash].js",
+        assetFileNames: "assets/[name]-[hash].[ext]",
+      },
+    },
+    // 提高 chunk 大小警告阈值
+    chunkSizeWarningLimit: 600,
+    // 启用 CSS 代码分割
+    cssCodeSplit: true,
+    // 资源内联阈值 (4KB以下内联为base64·减少HTTP请求)
+    assetsInlineLimit: 4096,
+  },
 });

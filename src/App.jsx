@@ -1,21 +1,30 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
 import { loadKeys, watchNetwork, callAgentStream, MODEL_PRESETS } from "./lib/api";
 import { parseFile, fileToBase64, fileToBase64Resized, fileToObjectURL, isImage } from "./lib/fileParser";
 import { updatePreferences, getLikedMessages, getPreferenceInjection } from "./lib/preferences";
 import { trackPageView, recordVisit } from "./lib/analytics";
 import Sidebar from "./components/Sidebar";
-import AdminDashboard from "./components/AdminDashboard";
-import AdminGate from "./components/AdminGate";
 import ChatArea from "./components/ChatArea";
 import InputBar from "./components/InputBar";
 import ExportMenu from "./components/ExportMenu";
-import SettingsModal from "./components/SettingsModal";
 import ThemeSwitcher, { getEffectiveTheme } from "./components/ThemeSwitcher";
 import MobileTabBar from "./components/MobileTabBar";
 import { loadSessionHistory, saveSessionHistory } from "./lib/sessionStore";
 import AgentIcon from "./components/AgentIcon";
-import CanvasWorkspace from "./components/canvas/CanvasWorkspace";
 import ErrorBoundary from "./components/ErrorBoundary";
+
+// 🔴 懒加载重型组件 — 只在首次使用时加载·减少初始包体积
+const CanvasWorkspace = lazy(() => import("./components/canvas/CanvasWorkspace"));
+const SettingsModal = lazy(() => import("./components/SettingsModal"));
+const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
+const AdminGate = lazy(() => import("./components/AdminGate"));
+
+// 加载占位
+function Fallback({ h }) {
+  return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: h || "100%", color: "var(--text-muted)", fontSize: 13 }}>
+    <span style={{ opacity: 0.5 }}>加载中...</span>
+  </div>;
+}
 
 // Init theme on load
 document.documentElement.setAttribute("data-theme", getEffectiveTheme());
@@ -503,7 +512,7 @@ export default function App() {
           <button onClick={() => setSettingsOpen(true)} style={{padding:'6px 12px',borderRadius:6,border:'1px solid var(--border-glow)',background:'var(--bg-card)',color:'var(--text)',cursor:'pointer',fontSize:13,fontWeight:600}} title="设置">⚙ 设置</button>
         </header>
         {mode === "canvas" ? (
-          <CanvasWorkspace />
+          <Suspense fallback={<Fallback />}><CanvasWorkspace /></Suspense>
         ) : (
           <>
             {/* Agent tabs */}
@@ -547,9 +556,9 @@ export default function App() {
           </>
         )}
       </div>
-      {settingsOpen && <SettingsModal activeProvider={provider} onSave={handleSettingsSave} onClose={() => setSettingsOpen(false)} />}
-      {showAdmin && !adminAuthed && <AdminGate onUnlock={() => setAdminAuthed(true)} />}
-      {showAdmin && adminAuthed && <AdminDashboard onClose={() => { setShowAdmin(false); setAdminAuthed(false) }} />}
+      {settingsOpen && <Suspense fallback={<Fallback />}><SettingsModal activeProvider={provider} onSave={handleSettingsSave} onClose={() => setSettingsOpen(false)} /></Suspense>}
+      {showAdmin && !adminAuthed && <Suspense fallback={<Fallback />}><AdminGate onUnlock={() => setAdminAuthed(true)} /></Suspense>}
+      {showAdmin && adminAuthed && <Suspense fallback={<Fallback />}><AdminDashboard onClose={() => { setShowAdmin(false); setAdminAuthed(false) }} /></Suspense>}
       {/* 快捷键面板 */}
       {shortcutOpen && (
         <>
