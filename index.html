@@ -18,46 +18,10 @@
 <body>
 <div id="director-studio-root"></div>
 <script>
-// ===== 强制刷新系统 — 每次部署自动清除所有缓存 =====
-(function(){
-  var BUILD = 'BUILD_VER';
-  var key = '_ds_build_ver';
-
-  // Step 1: Check if we need to upgrade
-  var current = (function(){ try { return localStorage.getItem(key); } catch(e) { return null; } })();
-
-  if (current !== BUILD) {
-    // Step 2: Nuke all caches and service workers
-    var tasks = [];
-    if ('serviceWorker' in navigator) {
-      tasks.push(
-        navigator.serviceWorker.getRegistrations().then(function(regs) {
-          return Promise.all(regs.map(function(r) { return r.unregister(); }));
-        })
-      );
-    }
-    if ('caches' in window) {
-      tasks.push(
-        caches.keys().then(function(keys) {
-          return Promise.all(keys.map(function(k) { return caches.delete(k); }));
-        })
-      );
-    }
-    // Step 3: Store new version and force-reload bypassing all caches
-    var reloadClean = function() {
-      try { localStorage.setItem(key, BUILD); } catch(e) {}
-      // Add unique query to bypass browser/CDN cache
-      var sep = location.href.indexOf('?') === -1 ? '?' : '&';
-      location.href = location.href.split('#')[0].split('?')[0] + sep + '_t=' + BUILD;
-    };
-    Promise.all(tasks).then(reloadClean).catch(reloadClean);
-  } else {
-    // Already on latest — register SW normally
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').catch(function(){});
-    }
-  }
-})();
+// Register service worker for offline support
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(function(){});
+}
 </script>
 <script type="module" src="/src/main.jsx"></script>
 </body>
