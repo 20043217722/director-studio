@@ -16,6 +16,7 @@ import { loadSessionHistory, saveSessionHistory } from "./lib/sessionStore";
 import AgentIcon from "./components/AgentIcon";
 import CanvasWorkspace from "./components/canvas/CanvasWorkspace";
 import ErrorBoundary from "./components/ErrorBoundary";
+import LoginModal from "./components/LoginModal";
 
 // Init theme on load
 document.documentElement.setAttribute("data-theme", getEffectiveTheme());
@@ -58,7 +59,28 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminAuthed, setAdminAuthed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Auth state
+  const [authUser, setAuthUser] = useState(() => {
+    try { const a = JSON.parse(localStorage.getItem('ds_auth')); return a?.user || null } catch { return null }
+  });
+  const [showLogin, setShowLogin] = useState(false);
+  // Auto-show login on first visit (no auth saved)
+  useEffect(() => {
+    const hasAuth = localStorage.getItem('ds_auth')
+    if (!hasAuth) {
+      const timer = setTimeout(() => setShowLogin(true), 1500) // delay so page loads first
+      return () => clearTimeout(timer)
+    }
+  }, []);
   useEffect(() => { trackPageView(); recordVisit(); }, []);
+  // Track to backend proxy when available
+  useEffect(() => {
+    const phone = authUser?.phone || localStorage.getItem('ds_auth_phone') || 'anon'
+    fetch('http://localhost:3001/api/auth/track', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, page: 'app' }),
+    }).catch(() => {}) // silent fail if backend not running
+  }, [authUser]);
   const [provider, setProvider] = useState(() => localStorage.getItem("active_provider") || "deepseek");
   const [network, setNetwork] = useState(() => navigator.onLine ? "online" : "offline");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -443,6 +465,12 @@ export default function App() {
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 
+  const handleLogin = useCallback((user) => {
+    setAuthUser(user)
+    localStorage.setItem('ds_auth_phone', user?.phone || '')
+    setShowLogin(false)
+  }, []);
+
   function handleSettingsSave({ provider: p, keys }) {
     setProvider(p);
     if (keys[p]) {
@@ -501,6 +529,17 @@ export default function App() {
           <ExportMenu onExport={handleExport} disabled={loading} />
           <button onClick={clearHistory} className="p-1.5 rounded-lg opacity-45 hover:opacity-80 transition-opacity text-sm" title="清空记录">🗑</button>
           <button onClick={() => setSettingsOpen(true)} style={{padding:'6px 12px',borderRadius:6,border:'1px solid var(--border-glow)',background:'var(--bg-card)',color:'var(--text)',cursor:'pointer',fontSize:13,fontWeight:600}} title="设置">⚙ 设置</button>
+          {authUser ? (
+            <span style={{ padding:'4px 10px', borderRadius:6, background:'var(--bg-card)', border:'1px solid var(--border)',
+              color:'var(--text)', fontSize:11, fontWeight:600, cursor:'default' }} title="已登录">
+              👤 {authUser.phone?.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') || '已登录'}
+            </span>
+          ) : (
+            <button onClick={() => setShowLogin(true)} style={{ padding:'6px 12px', borderRadius:6, border:'1px solid var(--accent)',
+              background:'transparent', color:'var(--accent)', cursor:'pointer', fontSize:12, fontWeight:600 }} title="登录">
+              🔑 登录
+            </button>
+          )}
         </header>
         {mode === "canvas" ? (
           <CanvasWorkspace />
@@ -581,6 +620,10 @@ export default function App() {
         }`}>
           {toast.text}
         </div>
+      )}
+      {/* 登录弹窗 */}
+      {showLogin && !authUser && (
+        <LoginModal onLogin={handleLogin} onClose={() => setShowLogin(false)} />
       )}
     </div>
     </ErrorBoundary>
