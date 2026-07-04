@@ -8,7 +8,6 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 统一使用 ./ 相对路径 — dev 和 GitHub Pages 均正确解析
 function buildVersionPlugin() {
   const ts = String(Date.now());
   return {
@@ -20,6 +19,14 @@ function buildVersionPlugin() {
     },
     closeBundle() {
       const dist = path.resolve(__dirname, "dist");
+      // Replace __BUILD_TS__ in service worker with build timestamp
+      const swPath = path.join(dist, "sw.js");
+      if (fs.existsSync(swPath)) {
+        let sw = fs.readFileSync(swPath, "utf-8");
+        sw = sw.replaceAll("__BUILD_TS__", ts);
+        fs.writeFileSync(swPath, sw);
+        console.log("✓ sw.js cache version patched with build ts");
+      }
       const src = path.join(dist, "index.html");
       const dst = path.join(dist, "404.html");
       if (fs.existsSync(src)) {
