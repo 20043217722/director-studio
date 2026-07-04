@@ -378,11 +378,12 @@ async function fetchWithRetry(url, options, protocol, retries = 3, streaming = f
   const externalSignal = options.signal;
   delete options.signal;
 
-  // 预检：先 ping 端点
-  const reachable = await preflightCheck(url);
-  if (!reachable) {
-    // 网络不可达，提示用户检查代理/VPN
-    throw new Error("🌐 无法连接 API 服务器\n请检查:\n• 网络连接是否正常\n• 是否需要配置代理地址\n• 防火墙/VPN 设置");
+  // 预检：代理可用跳过·直连失败不阻断(GFW拦HEAD但POST可能通)
+  if (!_proxyAvailable) {
+    const reachable = await preflightCheck(url);
+    if (!reachable) {
+      console.warn("[API] 预检失败 — 仍会尝试请求 (建议 npm start 启动本地代理)");
+    }
   }
 
   // 熔断检查
