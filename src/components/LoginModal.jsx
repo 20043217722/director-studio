@@ -68,7 +68,7 @@ export default function LoginModal({ onLogin, onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: 'var(--bg-elevated)', borderRadius: 16, padding: 32, minWidth: 340, maxWidth: 400,
+      <div style={{ position: 'relative', background: 'var(--bg-elevated)', borderRadius: 16, padding: 32, minWidth: 340, maxWidth: 400,
         border: '1px solid var(--border)', boxShadow: '0 24px 80px rgba(0,0,0,0.4)', animation: 'fadeIn 0.25s ease' }}>
 
         {/* Header */}
@@ -115,7 +115,7 @@ export default function LoginModal({ onLogin, onClose }) {
             <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>
               短信验证码 <span style={{ color: 'var(--text-dim)' }}>→ {phone.replace(/\D/g, '').replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')}</span>
             </label>
-            <input ref={inputRef} type="text" value={smsCode} maxLength={6}
+            <input ref={inputRef} type="text" value={smsCode} maxLength={6} autoComplete="one-time-code"
               onChange={e => { setSmsCode(e.target.value.replace(/\D/g, '')); setError('') }}
               onKeyDown={e => { if (e.key === 'Enter') handleVerifySMS() }}
               placeholder="输入6位验证码"

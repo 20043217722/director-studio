@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 const API = 'http://localhost:3001'
 
 // Get admin password from localStorage (set via AdminGate)
-function getAdminAuth() { return localStorage.getItem('ds_admin_raw') || 'admin123' }
+function getAdminAuth() { return localStorage.getItem('ds_admin_token') || 'admin123' }
 
 export default function AdminDashboard({ onClose }) {
   const [tab, setTab] = useState('codes') // 'codes' | 'stats'

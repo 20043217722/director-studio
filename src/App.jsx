@@ -64,13 +64,30 @@ export default function App() {
     try { const a = JSON.parse(localStorage.getItem('ds_auth')); return a?.user || null } catch { return null }
   });
   const [showLogin, setShowLogin] = useState(false);
-  // Auto-show login on first visit (no auth saved)
+  // Validate token on mount + auto-show login if needed
   useEffect(() => {
-    const hasAuth = localStorage.getItem('ds_auth')
-    if (!hasAuth) {
-      const timer = setTimeout(() => setShowLogin(true), 1500) // delay so page loads first
+    const raw = localStorage.getItem('ds_auth')
+    if (!raw) {
+      const timer = setTimeout(() => setShowLogin(true), 1500)
       return () => clearTimeout(timer)
     }
+    // Validate existing token
+    try {
+      const data = JSON.parse(raw)
+      if (data.token) {
+        fetch('http://localhost:3001/api/auth/validate', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: data.token }),
+        }).then(r => r.json()).then(d => {
+          if (!d.ok) {
+            // Token expired/invalid — clear and show login
+            localStorage.removeItem('ds_auth')
+            setAuthUser(null)
+            setShowLogin(true)
+          }
+        }).catch(() => {}) // backend not running, keep existing auth
+      }
+    } catch { localStorage.removeItem('ds_auth') }
   }, []);
   useEffect(() => { trackPageView(); recordVisit(); }, []);
   // Track to backend proxy when available
