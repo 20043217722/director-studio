@@ -16,6 +16,7 @@ import { loadSessionHistory, saveSessionHistory } from "./lib/sessionStore";
 import AgentIcon from "./components/AgentIcon";
 import CanvasWorkspace from "./components/canvas/CanvasWorkspace";
 import ErrorBoundary from "./components/ErrorBoundary";
+import PassGate from "./components/PassGate";
 
 // Init theme on load
 document.documentElement.setAttribute("data-theme", getEffectiveTheme());
@@ -58,6 +59,7 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminAuthed, setAdminAuthed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [passed, setPassed] = useState(() => sessionStorage.getItem('ds_pass') === '1');
   useEffect(() => { trackPageView(); recordVisit(); }, []);
   const [provider, setProvider] = useState(() => localStorage.getItem("active_provider") || "deepseek");
   const [network, setNetwork] = useState(() => navigator.onLine ? "online" : "offline");
@@ -482,6 +484,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
+    {!passed ? <PassGate onUnlock={() => setPassed(true)} /> : (
     <div className="flex overflow-hidden" style={{ position: "fixed", inset: 0, background: "var(--bg-root)" }}>
       {sidebarOpen && <div className="fixed inset-0 bg-black/40 z-20 lg:hidden" onClick={() => setSidebarOpen(false)} />}
       <div className={`sidebar fixed lg:relative z-30 h-full transition-transform duration-250 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
@@ -583,6 +586,7 @@ export default function App() {
         </div>
       )}
     </div>
+    )}
     </ErrorBoundary>
   );
 }

@@ -66,6 +66,15 @@ const server = http.createServer((req, res) => {
     return j(res, 200, { status: 'ok', configured: Object.entries(KEYS).filter(([,v])=>v).map(([k])=>k) })
   }
 
+  // Track visit (minimal)
+  if (pn === '/api/auth/track' && method === 'POST') {
+    let b = ''; req.on('data', c => b += c); req.on('end', () => {
+      try { const d = JSON.parse(b); log('visit', `page: ${d.page || '/'}`) } catch {}
+      return j(res, 200, { ok: true })
+    })
+    return
+  }
+
   // ─── Proxy /api/{url} ───
   if (!req.url.startsWith('/api/')) return j(res, 404, { error: 'Not found' })
 
