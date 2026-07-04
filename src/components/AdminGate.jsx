@@ -35,7 +35,6 @@ export default function AdminGate({ onUnlock }) {
     }
     const hash = await hashPassword(password)
     localStorage.setItem('ds_admin_hash', hash)
-    localStorage.setItem('ds_admin_token', hash) // hashed, safe for API calls
     setPassword('')
     setError('')
     onUnlock()
