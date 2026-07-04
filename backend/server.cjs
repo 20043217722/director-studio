@@ -27,8 +27,6 @@ const TIMEOUT = 120_000
 const STREAM_TYPES = ['text/event-stream', 'application/x-ndjson']
 const DATA_DIR = path.join(__dirname, 'data')
 const INVITE_TTL_MIN = 10
-const SMS_TTL_MS = 5 * 60 * 1000
-const SMS_COOLDOWN_MS = 60 * 1000
 const CLEANUP_INTERVAL_MS = 10 * 60 * 1000 // 10分钟清理一次过期数据
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
@@ -67,7 +65,6 @@ async function readLocked(name) {
 // ===== Generators (crypto-safe) =====
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
 function randStr(len) { const b = crypto.randomBytes(len); let s = ''; for (let i = 0; i < len; i++) s += CHARS[b[i] % CHARS.length]; return s }
-function smsCode() { return String(crypto.randomInt(100000, 999999)) } // crypto-safe 6-digit
 function sha256(d) { return crypto.createHash('sha256').update(d).digest('hex') }
 function iso() { return new Date().toISOString() }
 function hlog(tag, msg) { console.log(`[${new Date().toISOString().slice(11,19)}] ${tag}: ${msg}`) }
@@ -80,11 +77,6 @@ function cleanupExpired() {
     const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     const filtered = codes.filter(c => !c.is_used || c.used_at > cutoff)
     if (filtered.length !== codes.length) { saveSafe('invitation_codes', filtered); hlog('cleanup', `邀请码: ${codes.length - filtered.length} 条过期清理`) }
-    // Clean SMS codes
-    const sms = db('sms_codes')
-    let smsCleaned = 0
-    for (const k of Object.keys(sms)) { if (Date.now() > sms[k].exp) { delete sms[k]; smsCleaned++ } }
-    if (smsCleaned > 0) { saveSafe('sms_codes', sms); hlog('cleanup', `短信码: ${smsCleaned} 条过期清理`) }
     // Clean old tokens (>7 days)
     const tokens = db('tokens')
     let tokCleaned = 0
@@ -183,38 +175,10 @@ async function authRoutes(req, res, pn, method) {
     return j(res, 200, { removed, remaining: filtered.length })
   }
 
-  // ─── POST /api/auth/send-sms ───
-  if (pn === '/api/auth/send-sms' && method === 'POST') {
-    const b = await body(req)
-    const phone = (b.phone || '').replace(/\D/g, '')
-    if (!/^1[3-9]\d{9}$/.test(phone)) return j(res, 400, { error: '请输入有效的手机号' })
-    const sms = db('sms_codes')
-    if (sms[phone] && Date.now() - sms[phone].sent < SMS_COOLDOWN_MS)
-      return j(res, 429, { error: '请60秒后再试', retry: Math.ceil((sms[phone].sent + SMS_COOLDOWN_MS - Date.now())/1000) })
-    const code = smsCode()
-    sms[phone] = { code, sent: Date.now(), exp: Date.now() + SMS_TTL_MS, tries: 0 }
-    await saveSafe('sms_codes', sms)
-    hlog('sms', `→ ${phone} = ${code}`)
-    return j(res, 200, { ok: true, msg: '验证码已发送', dev: code })
-  }
-
-  // ─── POST /api/auth/login ───
+  // ─── POST /api/auth/login — 纯邀请码登录（无需手机号） ───
   if (pn === '/api/auth/login' && method === 'POST') {
     const b = await body(req)
-    const phone = (b.phone || '').replace(/\D/g, '')
-    const sc = (b.smsCode || '').replace(/\D/g, '')
     const ic = (b.inviteCode || '').trim()
-
-    if (!/^1[3-9]\d{9}$/.test(phone)) return j(res, 400, { error: '请输入有效的手机号' })
-
-    // SMS verify (with lock for read-modify-write safety)
-    const sms = db('sms_codes')
-    const se = sms[phone]
-    if (!se) return j(res, 400, { error: '请先获取短信验证码' })
-    if (se.tries >= 5) { delete sms[phone]; await saveSafe('sms_codes', sms); return j(res, 429, { error: '尝试次数过多，请重新获取' }) }
-    if (Date.now() > se.exp) { delete sms[phone]; await saveSafe('sms_codes', sms); return j(res, 400, { error: '验证码已过期，请重新获取' }) }
-    se.tries++; await saveSafe('sms_codes', sms)
-    if (se.code !== sc) return j(res, 400, { error: `验证码错误（剩余${5-se.tries}次）` })
 
     // Invite code verify (with lock)
     await acquireLock('invitation_codes')
@@ -223,8 +187,7 @@ async function authRoutes(req, res, pn, method) {
     const inv = codes.find(c => c.code === ic)
     if (!inv) return j(res, 400, { error: '邀请码无效' })
     if (inv.is_used) return j(res, 400, { error: '邀请码已被使用' })
-    if (new Date(inv.expires_at) < new Date()) return j(res, 400, { error: '邀请码已过期' })
-    inv.is_used = true; inv.used_by = phone; inv.used_at = iso()
+    if (new Date(inv.expires_at) < new Date()) return j(res, 400, { error: '邀请码已过期（10分钟有效）' })
 
     // Atomic: mark code used + register user + create token
     await acquireLock('invitation_codes')
@@ -232,28 +195,25 @@ async function authRoutes(req, res, pn, method) {
       codes = db('invitation_codes')
       const inv2 = codes.find(c => c.code === ic)
       if (!inv2 || inv2.is_used) { releaseLock('invitation_codes'); return j(res, 400, { error: '邀请码已被使用' }) }
-      inv2.is_used = true; inv2.used_by = phone; inv2.used_at = iso()
+      inv2.is_used = true; inv2.used_at = iso()
       fs.writeFileSync(path.join(DATA_DIR, 'invitation_codes.json'), JSON.stringify(codes, null, 2))
     } finally { releaseLock('invitation_codes') }
 
-    // User registration
+    // Register user session
+    const userId = randStr(16)
     const users = db('users')
-    let u = users.find(x => x.phone === phone)
-    if (!u) { u = { id: randStr(16), phone, created_at: iso(), logins: 0, last: null }; users.push(u) }
-    u.logins = (u.logins||0) + 1; u.last = iso()
+    const u = { id: userId, created_at: iso(), logins: 1, last: iso() }
+    users.push(u)
     await saveSafe('users', users)
 
     // Create session token
     const token = randStr(32)
     const tokens = db('tokens')
-    tokens[token] = { phone, user_id: u.id, created: Date.now() }
+    tokens[token] = { user_id: userId, created: Date.now() }
     await saveSafe('tokens', tokens)
 
-    // Clean SMS
-    delete sms[phone]; await saveSafe('sms_codes', sms)
-
-    hlog('auth', `✓ 登录: ${phone} (#${u.logins})`)
-    return j(res, 200, { ok: true, token, user: { id: u.id, phone: u.phone, logins: u.logins } })
+    hlog('auth', `✓ 登录: 邀请码 ${ic} (用户 #${users.length})`)
+    return j(res, 200, { ok: true, token, user: { id: userId, logins: 1 } })
   }
 
   // ─── POST /api/auth/validate — 校验 token 是否有效 ───
