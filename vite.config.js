@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import basicSsl from "@vitejs/plugin-basic-ssl";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -37,10 +38,11 @@ function buildVersionPlugin() {
 }
 
 export default defineConfig({
-  plugins: [react(), buildVersionPlugin()],
+  plugins: [react(), basicSsl(), buildVersionPlugin()],
   base: "./",
   server: {
     port: 5174,
+    https: true,
     host: "0.0.0.0",
     proxy: {},
   },

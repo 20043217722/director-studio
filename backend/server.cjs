@@ -67,7 +67,7 @@ const server = http.createServer((req, res) => {
   }
 
   // Track visit (minimal)
-  if (pn === '/api/auth/track' && req.method === 'POST') {
+  if (pn === '/api/auth/track' && method === 'POST') {
     let b = ''; req.on('data', c => b += c); req.on('end', () => {
       try { const d = JSON.parse(b); log('visit', `page: ${d.page || '/'}`) } catch {}
       return j(res, 200, { ok: true })
