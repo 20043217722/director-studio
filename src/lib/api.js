@@ -5,9 +5,17 @@ import { getPreferenceInjection } from "./preferences";
 // 后端代理检测（如果 localhost:3001 运行，自动走代理，免 API Key）
 let _proxyChecked = false
 let _proxyAvailable = false
+const isGitHubPages = (() => { try { return window.location.hostname.includes('github.io') } catch { return false } })()
+
 async function ensureProxy() {
   if (_proxyChecked) return _proxyAvailable
   _proxyChecked = true
+  // GitHub Pages HTTPS 无法访问 localhost HTTP（浏览器混合内容拦截）
+  if (isGitHubPages) {
+    console.warn('[API] GitHub Pages 无法使用本地代理——请用 http://localhost:5174')
+    _proxyAvailable = false
+    return false
+  }
   try {
     const r = await fetch('http://localhost:3001/health', { signal: AbortSignal.timeout(1500) })
     _proxyAvailable = r.ok
@@ -476,12 +484,17 @@ async function fetchWithRetry(url, options, protocol, retries = 3, streaming = f
   const msg = lastError.message || "";
   // 浏览器无法连接服务器（DNS/防火墙/VPN 导致）
   if (msg === "Failed to fetch" || lastError.name === "TypeError") {
-    const hints = [];
+        const hints = [];
+        if (isGitHubPages) {
+          hints.push("🔴 GitHub Pages 无法直连 API，请本地运行 npm start");
+          hints.push("然后访问 http://localhost:5174 即可正常使用");
+        } else {
     const endpoint = url || options?.url || "";
     if (endpoint.includes("openai.com")) hints.push("OpenAI API 需科学上网");
     if (endpoint.includes("anthropic.com")) hints.push("Anthropic API 需科学上网");
     if (endpoint.includes("deepseek.com")) hints.push("检查 api.deepseek.com 是否可访问，或尝试更换网络");
     hints.push("尝试在设置中配置代理地址");
+        }
     hints.push("检查防火墙/VPN 设置");
     throw new Error(`🌐 无法连接 API 服务器\n${hints.join("\n")}\n原始错误: ${msg}`);
   }
