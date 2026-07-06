@@ -16,6 +16,7 @@ jobs:
         with:
           node-version: 20
       - run: npm install --legacy-peer-deps
+      - run: rm -rf node_modules/.vite dist
       - run: npm run build
         env:
           DEPLOY: pages
