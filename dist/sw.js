@@ -1,5 +1,5 @@
 // Service Worker v5 — network-first, cache-busted per deploy
-const CACHE = "director-studio-v5-1783266658731";
+const CACHE = "director-studio-v5-1783314759314";
 const BASE = "/director-studio/";
 
 self.addEventListener("install", (e) => {
