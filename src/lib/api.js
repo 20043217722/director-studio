@@ -327,7 +327,7 @@ async function preflightCheck(endpoint) {
   const now = Date.now();
   const cached = healthCache.get(endpoint);
   // 30 秒内复用缓存结果
-  if (cached && now - cached.time < 30_000) return cached.ok;
+  if (cached && now - cached.time < 10_000) return cached.ok;
 
   try {
     const ctrl = new AbortController();
@@ -673,7 +673,7 @@ function getSystemPrompt(mode) {
     if (["seedance", "character", "scene", "prompteng"].includes(mode)) {
       try { prefsInjection = getPreferenceInjection(mode) || ""; } catch (_) {}
     }
-    return slimProtocol + (prefsInjection ? "\n\n" + prefsInjection : "") + "\n\n---\n\n" + prompts[mode];
+    return slimProtocol + (prefsInjection ? "\n\n" + prefsInjection : "") + "\n\n---\n\n" + (prompts[mode] || prompts.director || "");
   }
-  return qualityFramework + "\n\n---\n\n" + (prompts[mode] || prompts.director);
+  return qualityFramework + "\n\n---\n\n" + (prompts[mode] || prompts.director || "");
 }
