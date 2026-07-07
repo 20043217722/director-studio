@@ -30,7 +30,6 @@ const AGENTS = [
   { group: '📷 拍摄方案', id: "cinematographer", name: "摄影指导", desc: "镜头语法 · 布光方案 · 7平台策略 · 运镜时序" },
   { group: '📷 拍摄方案', id: "seedance", name: "剧幕文戏分析", desc: "逐镜FACS拆解 · Seedance提示词 · 表演时序" },
   { group: '🎧 后期制作', id: "sound", name: "声音设计", desc: "音景 · 拟音 · AI音频提示词 · 配乐情绪曲线" },
-  { group: '🎧 后期制作', id: "colorist", name: "调色师", desc: "色彩方案 · LUT · 场景过渡 · 色彩连续性锁" },
   { group: '🎧 后期制作', id: "post", name: "后期总监", desc: "剪辑策略 · 转场设计 · AIGC后期方案 · VFX规划" },
   { group: '🔍 分析工具', id: "lens", name: "视觉解析师", desc: "视觉DNA提取 · 8平台提示词 · 微表情解码 · 反幻觉" },
   { group: '🤖 AI工程', id: "prompteng", name: "提示词工程师", desc: "为Claude Code/Cursor/Codex等AI Agent生成一步到位的精确提示词" },
