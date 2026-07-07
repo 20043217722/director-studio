@@ -378,11 +378,11 @@ async function fetchWithRetry(url, options, protocol, retries = 3, streaming = f
   const externalSignal = options.signal;
   delete options.signal;
 
-  // 预检：先 ping 端点
+  // 预检：非阻塞 ping——失败不阻止请求，由实际请求的错误处理来兜底
   const reachable = await preflightCheck(url);
   if (!reachable) {
-    // 网络不可达，提示用户检查代理/VPN
-    throw new Error("🌐 无法连接 API 服务器\n请检查:\n• 网络连接是否正常\n• 是否需要配置代理地址\n• 防火墙/VPN 设置");
+    console.warn("[API] Preflight failed for", url, "— proceeding with actual request");
+    // 不抛异常，继续尝试真实请求
   }
 
   // 熔断检查
