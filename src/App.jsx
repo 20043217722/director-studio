@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { loadKeys, watchNetwork, callAgentStream, MODEL_PRESETS } from "./lib/api";
+import { loadKeys, watchNetwork, callAgentStream, MODEL_PRESETS, sanitizePrompt } from "./lib/api";
 import { parseFile, fileToBase64, fileToBase64Resized, fileToObjectURL, isImage } from "./lib/fileParser";
 import { updatePreferences, getLikedMessages, getPreferenceInjection } from "./lib/preferences";
 import { trackPageView, recordVisit } from "./lib/analytics";
@@ -360,7 +360,8 @@ export default function App() {
         }
       }
       if (!replyText) replyText = "(对方未返回内容，请重试)";
-      setMessages((prev) => prev.map((m) => m.id === aiMsg.id ? { ...m, text: replyText, streaming: false } : m));
+      const sanitized = sanitizePrompt(replyText);
+      setMessages((prev) => prev.map((m) => m.id === aiMsg.id ? { ...m, text: sanitized, streaming: false } : m));
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : String(e);
       const partial = aiMsg.text?.length > 0;
