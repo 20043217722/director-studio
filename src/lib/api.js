@@ -667,7 +667,7 @@ function getSystemPrompt(mode) {
 **🎥 传统模式输出顺序：** 实战方案 → 剧组执行清单 → 分析报告(后置≤200字)
 **铁律：可执行方案在前，分析在后。AIGC用<!--PROMPT-->块，传统用设备/岗位/日程表。**
 `;
-  if (mode === "character" || mode === "scene" || mode === "lens" || mode === "seedance" || mode === "cinematographer" || mode === "sound" || mode === "colorist" || mode === "prompteng") {
+  if (mode === "character" || mode === "scene" || mode === "lens" || mode === "seedance" || mode === "cinematographer" || mode === "sound" || mode === "colorist" || mode === "prompteng" || mode === "post") {
     // 偏好注入（仅 seedance/character/scene）
     let prefsInjection = "";
     if (["seedance", "character", "scene", "prompteng"].includes(mode)) {
