@@ -1,3 +1,15 @@
+
+// ===== DATA TYPE SYSTEM =====
+export const DATA_TYPES = {
+  TEXT:    { label: '文本',   color: '#6c63ff', icon: 'T', shape: 'circle' },
+  IMAGE:   { label: '图片',   color: '#e94560', icon: 'I', shape: 'circle' },
+  VIDEO:   { label: '视频',   color: '#0f3460', icon: 'V', shape: 'circle' },
+  PROMPT:  { label: '提示词', color: '#8b5cf6', icon: 'P', shape: 'circle' },
+  INT:     { label: '整数',   color: '#22c55e', icon: '#', shape: 'diamond' },
+  FLOAT:   { label: '浮点',   color: '#06b6d4', icon: 'f', shape: 'diamond' },
+  BOOL:    { label: '布尔',   color: '#f97316', icon: '?', shape: 'diamond' },
+  SEED:    { label: '种子',   color: '#f5c518', icon: 'S', shape: 'diamond' },
+}
 // Unified Handle IDs — single source of truth for all nodes and store logic
 export const HANDLE_IDS = {
   source: 'output',
@@ -42,6 +54,7 @@ export const nodeDefaults = {
     progress: 0, generatedVideo: null, status: 'idle', errorMessage: '',
   },
   reroute: { label: '中继节点' },
+  primitive: { label: '基础值', valueType: 'string', value: '' },
   mediaGen: {
     reroute: ['input'], imageGen: ['prompt','image'], videoGen: ['prompt','image'],
     label: '媒体生成', prompt: '', mediaType: 'image',
@@ -104,6 +117,11 @@ export const validConnections = {
   // 🎞️ 短视频 → 预览
   pixelleVideo: {
     reroute: ['input'], preview: ['input'] },
+  // 🔢 基础值节点 → 输出原始值
+  primitive: {
+    textPrompt: ['prompt'], agent: ['prompt'],
+    mediaGen: ['prompt'], imageGen: ['prompt'], videoGen: ['prompt'],
+  },
   // 🔄 中继节点 → 万物通过
   reroute: {
     textPrompt: ['prompt'], imageGen: ['prompt'], videoGen: ['prompt'],
@@ -112,6 +130,7 @@ export const validConnections = {
   },
   // 🎨 媒体生成 → 多向下游
   reroute: { label: '中继节点' },
+  primitive: { label: '基础值', valueType: 'string', value: '' },
   mediaGen: {
     reroute: ['input'], imageGen: ['prompt','image'], videoGen: ['prompt','image'],
     preview: ['input'], videoGen: ['image'], agent: ['prompt'],

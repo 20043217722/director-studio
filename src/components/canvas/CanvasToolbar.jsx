@@ -10,7 +10,7 @@ const NODE_TYPES = [
 
 const MAX_NODES = 100
 
-export function CanvasToolbar({ undo, redo, fitView, onSmartLayout }) {
+export function CanvasToolbar({ undo, redo, fitView, onSmartLayout, onSubmitWorkflow, wfRunning }) {
   const { addNode, clearCanvas, exportCanvas, importCanvas, autoLayout, nodes } = useCanvasStore()
   const nodeCount = nodes.length
 

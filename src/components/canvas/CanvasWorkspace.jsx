@@ -9,6 +9,7 @@ import { PreviewNode } from './nodes/PreviewNode'
 import { AgentNode } from './nodes/AgentNode'
 import { PixelleVideoNode } from './nodes/PixelleVideoNode'
 import { RerouteNode } from './nodes/RerouteNode'
+import { PrimitiveNode } from './nodes/PrimitiveNode'
 import { CanvasToolbar } from './CanvasToolbar'
 import { NodeConfigPanel } from './NodeConfigPanel'
 import { CanvasWelcome } from './CanvasWelcome'
@@ -25,6 +26,7 @@ const nodeTypes = {
   textPrompt: TextPromptNode, mediaGen: MediaGenNode, imageGen: MediaGenNode, videoGen: MediaGenNode,
   reference: ReferenceNode, preview: PreviewNode, agent: AgentNode, pixelleVideo: PixelleVideoNode,
   reroute: RerouteNode,
+  primitive: PrimitiveNode,
 }
 
 const NODE_CATEGORIES = [
@@ -347,7 +349,7 @@ function CanvasInner() {
         <span className="stat-item">Space拖拽 | Ctrl+Enter运行链 | Ctrl+F搜索 | Ctrl+P面板</span>
       </div>
 
-      <CanvasToolbar undo={undo} redo={redo} fitView={fitView} onSmartLayout={handleSmartLayout} />
+      <CanvasToolbar undo={undo} redo={redo} fitView={fitView} onSmartLayout={handleSmartLayout} onSubmitWorkflow={handleSubmitWorkflow} wfRunning={wfRunning} />
       <ProjectBiblePanel />
       <NodeConfigPanel />
       <CanvasInputBar />

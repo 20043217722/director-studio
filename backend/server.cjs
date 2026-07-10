@@ -52,11 +52,89 @@ function log(tag, msg) { console.log(`[${new Date().toISOString().slice(11,19)}]
 function j(res, s, d) { res.writeHead(s,{'Content-Type':'application/json','Access-Control-Allow-Origin':'*'}); res.end(JSON.stringify(d)) }
 
 // ===== Server =====
+const { executeWorkflow, sseClients, sseSend } = require('./workflow-engine.cjs')
+
 const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin','*')
   res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,DELETE,OPTIONS')
   res.setHeader('Access-Control-Allow-Headers','Content-Type,Authorization,x-api-key,x-goog-api-key,Accept')
-  if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return }
+
+  // ===== WORKFLOW ROUTES =====
+  
+  // POST /api/workflow/run — submit workflow for execution
+  if (req.method === 'POST' && req.url === '/api/workflow/run') {
+    let body = ''
+    req.on('data', c => body += c)
+    req.on('end', async () => {
+      try {
+        const { nodes, edges, apiKeys, config } = JSON.parse(body)
+        const runId = 'run_' + Date.now() + '_' + Math.random().toString(36).slice(2,7)
+        
+        log('workflow', `启动执行 ${runId} — ${nodes.length} 节点, ${edges.length} 连线`)
+        
+        // Start async execution (don't await — stream progress via SSE)
+        executeWorkflow(runId, { nodes, edges }, apiKeys || {}, config || {}).then(run => {
+          log('workflow', `执行完成 ${runId} — ${Object.values(run.nodeStatus).filter(s => s === 'done').length}/${Object.keys(run.nodeStatus).length} 成功`)
+        }).catch(err => {
+          log('workflow:error', `${runId} — ${err.message}`)
+        })
+        
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
+        res.end(JSON.stringify({ runId, status: 'started' }))
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
+        res.end(JSON.stringify({ error: 'Invalid graph JSON: ' + err.message }))
+      }
+    })
+    return
+  }
+
+  // GET /api/workflow/stream/:runId — SSE progress stream
+  const sseMatch = req.url.match(/^\/api\/workflow\/stream\/(.+)$/)
+  if (sseMatch && req.method === 'GET') {
+    const runId = sseMatch[1]
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+    })
+    
+    if (!sseClients[runId]) sseClients[runId] = []
+    sseClients[runId].push(res)
+    
+    // Send initial state
+    const run = require('./workflow-engine.cjs').runs[runId]
+    if (run) {
+      res.write(`event: init\ndata: ${JSON.stringify({ runId, status: run.status, nodeStatus: run.nodeStatus })}\n\n`)
+    }
+    
+    req.on('close', () => {
+      if (sseClients[runId]) {
+        sseClients[runId] = sseClients[runId].filter(r => r !== res)
+        if (sseClients[runId].length === 0) delete sseClients[runId]
+      }
+    })
+    return
+  }
+
+  // GET /api/workflow/status/:runId — poll status
+  const statusMatch = req.url.match(/^\/api\/workflow\/status\/(.+)$/)
+  if (statusMatch && req.method === 'GET') {
+    const runId = statusMatch[1]
+    const run = require('./workflow-engine.cjs').runs[runId]
+    if (run) {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
+      res.end(JSON.stringify({ runId, status: run.status, nodeStatus: run.nodeStatus, results: run.results }))
+    } else {
+      res.writeHead(404, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
+      res.end(JSON.stringify({ error: 'run not found' }))
+    }
+    return
+  }
+
+
+  
 
   const u = new URL(req.url, 'http://localhost')
   const pn = u.pathname
