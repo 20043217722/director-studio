@@ -8,6 +8,7 @@ import { ReferenceNode } from './nodes/ReferenceNode'
 import { PreviewNode } from './nodes/PreviewNode'
 import { AgentNode } from './nodes/AgentNode'
 import { PixelleVideoNode } from './nodes/PixelleVideoNode'
+import { RerouteNode } from './nodes/RerouteNode'
 import { CanvasToolbar } from './CanvasToolbar'
 import { NodeConfigPanel } from './NodeConfigPanel'
 import { CanvasWelcome } from './CanvasWelcome'
@@ -23,6 +24,7 @@ function getConnectedNodeIds(nodeId, edges) {
 const nodeTypes = {
   textPrompt: TextPromptNode, mediaGen: MediaGenNode, imageGen: MediaGenNode, videoGen: MediaGenNode,
   reference: ReferenceNode, preview: PreviewNode, agent: AgentNode, pixelleVideo: PixelleVideoNode,
+  reroute: RerouteNode,
 }
 
 // === NODE CATEGORIES for palette and context menu ===

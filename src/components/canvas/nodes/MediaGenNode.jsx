@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useEffect, useSyncExternalStore, useRef } from 'react'
+import { memo, useState, useCallback, useEffect, useSyncExternalStore } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { useCanvasStore } from '../utils/canvasStore'
 import Lightbox from '../Lightbox'
@@ -20,9 +20,11 @@ export const MediaGenNode = memo(({ id, data }) => {
   const registerAbort = useCanvasStore((s) => s.registerAbort)
   const unregisterAbort = useCanvasStore((s) => s.unregisterAbort)
   const [genLoading, setGenLoading] = useState(false)
+  const [batchLoading, setBatchLoading] = useState(false)
   const [lightboxIdx, setLightboxIdx] = useState(-1)
   const [videoLightbox, setVideoLightbox] = useState(false)
   const [showParams, setShowParams] = useState(false)
+  const [compareMode, setCompareMode] = useState(false)
   const userKeys = useModelKeys()
 
   const mediaType = data.mediaType || 'image'
@@ -33,12 +35,17 @@ export const MediaGenNode = memo(({ id, data }) => {
   const imageModel = IMAGE_MODELS.find((m) => m.id === data.modelProvider)
   const videoModel = VIDEO_MODELS.find((m) => m.id === data.modelProvider)
   const [durMin, durMax] = isVideo ? (videoModel?.durationRange || [3, 15]) : [3, 15]
-  const imageVersions = data.imageVersions || []; const videoVersions = data.videoVersions || []
+  const imageVersions = data.imageVersions || []
   const [currentImgVer, setCurrentImgVer] = useState(imageVersions.length > 0 ? imageVersions.length - 1 : 0)
-  const allImageVersions = [...imageVersions]; if (data.generatedImages?.length > 0 && !imageVersions.includes(data.generatedImages)) allImageVersions.push(data.generatedImages)
+  const [compareLeft, setCompareLeft] = useState(0)
+  const [compareRight, setCompareRight] = useState(1)
+  const allImageVersions = [...imageVersions]
+  if (data.generatedImages?.length > 0 && !imageVersions.includes(data.generatedImages)) allImageVersions.push(data.generatedImages)
+  const batchResults = data.batchResults || []
 
-  const handleCancel = useCallback(() => { useCanvasStore.getState().abortGeneration(id); setGenLoading(false); updateNodeData(id, { status: 'idle', errorMessage: '' }) }, [id, updateNodeData])
+  const handleCancel = useCallback(() => { useCanvasStore.getState().abortGeneration(id); setGenLoading(false); setBatchLoading(false); updateNodeData(id, { status: 'idle', errorMessage: '' }) }, [id, updateNodeData])
 
+  // Single generate
   const handleGenerate = async () => {
     if (!data.prompt && (isImage || !data.sourceImage)) return
     setGenLoading(true)
@@ -49,9 +56,8 @@ export const MediaGenNode = memo(({ id, data }) => {
     const ctrl = new AbortController(); registerAbort(id, ctrl)
     try {
       if (isImage) {
-        const { generateImage } = await import('../../../lib/canvasApi')
-        // Simulate progress updates for image generation
         const progressTimer = setInterval(() => { const s = useCanvasStore.getState(); const n = s.nodes.find(n => n.id === id); if (n && n.data.status === 'generating') { const p = Math.min((n.data.progress || 0) + 15, 90); updateNodeData(id, { progress: p }) } }, 800)
+        const { generateImage } = await import('../../../lib/canvasApi')
         const r = await generateImage(data.prompt, { provider: data.modelProvider || 'gpt-image-1', aspectRatio: data.aspectRatio || '1:1', count: data.imageCount || 1, signal: ctrl.signal })
         clearInterval(progressTimer)
         if (ctrl.signal.aborted) return
@@ -65,6 +71,42 @@ export const MediaGenNode = memo(({ id, data }) => {
       }
     } catch (e) { if (e.name === 'AbortError' || ctrl.signal.aborted) return; updateNodeData(id, { status: 'error', errorMessage: e.message }) }
     finally { setGenLoading(false); unregisterAbort(id) }
+  }
+
+  // BATCH GENERATE: 4 variants in parallel
+  const handleBatchGenerate = async () => {
+    if (!data.prompt || !isImage) return
+    setBatchLoading(true)
+    updateNodeData(id, { batchResults: [], status: 'generating' })
+    const ctrl = new AbortController(); registerAbort(id, ctrl)
+    const results = []
+    try {
+      const { generateImage } = await import('../../../lib/canvasApi')
+      for (let i = 0; i < 4; i++) {
+        if (ctrl.signal.aborted) return
+        results.push({ status: 'generating', index: i })
+        updateNodeData(id, { batchResults: [...results], progress: Math.round((i / 4) * 100) })
+        try {
+          const r = await generateImage(data.prompt, { provider: data.modelProvider || 'gpt-image-1', aspectRatio: data.aspectRatio || '1:1', count: 1, signal: ctrl.signal })
+          if (ctrl.signal.aborted) return
+          results[i] = { status: 'done', index: i, image: r.images?.[0] }
+        } catch (e) {
+          if (ctrl.signal.aborted) return
+          results[i] = { status: 'error', index: i, error: e.message }
+        }
+        updateNodeData(id, { batchResults: [...results], progress: Math.round(((i + 1) / 4) * 100) })
+      }
+      updateNodeData(id, { status: 'done', progress: 100 })
+      // Auto-save batch results to versions
+      const goodImages = results.filter(r => r.status === 'done' && r.image).map(r => r.image)
+      if (goodImages.length) {
+        const vers = [...(data.imageVersions || [])]
+        if (data.generatedImages?.length) vers.push(data.generatedImages)
+        vers.push(goodImages)
+        updateNodeData(id, { generatedImages: goodImages, imageVersions: vers })
+      }
+    } catch (e) { if (e.name === 'AbortError' || ctrl.signal.aborted) return; updateNodeData(id, { status: 'error', errorMessage: e.message }) }
+    finally { setBatchLoading(false); unregisterAbort(id) }
   }
 
   useEffect(() => { const handler = (e) => { const s = useCanvasStore.getState(); const isUpstream = s.edges.some(edge => edge.source === id && edge.target === e.detail?.previewId); if (isUpstream && !genLoading && data.prompt) { handleGenerate() } }; window.addEventListener('preview-retry', handler); return () => window.removeEventListener('preview-retry', handler) }, [id, genLoading, data.prompt])
@@ -102,23 +144,67 @@ export const MediaGenNode = memo(({ id, data }) => {
           <button className={'media-tab' + (isVideo ? ' active' : '')} onClick={() => updateNodeData(id, { mediaType: 'video' })}>生成视频</button>
         </div>
 
-        {/* Image generation progress bar */}
-        {isImage && data.status === 'generating' && data.progress < 100 && (
-          <div className="node-progress-bar"><div className="node-progress-fill image" style={{ width: (data.progress || 0) + '%' }} /></div>
+        {/* --- BATCH MODE: 2x2 variation grid --- */}
+        {(batchLoading || batchResults.length > 0) && isImage && (
+          <div className="batch-grid">
+            {[0,1,2,3].map(idx => {
+              const result = batchResults[idx]
+              const isGen = batchLoading && (!result || result.status === 'generating')
+              const img = result?.status === 'done' ? result.image : null
+              const isErr = result?.status === 'error'
+              return (
+                <div key={idx} className={'batch-item' + (isGen ? ' generating' : '')}
+                  onClick={() => { if (img) setLightboxIdx(idx) }}
+                  title={isErr ? result.error : '变体 ' + (idx + 1)}>
+                  {img ? <img src={img.url || img.base64} alt="" /> :
+                   isGen ? <span>⏳</span> :
+                   isErr ? <span style={{color:'#ef4444',fontSize:10}}>❌</span> :
+                   <span style={{color:'#555',fontSize:10}}>-</span>}
+                  {result && <span className="batch-label">#{idx + 1}</span>}
+                </div>
+              )
+            })}
+          </div>
         )}
 
+        {/* --- MAIN GALLERY --- */}
+        {isImage && data.status === 'generating' && !batchResults.length && (<div className="node-progress-bar"><div className="node-progress-fill image" style={{ width: (data.progress || 0) + '%' }} /></div>)}
         {isImage && data.generatedImages?.length > 0 && (
           <div className="img-gallery">
             {data.generatedImages.map((img, i) => (<div key={i} className="img-gallery-item" draggable onDragStart={(e) => onImageDragStart(e, img)}><img src={img.url || img.base64} alt="" className="img-gallery-thumb" onClick={() => setLightboxIdx(i)} /><div className="img-gallery-actions"><button className="img-action-btn" onClick={() => setLightboxIdx(i)}>放大</button><button className="img-action-btn" onClick={(e) => handleDownload(img, e)}>下载</button></div></div>))}
           </div>
         )}
-        {isImage && !data.generatedImages?.length && data.status !== 'generating' && (<div className="node-preview-placeholder"><span className="ph-icon">[ ]</span><span>输入提示词，点击生成</span></div>)}
+        {isImage && !data.generatedImages?.length && data.status !== 'generating' && !batchResults.length && (<div className="node-preview-placeholder"><span className="ph-icon">[ ]</span><span>输入提示词，点击生成</span></div>)}
+
+        {/* --- VERSION THUMBNAILS --- */}
+        {isImage && allImageVersions.length > 1 && (
+          <div>
+            <div className="node-section-label" style={{marginBottom:4}}>版本历史 ({allImageVersions.length})</div>
+            <div className="version-thumbs">
+              {allImageVersions.map((versionImgs, vi) => {
+                const thumb = versionImgs?.[0]
+                const isActive = vi === currentImgVer
+                return (
+                  <div key={vi} className={'version-thumb' + (isActive ? ' active' : '')}
+                    onClick={() => { setCurrentImgVer(vi); updateNodeData(id, { generatedImages: versionImgs }) }}
+                    title={'版本 ' + (vi + 1)}>
+                    {thumb?.url || thumb?.base64 ? <img src={thumb.url || thumb.base64} alt="" /> : <span className="v-number">v{vi + 1}</span>}
+                  </div>
+                )
+              })}
+              {allImageVersions.length >= 2 && (
+                <button className="version-thumb" style={{borderColor:'#8b5cf6',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:600,color:'#8b5cf6',background:'transparent'}}
+                  onClick={() => { setCompareLeft(currentImgVer); setCompareRight(Math.min(allImageVersions.length - 1, currentImgVer + 1)); setCompareMode(true) }}>
+                  对比
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {isVideo && data.generatedVideo?.url && (<div className="video-preview-wrap"><video src={data.generatedVideo.url} controls className="video-preview" /><div className="media-actions"><button className="img-action-btn" onClick={() => setVideoLightbox(true)}>放大</button><button className="img-action-btn" onClick={handleDownloadVideo}>下载</button></div></div>)}
         {isVideo && !data.generatedVideo?.url && data.status !== 'generating' && (<div className="node-preview-placeholder"><span className="ph-icon">[V]</span><span>输入提示词，点击生成视频</span></div>)}
         {isVideo && data.status === 'generating' && (<div className="node-progress-bar"><div className="node-progress-fill video" style={{ width: (data.progress || 0) + '%' }} /></div>)}
-
-        {isImage && allImageVersions.length > 1 && (<div className="version-nav"><button onClick={() => { const v = Math.max(0, currentImgVer - 1); setCurrentImgVer(v); updateNodeData(id, { generatedImages: allImageVersions[v] }) }} disabled={currentImgVer <= 0}>上一个</button><span>v{currentImgVer + 1}/{allImageVersions.length}</span><button onClick={() => { const v = Math.min(allImageVersions.length - 1, currentImgVer + 1); setCurrentImgVer(v); updateNodeData(id, { generatedImages: allImageVersions[v] }) }} disabled={currentImgVer >= allImageVersions.length - 1}>下一个</button></div>)}
 
         <button onClick={() => setShowParams(!showParams)} style={{ background: 'transparent', border: 'none', color: '#888', fontSize: 10, cursor: 'pointer', textAlign: 'left', padding: 0 }}>{showParams ? '收起参数' : '展开参数...'}</button>
 
@@ -128,16 +214,50 @@ export const MediaGenNode = memo(({ id, data }) => {
           {isVideo && (<div className="duration-control"><span style={{fontSize:11,color:'#888'}}>{data.duration || 5}秒</span><input type="range" min={durMin} max={durMax} step={1} value={data.duration || 5} onChange={(e) => updateNodeData(id, { duration: parseInt(e.target.value) })} style={{ flex: 1 }} /><span style={{fontSize:10,color:'#666'}}>{durMin}-{durMax}秒</span></div>)}
         </>)}
 
-        <textarea value={data.prompt || ''} onChange={(e) => updateNodeData(id, { prompt: e.target.value })} placeholder={isImage ? '描述你想生成的画面...' : '描述视频场景，或拖入参考图...'} className="node-textarea" rows={2} style={{minHeight:48}} onPasteCapture={handlePaste} />
+        <textarea value={data.prompt || ''} onChange={(e) => updateNodeData(id, { prompt: e.target.value })} placeholder={isImage ? '描述你想生成的画面...' : '描述视频场景或拖入参考图...'} className="node-textarea" rows={2} style={{minHeight:48}} onPasteCapture={handlePaste} />
 
         <div style={{ display: 'flex', gap: 6 }}>
-          <button className={'node-btn-generate ' + (isImage ? 'image' : 'video')} onClick={handleGenerate} disabled={genLoading || (!data.prompt && (isImage || !data.sourceImage))}>
+          <button className={'node-btn-generate ' + (isImage ? 'image' : 'video')} onClick={handleGenerate} disabled={genLoading || batchLoading || (!data.prompt && (isImage || !data.sourceImage))}>
             {genLoading ? (isImage ? '生成中 ' + (data.progress || 0) + '%' : (data.progress || 0) + '%') : (isImage ? '生成图片' : '生成视频')}
           </button>
           {genLoading && <button className="node-btn-danger" onClick={handleCancel}>取消</button>}
         </div>
+
+        {/* Batch generate button — image mode only */}
+        {isImage && (
+          <button onClick={handleBatchGenerate} disabled={genLoading || batchLoading || !data.prompt}
+            style={{width:'100%',padding:'7px 0',fontSize:11,fontWeight:700,borderRadius:6,
+              border:'1px dashed #e94560',background:batchLoading?'rgba(233,69,96,0.1)':'transparent',
+              color:batchLoading?'#e94560':'#888',cursor:batchLoading?'default':'pointer',
+              transition:'all 0.15s'}}>
+            {batchLoading ? '批量生成中 ' + (data.progress || 0) + '%' : '生成 4 个变体'}
+          </button>
+        )}
+
         {data.status === 'error' && <div className="node-error">{data.errorMessage}</div>}
       </div>}
+
+      {/* --- COMPARE MODE OVERLAY --- */}
+      {compareMode && allImageVersions.length >= 2 && (
+        <div className="compare-overlay" onClick={() => setCompareMode(false)}>
+          <button className="compare-close" onClick={() => setCompareMode(false)}>×</button>
+          <div className="compare-grid" onClick={(e) => e.stopPropagation()}>
+            <div className="compare-slot">
+              <div className="slot-label">版本 {compareLeft + 1}</div>
+              {allImageVersions[compareLeft]?.[0]?.url || allImageVersions[compareLeft]?.[0]?.base64 ? (
+                <img src={allImageVersions[compareLeft][0].url || allImageVersions[compareLeft][0].base64} alt="" />
+              ) : <div style={{color:'#666',padding:40}}>无数据</div>}
+            </div>
+            <div style={{fontSize:24,color:'#888'}}>vs</div>
+            <div className="compare-slot">
+              <div className="slot-label">版本 {compareRight + 1}</div>
+              {allImageVersions[compareRight]?.[0]?.url || allImageVersions[compareRight]?.[0]?.base64 ? (
+                <img src={allImageVersions[compareRight][0].url || allImageVersions[compareRight][0].base64} alt="" />
+              ) : <div style={{color:'#666',padding:40}}>无数据</div>}
+            </div>
+          </div>
+        </div>
+      )}
 
       {lightboxIdx >= 0 && isImage && imgItems.length > 0 && (<Lightbox items={imgItems} index={lightboxIdx} onClose={() => setLightboxIdx(-1)} />)}
       {videoLightbox && data.generatedVideo?.url && (<Lightbox items={[{ url: data.generatedVideo.url, type: 'video' }]} index={0} onClose={() => setVideoLightbox(false)} />)}
