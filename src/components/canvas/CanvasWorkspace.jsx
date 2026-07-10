@@ -133,6 +133,11 @@ function CanvasInner() {
     }
   }, [wfRunning])
   useEffect(() => { if (toastMsg) { const t = setTimeout(() => setToastMsg(null), 2000); return () => clearTimeout(t) } }, [toastMsg])
+  // Load favorites & recents from localStorage after mount
+  useEffect(() => {
+    try { setFavs(getFavorites()) } catch {}
+    try { setRecents(getRecents()) } catch {}
+  }, [])
   // === WORKFLOW EXECUTION (Backend Engine) ===
   const [wfRunning, setWfRunning] = useState(false)
   const [wfStatus, setWfStatus] = useState({})
@@ -279,8 +284,8 @@ function CanvasInner() {
   }, [selectedNodeIds])
 
   // === PALETTE FAVORITES & RECENTS ===
-  const [favs, setFavs] = useState(() => getFavorites())
-  const [recents, setRecents] = useState(() => getRecents())
+  const [favs, setFavs] = useState([])
+  const [recents, setRecents] = useState([])
   const handlePaletteAddTracked = useCallback((type) => {
     addRecent(type); setRecents(getRecents())
     addNode(type); setPaletteOpen(false); setPaletteSearch('')
