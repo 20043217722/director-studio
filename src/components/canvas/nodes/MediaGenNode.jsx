@@ -184,7 +184,15 @@ export const MediaGenNode = memo(({ id, data }) => {
               {allImageVersions.map((versionImgs, vi) => {
                 const thumb = versionImgs?.[0]
                 const isActive = vi === currentImgVer
-                return (
+              
+  // === RUN CHAIN listener ===
+  useEffect(() => {
+    const h = (e) => { if (e.detail?.nodeId === id && !genLoading && !batchLoading && data.prompt) handleGenerate() }
+    window.addEventListener('run-chain', h)
+    return () => window.removeEventListener('run-chain', h)
+  }, [id, genLoading, batchLoading, data.prompt])
+
+  return (
                   <div key={vi} className={'version-thumb' + (isActive ? ' active' : '')}
                     onClick={() => { setCurrentImgVer(vi); updateNodeData(id, { generatedImages: versionImgs }) }}
                     title={'版本 ' + (vi + 1)}>

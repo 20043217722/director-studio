@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect, useRef, useMemo } from 'react'
-import { ReactFlow, ReactFlowProvider, Background, Controls, MiniMap, useReactFlow, useStore } from '@xyflow/react'
+import { ReactFlow, ReactFlowProvider, Background, Controls, MiniMap, useReactFlow } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useCanvasStore, validateConnection } from './utils/canvasStore'
 import { TextPromptNode } from './nodes/TextPromptNode'
@@ -27,7 +27,6 @@ const nodeTypes = {
   reroute: RerouteNode,
 }
 
-// === NODE CATEGORIES for palette and context menu ===
 const NODE_CATEGORIES = [
   { name: '输入节点', items: [
     { type: 'textPrompt', label: '文本提示词', icon: 'T', color: '#6c63ff', desc: '输入创作描述' },
@@ -43,41 +42,33 @@ const NODE_CATEGORIES = [
   { name: '输出节点', items: [
     { type: 'preview', label: '预览输出', icon: 'P', color: '#38bdf8', desc: '查看生成结果' },
   ]},
+  { name: '工具节点', items: [
+    { type: 'reroute', label: '中继节点', icon: '>', color: '#6c63ff', desc: '整理走线路径' },
+  ]},
 ]
 
-// === SMART LAYOUT: topological sort + layer assignment ===
 function smartAutoLayout(nodes, edges) {
   if (!nodes.length) return nodes
-  // Build adjacency: source -> [targets], and in-degree map
   const adj = {}; const inDeg = {}
   nodes.forEach(n => { adj[n.id] = []; inDeg[n.id] = 0 })
-  edges.forEach(e => {
-    if (adj[e.source] && adj[e.target] !== undefined) { adj[e.source].push(e.target); inDeg[e.target] = (inDeg[e.target]||0) + 1 }
-  })
-  // Kahn's algorithm for topological sort
+  edges.forEach(e => { if (adj[e.source] && adj[e.target] !== undefined) { adj[e.source].push(e.target); inDeg[e.target] = (inDeg[e.target]||0) + 1 } })
   const queue = nodes.filter(n => inDeg[n.id] === 0).map(n => n.id)
   const layers = []; const layerMap = {}
-  if (!queue.length) { queue.push(nodes[0].id) }  // all nodes in cycle, pick one
+  if (!queue.length) { queue.push(nodes[0].id) }
   while (queue.length) {
     const level = []; const nextQueue = []
     for (const id of queue) { level.push(id); layerMap[id] = layers.length; for (const t of adj[id]) { inDeg[t]--; if (inDeg[t] === 0) nextQueue.push(t) } }
     layers.push(level); queue.length = 0; queue.push(...nextQueue)
   }
-  // Assign any remaining nodes (cycles) to the last layer
   nodes.forEach(n => { if (layerMap[n.id] === undefined) { layerMap[n.id] = layers.length; layers.push([n.id]) } })
-  // Position nodes: each layer = one column
   const layerXs = layers.map((_, i) => 80 + i * 340)
-  const positioned = nodes.map(n => {
-    const layer = layerMap[n.id]
-    const idxInLayer = layers[layer]?.indexOf(n.id) || 0
+  return nodes.map(n => {
+    const layer = layerMap[n.id]; const idxInLayer = layers[layer]?.indexOf(n.id) || 0
     const totalInLayer = layers[layer]?.length || 1
-    const y = 80 + (idxInLayer - (totalInLayer - 1) / 2) * 280
-    return { ...n, position: { x: layerXs[layer], y: Math.max(0, y) } }
+    return { ...n, position: { x: layerXs[layer], y: Math.max(0, 80 + (idxInLayer - (totalInLayer - 1) / 2) * 280) } }
   })
-  return positioned
 }
 
-// === ALIGNMENT HELPERS ===
 function alignSelectedNodes(nodes, alignment) {
   if (nodes.length < 2) return nodes
   let refVal
@@ -100,10 +91,7 @@ function distributeNodes(nodes, direction) {
   const total = direction === 'horizontal' ? (last.x - first.x) : (last.y - first.y)
   if (total <= 0) return nodes
   const step = total / (sorted.length - 1)
-  return nodes.map(n => {
-    const idx = sorted.indexOf(n); if (idx <= 0 || idx >= sorted.length - 1) return n
-    return { ...n, position: { x: direction === 'horizontal' ? first.x + step * idx : n.position.x, y: direction === 'vertical' ? first.y + step * idx : n.position.y } }
-  })
+  return nodes.map(n => { const idx = sorted.indexOf(n); if (idx <= 0 || idx >= sorted.length - 1) return n; return { ...n, position: { x: direction === 'horizontal' ? first.x + step * idx : n.position.x, y: direction === 'vertical' ? first.y + step * idx : n.position.y } } })
 }
 
 export default function CanvasWorkspace() { return <ReactFlowProvider><CanvasInner /></ReactFlowProvider> }
@@ -122,39 +110,67 @@ function CanvasInner() {
   const [selectedNodeIds, setSelectedNodeIds] = useState([])
   const [bookmarks, setBookmarks] = useState([])
   const [edgeTooltip, setEdgeTooltip] = useState(null)
+  const [spaceHeld, setSpaceHeld] = useState(false)
+  const [toastMsg, setToastMsg] = useState(null)
+  const [connTooltip, setConnTooltip] = useState(null)
   const { screenToFlowPosition, fitView, getViewport } = useReactFlow()
-  const wrapperRef = useRef(null); const searchRef = useRef(null); const viewportRef = useRef(getViewport())
+  const wrapperRef = useRef(null); const searchRef = useRef(null)
 
   const connectedNodeIds = useMemo(() => selectedNodeId ? getConnectedNodeIds(selectedNodeId, edges) : new Set(), [selectedNodeId, edges])
   const closeMenu = useCallback(() => setContextMenu(null), [])
 
-  // Track viewport for bookmarks
-  useEffect(() => { viewportRef.current = getViewport() })
+  // === TOAST auto-dismiss ===
+  useEffect(() => { if (toastMsg) { const t = setTimeout(() => setToastMsg(null), 2000); return () => clearTimeout(t) } }, [toastMsg])
 
-  // === KEYBOARD SHORTCUTS ===
+  // === SPACE DRAG + KEYBOARD ===
   useEffect(() => {
+    const spaceDown = (e) => { if (e.code === 'Space' && !['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) { e.preventDefault(); setSpaceHeld(true) } }
+    const spaceUp = (e) => { if (e.code === 'Space') setSpaceHeld(false) }
+    window.addEventListener('keydown', spaceDown); window.addEventListener('keyup', spaceUp)
+
     const handle = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
         if (e.ctrlKey && e.key === 'f') { e.preventDefault(); setSearchOpen(true); return }
         return
       }
       const s = useCanvasStore.getState()
-      if (e.ctrlKey && e.key === 'z' && !e.shiftKey) { e.preventDefault(); s.undo() }
-      if ((e.ctrlKey && e.key === 'Z') || (e.ctrlKey && e.key === 'y')) { e.preventDefault(); s.redo() }
-      if (e.ctrlKey && e.key === 'd') { e.preventDefault(); if (s.selectedNodeId) s.duplicateNode(s.selectedNodeId) }
+      if (e.ctrlKey && e.key === 'z' && !e.shiftKey) { e.preventDefault(); s.undo(); setToastMsg('已撤销') }
+      if ((e.ctrlKey && e.key === 'Z') || (e.ctrlKey && e.key === 'y')) { e.preventDefault(); s.redo(); setToastMsg('已重做') }
+      if (e.ctrlKey && e.key === 'd') { e.preventDefault(); if (s.selectedNodeId) { s.duplicateNode(s.selectedNodeId); setToastMsg('已复制') } }
       if (e.ctrlKey && e.key === 'f') { e.preventDefault(); setSearchOpen(true); setTimeout(() => searchRef.current?.focus(), 50) }
       if (e.ctrlKey && e.key === 'm' && s.selectedNodeId) { e.preventDefault(); s.updateNodeData(s.selectedNodeId, { muted: !s.nodes.find(n => n.id === s.selectedNodeId)?.data?.muted }) }
-      if (e.ctrlKey && e.key === 'g' && selectedNodeIds.length >= 2) { e.preventDefault(); const name = prompt('输入节点组名称：', '节点组'); if (name) { s.createGroup(name, [...selectedNodeIds], '#6c63ff') } }
+      if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); handleRunChain() }
+      if (e.ctrlKey && e.key === 'g' && selectedNodeIds.length >= 2) { e.preventDefault(); const name = prompt('输入节点组名称：', '节点组'); if (name) { s.createGroup(name, [...selectedNodeIds], '#6c63ff'); setToastMsg('已创建组: ' + name) } }
       if (e.ctrlKey && e.key === 'b') { e.preventDefault(); addBookmark() }
       if (e.ctrlKey && e.key === 'p') { e.preventDefault(); setPaletteOpen(v => !v) }
       if ((e.key === 'Delete' || e.key === 'Backspace')) {
-        if (s.selectedNodeId) { e.preventDefault(); s.deleteNode(s.selectedNodeId) }
-        if (selectedNodeIds.length >= 2) { selectedNodeIds.forEach(id => s.deleteNode(id)); setSelectedNodeIds([]) }
+        if (s.selectedNodeId) { e.preventDefault(); s.deleteNode(s.selectedNodeId); setToastMsg('已删除') }
+        if (selectedNodeIds.length >= 2) { selectedNodeIds.forEach(id => s.deleteNode(id)); setSelectedNodeIds([]); setToastMsg('已删除 ' + selectedNodeIds.length + ' 个节点') }
       }
       if (e.key === 'Escape') { s.deselectNode(); s.deselectEdge(); setContextMenu(null); setSearchOpen(false); setPaletteOpen(false) }
     }
     window.addEventListener('keydown', handle)
-    return () => window.removeEventListener('keydown', handle)
+    return () => { window.removeEventListener('keydown', handle); window.removeEventListener('keydown', spaceDown); window.removeEventListener('keyup', spaceUp) }
+  }, [selectedNodeIds])
+
+  // === RUN CHAIN: execute all upstream nodes in topological order ===
+  const handleRunChain = useCallback(() => {
+    const s = useCanvasStore.getState()
+    const targetId = s.selectedNodeId || selectedNodeIds[0]
+    if (!targetId) return
+    const upstreamIds = new Set(); const queue = [targetId]
+    while (queue.length) {
+      const current = queue.shift()
+      s.edges.filter(e => e.target === current).forEach(e => { if (!upstreamIds.has(e.source)) { upstreamIds.add(e.source); queue.push(e.source) } })
+    }
+    upstreamIds.add(targetId)
+    const sorted = []; const visited = new Set()
+    const visit = (id) => { if (visited.has(id)) return; visited.add(id); s.edges.filter(e => e.target === id).forEach(e => visit(e.source)); if (upstreamIds.has(id)) sorted.push(id) }
+    visit(targetId)
+    sorted.forEach((nodeId, i) => {
+      setTimeout(() => { window.dispatchEvent(new CustomEvent('run-chain', { detail: { nodeId } })) }, i * 800)
+    })
+    setToastMsg('运行上游链: ' + sorted.length + ' 个节点')
   }, [selectedNodeIds])
 
   // === SEARCH ===
@@ -164,23 +180,19 @@ function CanvasInner() {
   }, [searchQuery, nodes])
   const gotoNode = useCallback((nodeId) => { const node = nodes.find(n => n.id === nodeId); if (node) { fitView({ nodes: [{ id: nodeId }], duration: 400, maxZoom: 1.5 }); selectNode(nodeId); setSearchOpen(false); setSearchQuery('') } }, [nodes, fitView, selectNode])
 
-  // === SMART LAYOUT (data-flow aware) ===
+  // === SMART LAYOUT ===
   const handleSmartLayout = useCallback(() => {
     const s = useCanvasStore.getState(); s._pushUndo()
     const positioned = smartAutoLayout(s.nodes, s.edges)
-    useCanvasStore.setState({ nodes: positioned })
+    useCanvasStore.setState({ nodes: positioned }); setToastMsg('智能排列完成')
   }, [])
 
   // === BOOKMARKS ===
   const addBookmark = useCallback(() => {
-    const vp = getViewport()
-    const name = '视点 ' + (bookmarks.length + 1)
-    setBookmarks(prev => [...prev, { id: Date.now(), name, x: vp.x, y: vp.y, zoom: vp.zoom }])
+    const vp = getViewport(); const name = '视点 ' + (bookmarks.length + 1)
+    setBookmarks(prev => [...prev, { id: Date.now(), name, x: vp.x, y: vp.y, zoom: vp.zoom }]); setToastMsg('已添加书签')
   }, [bookmarks, getViewport])
-  const gotoBookmark = useCallback((bm) => {
-    fitView({ duration: 400 })
-    // Use setCenter/setViewport via ReactFlow instance
-  }, [fitView])
+  const gotoBookmark = useCallback((bm) => { fitView({ duration: 400 }) }, [fitView])
   const removeBookmark = useCallback((id) => { setBookmarks(prev => prev.filter(b => b.id !== id)) }, [])
 
   // === SELECTION ===
@@ -191,58 +203,25 @@ function CanvasInner() {
     if (selectedNodeIds.length < 2) return
     const s = useCanvasStore.getState(); s._pushUndo()
     const selNodes = s.nodes.filter(n => selectedNodeIds.includes(n.id))
-    const aligned = alignSelectedNodes(selNodes, alignment)
-    const newNodes = s.nodes.map(n => { const an = aligned.find(a => a.id === n.id); return an || n })
+    const newNodes = s.nodes.map(n => { const an = alignSelectedNodes(selNodes, alignment).find(a => a.id === n.id); return an || n })
     useCanvasStore.setState({ nodes: newNodes })
   }, [selectedNodeIds])
   const handleDistribute = useCallback((direction) => {
     if (selectedNodeIds.length < 3) return
     const s = useCanvasStore.getState(); s._pushUndo()
     const selNodes = s.nodes.filter(n => selectedNodeIds.includes(n.id))
-    const dist = distributeNodes(selNodes, direction)
-    const newNodes = s.nodes.map(n => { const dn = dist.find(d => d.id === n.id); return dn || n })
+    const newNodes = s.nodes.map(n => { const dn = distributeNodes(selNodes, direction).find(d => d.id === n.id); return dn || n })
     useCanvasStore.setState({ nodes: newNodes })
   }, [selectedNodeIds])
 
-  // === PALETTE search ===
+  // === PALETTE ===
   const filteredCategories = useMemo(() => {
     if (!paletteSearch.trim()) return NODE_CATEGORIES
-    return NODE_CATEGORIES.map(cat => ({
-      ...cat,
-      items: cat.items.filter(item => item.label.includes(paletteSearch) || item.type.includes(paletteSearch) || item.desc.includes(paletteSearch))
-    })).filter(cat => cat.items.length > 0)
+    return NODE_CATEGORIES.map(cat => ({ ...cat, items: cat.items.filter(item => item.label.includes(paletteSearch) || item.type.includes(paletteSearch) || item.desc.includes(paletteSearch)) })).filter(cat => cat.items.length > 0)
   }, [paletteSearch])
-
   const handlePaletteAdd = useCallback((type) => { addNode(type); setPaletteOpen(false); setPaletteSearch('') }, [addNode])
 
-  // === EDGE TOOLTIP ===
-  const onEdgeMouseEnter = useCallback((e, edge) => {
-    const src = nodes.find(n => n.id === edge.source)
-    if (src?.data?.generatedImages?.length) {
-      const img = src.data.generatedImages[0]
-      const url = img.url || img.base64
-      if (url) setEdgeTooltip({ x: e.clientX, y: e.clientY, url, label: '图片数据流' })
-    } else if (edge.label) {
-      setEdgeTooltip({ x: e.clientX, y: e.clientY, url: null, label: edge.label || '' })
-    }
-  }, [nodes])
-  const onEdgeMouseLeave = useCallback(() => setEdgeTooltip(null), [])
-
-  // === GROUP RENDERING ===
-  const groupRects = useMemo(() => {
-    if (!groups || !groups.length) return []
-    return groups.map(g => {
-      const groupNodes = nodes.filter(n => g.nodeIds.includes(n.id))
-      if (!groupNodes.length) return null
-      const minX = Math.min(...groupNodes.map(n => n.position.x)) - 20
-      const minY = Math.min(...groupNodes.map(n => n.position.y)) - 40
-      const maxX = Math.max(...groupNodes.map(n => n.position.x + 280))
-      const maxY = Math.max(...groupNodes.map(n => n.position.y + 200))
-      return { ...g, x: minX, y: minY, width: maxX - minX, height: maxY - minY }
-    }).filter(Boolean)
-  }, [groups, nodes])
-
-  // === DRAG / DROP ===
+  // === DRAG/DROP ===
   const onDragOver = useCallback((e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }, [])
   const onDrop = useCallback((e) => {
     e.preventDefault(); const position = screenToFlowPosition({ x: e.clientX, y: e.clientY })
@@ -251,6 +230,19 @@ function CanvasInner() {
     const type = e.dataTransfer.getData('application/reactflow-type'); if (!type) return; addNode(type, position)
   }, [screenToFlowPosition, addNode])
 
+  // === CONNECTION TOOLTIP ===
+  const onConnectStart = useCallback((_, { nodeId, handleId }) => {
+    const s = useCanvasStore.getState(); const n = s.nodes.find(x => x.id === nodeId)
+    if (n) { const labels = {textPrompt:'提示词输出',agent:'分析输出',reference:'素材输出',preview:'预览输出',mediaGen:'媒体输出',imageGen:'图片输出',videoGen:'视频输出',reroute:'数据中继'}; setConnTooltip({ label: labels[n.type]||'数据输出', nodeId }) }
+  }, [])
+  const onConnectEnd = useCallback(() => setConnTooltip(null), [])
+
+  // === EDGE ===
+  const onEdgeMouseEnter = useCallback((e, edge) => {
+    const src = nodes.find(n => n.id === edge.source); if (src?.data?.generatedImages?.length) { const img = src.data.generatedImages[0]; const url = img.url || img.base64; if (url) setEdgeTooltip({ x: e.clientX, y: e.clientY, url, label: '图片数据流' }) }
+    else if (edge.label) { setEdgeTooltip({ x: e.clientX, y: e.clientY, url: null, label: edge.label || '' }) }
+  }, [nodes])
+  const onEdgeMouseLeave = useCallback(() => setEdgeTooltip(null), [])
   const onNodeDoubleClick = useCallback((_, node) => { setRenameModal({ nodeId: node.id, name: node.data.label || node.type || '' }) }, [])
   const handleRename = useCallback(() => { if (!renameModal) return; useCanvasStore.getState().updateNodeData(renameModal.nodeId, { label: renameModal.name }); setRenameModal(null) }, [renameModal])
   const onNodeContextMenu = useCallback((e, node) => { e.preventDefault(); selectNode(node.id); setContextMenu({ type: 'node', x: e.clientX, y: e.clientY, nodeId: node.id }) }, [selectNode])
@@ -259,70 +251,42 @@ function CanvasInner() {
   const onEdgeClick = useCallback((e, edge) => { useCanvasStore.getState().selectEdge(edge.id) }, [])
   const handleEdgeDelete = useCallback((edgeId) => { deleteEdge(edgeId); setContextMenu(null) }, [deleteEdge])
 
-  useEffect(() => {
-    if (!selectedEdgeId) { setContextMenu(null); return }
-    const edge = useCanvasStore.getState().edges.find((e) => e.id === selectedEdgeId); if (!edge) return
-    const src = useCanvasStore.getState().nodes.find((n) => n.id === edge.source); const tgt = useCanvasStore.getState().nodes.find((n) => n.id === edge.target)
-    if (src && tgt) setContextMenu({ type: 'edge', edgeId: selectedEdgeId, x: (src.position.x + tgt.position.x) / 2 + 80, y: (src.position.y + tgt.position.y) / 2 + 100 })
-  }, [selectedEdgeId])
+  useEffect(() => { if (!selectedEdgeId) { setContextMenu(null); return }; const edge = useCanvasStore.getState().edges.find((e) => e.id === selectedEdgeId); if (!edge) return; const src = useCanvasStore.getState().nodes.find((n) => n.id === edge.source); const tgt = useCanvasStore.getState().nodes.find((n) => n.id === edge.target); if (src && tgt) setContextMenu({ type: 'edge', edgeId: selectedEdgeId, x: (src.position.x + tgt.position.x) / 2 + 80, y: (src.position.y + tgt.position.y) / 2 + 100 }) }, [selectedEdgeId])
 
   const displayNodes = useMemo(() => {
     if (!selectedNodeId || connectedNodeIds.size <= 1) return nodes
     return nodes.map(n => ({ ...n, className: connectedNodeIds.has(n.id) ? 'node-highlighted' : 'node-dimmed' }))
   }, [nodes, selectedNodeId, connectedNodeIds])
 
-  // === EDGE CREATION with color class + marker ===
-  const onConnectWrapped = useCallback((connection) => {
-    const s = useCanvasStore.getState()
-    const src = s.nodes.find(n => n.id === connection.source)
-    const tgt = s.nodes.find(n => n.id === connection.target)
-    if (!src || !tgt) return
-    s.onConnect(connection)
-    // Add color class to the new edge
-    const cls = src.type === 'textPrompt' ? 'edge-prompt' : src.type === 'agent' ? 'edge-agent' : src.type === 'reference' ? 'edge-reference' : src.type === 'preview' ? 'edge-preview' : 'edge-media'
-    const newEdge = s.edges[s.edges.length - 1]
-    if (newEdge && !newEdge.className) {
-      s.setState({ edges: s.edges.map(e => e.id === newEdge.id ? { ...e, className: cls, markerEnd: 'url(#arrow-' + cls.replace('edge-','') + ')' } : e) })
-    }
-  }, [])
+  // === GROUP RECTS ===
+  const groupRects = useMemo(() => {
+    if (!groups || !groups.length) return []
+    return groups.map(g => { const groupNodes = nodes.filter(n => g.nodeIds.includes(n.id)); if (!groupNodes.length) return null; const minX = Math.min(...groupNodes.map(n => n.position.x)) - 20; const minY = Math.min(...groupNodes.map(n => n.position.y)) - 40; const maxX = Math.max(...groupNodes.map(n => n.position.x + 280)); const maxY = Math.max(...groupNodes.map(n => n.position.y + 200)); return { ...g, x: minX, y: minY, width: maxX - minX, height: maxY - minY } }).filter(Boolean)
+  }, [groups, nodes])
 
   return (
     <div className="w-full h-full relative" ref={wrapperRef} onClick={closeMenu} style={{ outline: 'none' }}>
-      {/* SVG Edge Arrow Markers */}
       <svg style={{ position: 'absolute', width: 0, height: 0, zIndex: -1 }}>
         <defs>
-          <marker id="arrow-prompt" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 4 L 0 8 z" fill="#6c63ff" />
-          </marker>
-          <marker id="arrow-image" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 4 L 0 8 z" fill="#e94560" />
-          </marker>
-          <marker id="arrow-video" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 4 L 0 8 z" fill="#0f3460" />
-          </marker>
-          <marker id="arrow-agent" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 4 L 0 8 z" fill="#f5c518" />
-          </marker>
-          <marker id="arrow-reference" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 4 L 0 8 z" fill="#4ade80" />
-          </marker>
-          <marker id="arrow-media" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 4 L 0 8 z" fill="#8b5cf6" />
-          </marker>
-          <marker id="arrow-preview" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 0 L 10 4 L 0 8 z" fill="#38bdf8" />
-          </marker>
+          <marker id="arrow-prompt" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 4 L 0 8 z" fill="#6c63ff" /></marker>
+          <marker id="arrow-image" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 4 L 0 8 z" fill="#e94560" /></marker>
+          <marker id="arrow-video" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 4 L 0 8 z" fill="#0f3460" /></marker>
+          <marker id="arrow-agent" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 4 L 0 8 z" fill="#f5c518" /></marker>
+          <marker id="arrow-reference" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 4 L 0 8 z" fill="#4ade80" /></marker>
+          <marker id="arrow-media" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 4 L 0 8 z" fill="#8b5cf6" /></marker>
+          <marker id="arrow-preview" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 4 L 0 8 z" fill="#38bdf8" /></marker>
         </defs>
       </svg>
 
       <ReactFlow nodes={displayNodes} edges={edges}
-        onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
-        onConnect={onConnectWrapped}
+        onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect}
+        onConnectStart={onConnectStart} onConnectEnd={onConnectEnd}
         onPaneClick={onPaneClick} onPaneContextMenu={onPaneContextMenu}
         onEdgeClick={onEdgeClick} onEdgeMouseEnter={onEdgeMouseEnter} onEdgeMouseLeave={onEdgeMouseLeave}
         onNodeClick={(_, node) => useCanvasStore.getState().selectNode(node.id)}
         onNodeDoubleClick={onNodeDoubleClick} onNodeContextMenu={onNodeContextMenu}
         onDragOver={onDragOver} onDrop={onDrop} nodeTypes={nodeTypes}
+        panOnDrag={spaceHeld ? [0,1,2] : [1,2]}
         onSelectionChange={onSelectionChange}
         fitView deleteKeyCode={null} multiSelectionKeyCode="Shift" selectionMode="partial"
         snapToGrid snapGrid={[16, 16]}
@@ -338,138 +302,50 @@ function CanvasInner() {
       </ReactFlow>
 
       {/* Group Rects */}
-      {groupRects.map(g => (
-        <div key={g.id} className="canvas-group" style={{ left: g.x, top: g.y, width: g.width, height: g.height }}>
-          <div className="canvas-group-header" onClick={() => fitView({ nodes: g.nodeIds.map(id => ({ id })), duration: 400, padding: 0.3 })}>
-            {g.name} ({g.nodeIds.length})
-          </div>
-        </div>
-      ))}
+      {groupRects.map(g => (<div key={g.id} className="canvas-group" style={{ left: g.x, top: g.y, width: g.width, height: g.height }}><div className="canvas-group-header" onClick={() => fitView({ nodes: g.nodeIds.map(id => ({ id })), duration: 400, padding: 0.3 })}>{g.name} ({g.nodeIds.length})</div></div>))}
 
+      {/* Zoom indicator */}
       <div className="zoom-indicator">{Math.round(zoom * 100)}%</div>
 
-      {/* Node Palette Toggle */}
-      <button className="palette-toggle-btn" onClick={() => setPaletteOpen(v => !v)} title="节点面板 Ctrl+P" style={{ position: 'absolute', top: 12, left: 60, zIndex: 11 }}>
-        {paletteOpen ? '×' : '+'}
-      </button>
-
-      {/* Searchable Node Palette */}
-      {paletteOpen && (
-        <div className="canvas-node-palette" onClick={(e) => e.stopPropagation()}>
-          <input value={paletteSearch} onChange={(e) => setPaletteSearch(e.target.value)} placeholder="搜索节点..." autoFocus />
-          {filteredCategories.map(cat => (
-            <div key={cat.name}>
-              <div className="palette-category">{cat.name}</div>
-              {cat.items.map(item => (
-                <button key={item.type} className="palette-item"
-                  onClick={() => handlePaletteAdd(item.type)}
-                  onDragStart={(e) => { e.dataTransfer.setData('application/reactflow-type', item.type); e.dataTransfer.effectAllowed = 'move'; setPaletteOpen(false) }}
-                  draggable>
-                  <span className="palette-item-icon" style={{background: item.color + '22', color: item.color}}>{item.icon}</span>
-                  <span>{item.label}</span>
-                  <span className="palette-item-desc">{item.desc}</span>
-                </button>
-              ))}
-            </div>
-          ))}
-          {filteredCategories.length === 0 && <div style={{padding:20,textAlign:'center',fontSize:11,color:'#666'}}>无匹配节点</div>}
-        </div>
-      )}
+      {/* Node Palette */}
+      <button className="palette-toggle-btn" onClick={() => setPaletteOpen(v => !v)} title="节点面板 Ctrl+P" style={{ position: 'absolute', top: 12, left: 60, zIndex: 11 }}>{paletteOpen ? 'x' : '+'}</button>
+      {paletteOpen && (<div className="canvas-node-palette" onClick={(e) => e.stopPropagation()}><input value={paletteSearch} onChange={(e) => setPaletteSearch(e.target.value)} placeholder="搜索节点..." autoFocus />{filteredCategories.map(cat => (<div key={cat.name}><div className="palette-category">{cat.name}</div>{cat.items.map(item => (<button key={item.type} className="palette-item" onClick={() => handlePaletteAdd(item.type)} onDragStart={(e) => { e.dataTransfer.setData('application/reactflow-type', item.type); e.dataTransfer.effectAllowed = 'move'; setPaletteOpen(false) }} draggable><span className="palette-item-icon" style={{background: item.color + '22', color: item.color}}>{item.icon}</span><span>{item.label}</span><span className="palette-item-desc">{item.desc}</span></button>))}</div>))}{filteredCategories.length === 0 && <div style={{padding:20,textAlign:'center',fontSize:11,color:'#666'}}>无匹配节点</div>}</div>)}
 
       {/* Search Bar */}
-      {searchOpen && (
-        <div className="canvas-search-bar" onClick={(e) => e.stopPropagation()} style={{zIndex:15}}>
-          <span style={{fontSize:12,color:'#888'}}>搜索</span>
-          <input ref={searchRef} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="输入节点名称..." autoFocus
-            onKeyDown={(e) => { if (e.key === 'Escape') { setSearchOpen(false); setSearchQuery('') } if (e.key === 'Enter' && searchResults.length > 0) gotoNode(searchResults[0].id) }} />
-          <span className="canvas-search-result">{searchResults.length} 个结果</span>
-          <button onClick={() => { setSearchOpen(false); setSearchQuery('') }} style={{background:'transparent',border:'none',color:'#888',cursor:'pointer',fontSize:14}}>×</button>
-          {searchResults.length > 0 && (
-            <div style={{position:'absolute',top:'100%',left:0,right:0,marginTop:4,background:'#1e1e32',border:'1px solid #2a2a45',borderRadius:8,maxHeight:200,overflowY:'auto',boxShadow:'0 8px 32px rgba(0,0,0,0.5)'}}>
-              {searchResults.map(n => (<button key={n.id} onClick={() => gotoNode(n.id)} style={{width:'100%',padding:'8px 12px',fontSize:12,textAlign:'left',border:'none',background:'transparent',color:'#d0d0e0',cursor:'pointer',display:'flex',justifyContent:'space-between'}} onMouseEnter={(e) => e.target.style.background='#2a2a45'} onMouseLeave={(e) => e.target.style.background='transparent'}><span>{n.data?.label || n.type}</span><span style={{fontSize:10,color:'#666'}}>{n.type}</span></button>))}
-            </div>
-          )}
-        </div>
-      )}
+      {searchOpen && (<div className="canvas-search-bar" onClick={(e) => e.stopPropagation()} style={{zIndex:15}}><span style={{fontSize:12,color:'#888'}}>搜索</span><input ref={searchRef} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="输入节点名称..." autoFocus onKeyDown={(e) => { if (e.key === 'Escape') { setSearchOpen(false); setSearchQuery('') } if (e.key === 'Enter' && searchResults.length > 0) gotoNode(searchResults[0].id) }} /><span className="canvas-search-result">{searchResults.length} 个结果</span><button onClick={() => { setSearchOpen(false); setSearchQuery('') }} style={{background:'transparent',border:'none',color:'#888',cursor:'pointer',fontSize:14}}>x</button>{searchResults.length > 0 && (<div style={{position:'absolute',top:'100%',left:0,right:0,marginTop:4,background:'#1e1e32',border:'1px solid #2a2a45',borderRadius:8,maxHeight:200,overflowY:'auto',boxShadow:'0 8px 32px rgba(0,0,0,0.5)'}}>{searchResults.map(n => (<button key={n.id} onClick={() => gotoNode(n.id)} style={{width:'100%',padding:'8px 12px',fontSize:12,textAlign:'left',border:'none',background:'transparent',color:'#d0d0e0',cursor:'pointer',display:'flex',justifyContent:'space-between'}} onMouseEnter={(e) => e.target.style.background='#2a2a45'} onMouseLeave={(e) => e.target.style.background='transparent'}><span>{n.data?.label || n.type}</span><span style={{fontSize:10,color:'#666'}}>{n.type}</span></button>))}</div>)}</div>)}
 
       {/* Alignment Bar */}
-      {selectedNodeIds.length >= 2 && (
-        <div className="canvas-align-bar" onClick={(e) => e.stopPropagation()}>
-          <span style={{fontSize:10,color:'#666',marginRight:4}}>{selectedNodeIds.length} 选中</span>
-          <button className="canvas-align-btn" onClick={() => handleAlign('left')}>左齐</button>
-          <button className="canvas-align-btn" onClick={() => handleAlign('center')}>中齐</button>
-          <button className="canvas-align-btn" onClick={() => handleAlign('right')}>右齐</button>
-          <button className="canvas-align-btn" onClick={() => handleAlign('top')}>顶齐</button>
-          <button className="canvas-align-btn" onClick={() => handleAlign('middle')}>竖中</button>
-          <button className="canvas-align-btn" onClick={() => handleAlign('bottom')}>底齐</button>
-          <div style={{width:1,height:16,background:'#2a2a45',margin:'0 4px'}} />
-          <button className="canvas-align-btn" onClick={() => handleDistribute('horizontal')}>横分</button>
-          <button className="canvas-align-btn" onClick={() => handleDistribute('vertical')}>竖分</button>
-        </div>
-      )}
+      {selectedNodeIds.length >= 2 && (<div className="canvas-align-bar" onClick={(e) => e.stopPropagation()}><span style={{fontSize:10,color:'#666',marginRight:4}}>{selectedNodeIds.length} 选中</span><button className="canvas-align-btn" onClick={() => handleAlign('left')}>左齐</button><button className="canvas-align-btn" onClick={() => handleAlign('center')}>中齐</button><button className="canvas-align-btn" onClick={() => handleAlign('right')}>右齐</button><button className="canvas-align-btn" onClick={() => handleAlign('top')}>顶齐</button><button className="canvas-align-btn" onClick={() => handleAlign('middle')}>竖中</button><button className="canvas-align-btn" onClick={() => handleAlign('bottom')}>底齐</button><div style={{width:1,height:16,background:'#2a2a45',margin:'0 4px'}} /><button className="canvas-align-btn" onClick={() => handleDistribute('horizontal')}>横分</button><button className="canvas-align-btn" onClick={() => handleDistribute('vertical')}>竖分</button></div>)}
 
-      {/* Bookmarks Bar */}
-      {bookmarks.length > 0 && (
-        <div className="canvas-bookmarks">
-          {bookmarks.map(bm => (
-            <button key={bm.id} className="canvas-bookmark-btn" onClick={() => gotoBookmark(bm)} title={bm.name}>
-              {bm.name}
-              <span onClick={(e) => { e.stopPropagation(); removeBookmark(bm.id) }} style={{marginLeft:4,color:'#666',fontSize:10}}>×</span>
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Bookmarks */}
+      {bookmarks.length > 0 && (<div className="canvas-bookmarks">{bookmarks.map(bm => (<button key={bm.id} className="canvas-bookmark-btn" onClick={() => gotoBookmark(bm)} title={bm.name}>{bm.name}<span onClick={(e) => { e.stopPropagation(); removeBookmark(bm.id) }} style={{marginLeft:4,color:'#666',fontSize:10}}>x</span></button>))}</div>)}
 
       {/* Edge Tooltip */}
-      {edgeTooltip && (
-        <div className="edge-tooltip" style={{ left: edgeTooltip.x + 16, top: edgeTooltip.y - 10 }}>
-          <div>{edgeTooltip.label}</div>
-          {edgeTooltip.url && <img src={edgeTooltip.url} alt="" />}
-        </div>
-      )}
+      {edgeTooltip && (<div className="edge-tooltip" style={{ left: edgeTooltip.x + 16, top: edgeTooltip.y - 10 }}><div>{edgeTooltip.label}</div>{edgeTooltip.url && <img src={edgeTooltip.url} alt="" />}</div>)}
 
-      {/* Categorized Context Menu */}
-      {contextMenu && (
-        <div className="canvas-context-menu" style={{ position: 'fixed', left: contextMenu.x, top: contextMenu.y, zIndex: 50 }} onClick={(e) => e.stopPropagation()}>
-          {contextMenu.type === 'node' && (<>
-            <button className="menu-item" onClick={() => { setRenameModal({ nodeId: contextMenu.nodeId, name: useCanvasStore.getState().nodes.find((n) => n.id === contextMenu.nodeId)?.data?.label || '' }); setContextMenu(null) }}><span>重命名</span></button>
-            <button className="menu-item" onClick={() => { duplicateNode(contextMenu.nodeId); setContextMenu(null) }}><span>复制</span><span style={{fontSize:10,color:'#666'}}>Ctrl+D</span></button>
-            <button className="menu-item" onClick={() => { const s = useCanvasStore.getState(); s.updateNodeData(contextMenu.nodeId, { collapsed: !s.nodes.find(n => n.id === contextMenu.nodeId)?.data?.collapsed }); setContextMenu(null) }}><span>折叠</span></button>
-            <button className="menu-item" onClick={() => { const s = useCanvasStore.getState(); s.updateNodeData(contextMenu.nodeId, { muted: !s.nodes.find(n => n.id === contextMenu.nodeId)?.data?.muted }); setContextMenu(null) }}><span>静音</span><span style={{fontSize:10,color:'#666'}}>Ctrl+M</span></button>
-            <div className="menu-divider" />
-            <button className="menu-item danger" onClick={() => { deleteNode(contextMenu.nodeId); setContextMenu(null) }}><span>删除</span></button>
-          </>)}
-          {contextMenu.type === 'pane' && NODE_CATEGORIES.map(cat => (
-            <div key={cat.name}>
-              <div className="menu-label">{cat.name}</div>
-              {cat.items.map(item => (
-                <button key={item.type} className="menu-item" onClick={() => { addNode(item.type, contextMenu.position); setContextMenu(null) }}>
-                  <span style={{color: item.color, marginRight: 6}}>{item.icon}</span>
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </div>
-          ))}
-          {contextMenu.type === 'edge' && (<>
-            <div className="menu-label">连线</div>
-            <button className="menu-item danger" onClick={() => handleEdgeDelete(contextMenu.edgeId)}>删除连线</button>
-          </>)}
-        </div>
-      )}
+      {/* Connection Tooltip */}
+      {connTooltip && (<div className="connection-tooltip" style={{ left: typeof window !== 'undefined' ? window.innerWidth / 2 : 400, top: 60 }}>{connTooltip.label}</div>)}
+
+      {/* Context Menu */}
+      {contextMenu && (<div className="canvas-context-menu" style={{ position: 'fixed', left: contextMenu.x, top: contextMenu.y, zIndex: 50 }} onClick={(e) => e.stopPropagation()}>
+        {contextMenu.type === 'node' && (<><button className="menu-item" onClick={() => { setRenameModal({ nodeId: contextMenu.nodeId, name: useCanvasStore.getState().nodes.find((n) => n.id === contextMenu.nodeId)?.data?.label || '' }); setContextMenu(null) }}><span>重命名</span></button><button className="menu-item" onClick={() => { duplicateNode(contextMenu.nodeId); setContextMenu(null) }}><span>复制</span></button><button className="menu-item" onClick={() => { handleRunChain(); setContextMenu(null) }}><span>运行上游链</span><span style={{fontSize:10,color:'#4ade80'}}>Ctrl+Enter</span></button><button className="menu-item" onClick={() => { const s = useCanvasStore.getState(); s.updateNodeData(contextMenu.nodeId, { collapsed: !s.nodes.find(n => n.id === contextMenu.nodeId)?.data?.collapsed }); setContextMenu(null) }}><span>折叠</span></button><div className="menu-divider" /><button className="menu-item danger" onClick={() => { deleteNode(contextMenu.nodeId); setContextMenu(null) }}><span>删除</span></button></>)}
+        {contextMenu.type === 'pane' && NODE_CATEGORIES.map(cat => (<div key={cat.name}><div className="menu-label">{cat.name}</div>{cat.items.map(item => (<button key={item.type} className="menu-item" onClick={() => { addNode(item.type, contextMenu.position); setContextMenu(null) }}><span style={{color: item.color, marginRight: 6}}>{item.icon}</span><span>{item.label}</span></button>))}</div>))}
+        {contextMenu.type === 'edge' && (<><div className="menu-label">连线</div><button className="menu-item danger" onClick={() => handleEdgeDelete(contextMenu.edgeId)}>删除连线</button></>)}
+      </div>)}
 
       {/* Rename Modal */}
-      {renameModal && (<>
-        <div className="rename-overlay" onClick={() => setRenameModal(null)} />
-        <div className="rename-modal" onClick={(e) => e.stopPropagation()}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#e0e0f0', marginBottom: 8 }}>重命名节点</div>
-          <input value={renameModal.name} onChange={(e) => setRenameModal({ ...renameModal, name: e.target.value })}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenameModal(null) }} autoFocus />
-          <div style={{ display: 'flex', gap: 6, marginTop: 8, justifyContent: 'flex-end' }}>
-            <button onClick={() => setRenameModal(null)} style={{ padding: '5px 12px', fontSize: 11, borderRadius: 5, border: '1px solid #2a2a45', background: 'transparent', color: '#888', cursor: 'pointer' }}>取消</button>
-            <button onClick={handleRename} style={{ padding: '5px 12px', fontSize: 11, borderRadius: 5, border: 'none', background: '#6c63ff', color: '#fff', cursor: 'pointer' }}>确定</button>
-          </div>
-        </div>
-      </>)}
+      {renameModal && (<><div className="rename-overlay" onClick={() => setRenameModal(null)} /><div className="rename-modal" onClick={(e) => e.stopPropagation()}><div style={{ fontSize: 12, fontWeight: 700, color: '#e0e0f0', marginBottom: 8 }}>重命名节点</div><input value={renameModal.name} onChange={(e) => setRenameModal({ ...renameModal, name: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenameModal(null) }} autoFocus /><div style={{ display: 'flex', gap: 6, marginTop: 8, justifyContent: 'flex-end' }}><button onClick={() => setRenameModal(null)} style={{ padding: '5px 12px', fontSize: 11, borderRadius: 5, border: '1px solid #2a2a45', background: 'transparent', color: '#888', cursor: 'pointer' }}>取消</button><button onClick={handleRename} style={{ padding: '5px 12px', fontSize: 11, borderRadius: 5, border: 'none', background: '#6c63ff', color: '#fff', cursor: 'pointer' }}>确定</button></div></div></>)}
+
+      {/* Toast */}
+      {toastMsg && <div className="canvas-toast">{toastMsg}</div>}
+
+      {/* Status Bar */}
+      <div className="canvas-statusbar">
+        <span className="stat-item">节点 <span className="stat-value">{nodes.length}</span></span>
+        <span className="stat-item">选中 <span className="stat-value">{selectedNodeIds.length || (selectedNodeId ? 1 : 0)}</span></span>
+        <span style={{flex:1}} />
+        <span className="stat-item">Space拖拽 | Ctrl+Enter运行链 | Ctrl+F搜索 | Ctrl+P面板</span>
+      </div>
 
       <CanvasToolbar undo={undo} redo={redo} fitView={fitView} onSmartLayout={handleSmartLayout} />
       <ProjectBiblePanel />

@@ -83,6 +83,14 @@ export const AgentNode = memo(({ id, data }) => {
     useCanvasStore.setState({ nodes: newNodes, edges: newEdges })
   }, [shots, id])
 
+
+  // === RUN CHAIN listener ===
+  useEffect(() => {
+    const h = (e) => { if (e.detail?.nodeId === id && !genLoading && data.prompt) handleRun() }
+    window.addEventListener('run-chain', h)
+    return () => window.removeEventListener('run-chain', h)
+  }, [id, genLoading, data.prompt])
+
   return (
     <div className="canvas-node" style={{borderColor:'#f5c51840', minWidth:300, maxWidth:450}}>
       <Handle type="target" position={Position.Left} id="prompt" style={{ background: '#f5c518', border: '2px solid #1e1e32', width: 12, height: 12 }} />
