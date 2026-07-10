@@ -60,12 +60,12 @@ function extractStructuredBlocks(text) {
   const blocks = { prompts: {}, negatives: {}, continuity: null, metadata: null, handoffs: {} }
   // Extract handoff blocks: <!--HANDOFF:mode--> content <!--/HANDOFF:mode-->
   const handoffRe = /<!--HANDOFF:(\w+)-->([\s\S]*?)<!--\/HANDOFF:\1-->/g
+  let match
   while ((match = handoffRe.exec(text)) !== null) {
     blocks.handoffs[match[1]] = match[2].trim()
   }
   // Extract prompt blocks: <!--PROMPT:platform--> content <!--/PROMPT:platform-->
   const promptRe = /<!--PROMPT:(\w+)-->([\s\S]*?)<!--\/PROMPT:\1-->/g
-  let match
   while ((match = promptRe.exec(text)) !== null) {
     blocks.prompts[match[1]] = match[2].trim()
   }
