@@ -150,3 +150,14 @@ export const getNodeBorderColor = (type) => NODE_COLORS[type]?.border || '#555'
 export const getNodeGlow = (type) => NODE_COLORS[type]?.glow || 'transparent'
 export const getNodeIconColor = (type) => NODE_COLORS[type]?.icon || '#fff'
 export const getStatusColor = (status) => STATUS_COLORS[status] || STATUS_COLORS.idle
+
+// Connection validation with error message (libtv-level feedback)
+export function getConnectionError(sourceType, targetType) {
+  const valid = validConnections[sourceType]
+  if (!valid) return `Unknown source type: ${sourceType}`
+  if (!valid[targetType]) {
+    const allowed = Object.keys(valid).map(t => t).join(', ')
+    return `${sourceType} cannot connect to ${targetType}. Allowed targets: ${allowed}`
+  }
+  return null // Valid connection
+}

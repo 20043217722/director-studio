@@ -6,6 +6,8 @@ import { nodeDefaults, validConnections, HANDLE_IDS, NODE_ALIASES } from './node
 const STORAGE_KEY = 'director_studio_canvas'
 const MAX_UNDO = 50
 const MAX_NODES = 100
+const MAX_RETRIES = 3  // Max generation retries per node
+const GENERATION_TIMEOUT = 120000  // 2 minute timeout
 
 // Edge label by data type flowing through the connection
 const EDGE_LABELS = {
@@ -827,6 +829,13 @@ export const useCanvasStore = create(
     }),
     {
       name: STORAGE_KEY,
+    // Corrupted state recovery — if localStorage data is corrupted, start fresh
+    onRehydrateStorage: () => (state, error) => {
+      if (error) {
+        console.warn('[CanvasStore] Corrupted state detected, resetting to fresh canvas')
+        try { localStorage.removeItem(STORAGE_KEY) } catch (_) {}
+      }
+    },
       partialize: (state) => ({ nodes: state.nodes, edges: state.edges, groups: state.groups }),
       version: 1,
       // localStorage quota protection
