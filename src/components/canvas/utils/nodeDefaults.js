@@ -142,3 +142,11 @@ export const AGENT_MODES = [
   { id: 'colorist', name: '🎨 调色师', desc: '色彩管线 · LUT · 场景过渡' },
   { id: 'prompteng', name: '🤖 提示词工程师', desc: 'AI Agent 提示词生成' },
 ]
+
+
+// ===== libtv-level visual style exports =====
+export const getNodeColor = (type) => NODE_COLORS[type] || NODE_COLORS.agent
+export const getNodeBorderColor = (type) => NODE_COLORS[type]?.border || '#555'
+export const getNodeGlow = (type) => NODE_COLORS[type]?.glow || 'transparent'
+export const getNodeIconColor = (type) => NODE_COLORS[type]?.icon || '#fff'
+export const getStatusColor = (status) => STATUS_COLORS[status] || STATUS_COLORS.idle
