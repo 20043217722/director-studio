@@ -2,7 +2,7 @@ import { memo, useMemo, useCallback, useState } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { useCanvasStore } from '../utils/canvasStore'
 import { cardHeader, cardBody, cardFooter, genButtonStyle, textareaStyle, sectionLabel } from '../utils/cardStyle'
-import { NODE_COLORS, STATUS_COLORS } from '../utils/canvasTheme'
+import { NODE_COLORS, STATUS_COLORS, statusDotStyle } from '../utils/canvasTheme'
 
 // ===== Intent Detection Patterns =====
 const INTENTS = [
