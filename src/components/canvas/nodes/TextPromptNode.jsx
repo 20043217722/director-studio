@@ -75,6 +75,10 @@ export const TextPromptNode = memo(({ id, data }) => {
   const paramCount = Object.keys(params).length
 
   // Build downstream with extracted params
+  const handleChange = useCallback((e) => {
+    updateNodeData(id, { prompt: e.target.value })
+  }, [id, updateNodeData])
+
   const handleAutoBuild = useCallback(() => {
     if (!detectedIntent) return
     const targetType = { image: 'imageGen', video: 'videoGen', agent: 'agent' }[detectedIntent.key] || 'preview'
