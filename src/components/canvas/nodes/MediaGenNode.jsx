@@ -1,19 +1,15 @@
-import { memo, useState, useCallback, useEffect, useSyncExternalStore } from 'react'
+import { memo, useState, useCallback, useEffect, useSyncExternalStore, useRef } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { useCanvasStore } from '../utils/canvasStore'
 import Lightbox from '../Lightbox'
 import { IMAGE_MODELS, VIDEO_MODELS, HANDLE_IDS } from '../utils/nodeDefaults'
 
-// --- Reactive API key detection ---
 function useModelKeys() {
   const subscribe = useCallback((cb) => {
     const handler = () => cb()
     window.addEventListener('storage', handler)
     window.addEventListener('apikeys-changed', handler)
-    return () => {
-      window.removeEventListener('storage', handler)
-      window.removeEventListener('apikeys-changed', handler)
-    }
+    return () => { window.removeEventListener('storage', handler); window.removeEventListener('apikeys-changed', handler) }
   }, [])
   const getSnapshot = useCallback(() => {
     try { return JSON.stringify(Object.keys(JSON.parse(localStorage.getItem('api_keys') || '{}')).sort()) }
@@ -22,29 +18,12 @@ function useModelKeys() {
   return new Set(JSON.parse(useSyncExternalStore(subscribe, getSnapshot)))
 }
 
-// --- Drag image to canvas as ReferenceNode ---
 function onImageDragStart(e, img) {
   e.dataTransfer.setData('application/canvas-image', JSON.stringify({
     url: img.url || img.base64, type: 'image',
     name: img.revised_prompt ? img.revised_prompt.slice(0, 40) : 'Generated',
   }))
   e.dataTransfer.effectAllowed = 'copy'
-}
-
-// Auto-create a Preview node downstream if none exists
-function ensurePreviewDownstream(sourceId) {
-  const s = useCanvasStore.getState()
-  const hasPreview = s.edges.some((e) => {
-    if (e.source !== sourceId) return false
-    const tgt = s.nodes.find((n) => n.id === e.target)
-    return tgt && tgt.type === 'preview'
-  })
-  if (hasPreview) return
-  // Auto-build preview
-  const srcNode = s.nodes.find((n) => n.id === sourceId)
-  if (!srcNode) return
-  const pos = { x: srcNode.position.x + 360, y: srcNode.position.y }
-  s.autoBuild(sourceId, 'preview', {}, false)
 }
 
 export const MediaGenNode = memo(({ id, data }) => {
@@ -54,32 +33,23 @@ export const MediaGenNode = memo(({ id, data }) => {
   const [genLoading, setGenLoading] = useState(false)
   const [lightboxIdx, setLightboxIdx] = useState(-1)
   const [videoLightbox, setVideoLightbox] = useState(false)
+  const [showParams, setShowParams] = useState(false)
   const userKeys = useModelKeys()
+  const promptRef = useRef(null)
 
   const mediaType = data.mediaType || 'image'
   const isImage = mediaType === 'image'
   const isVideo = mediaType === 'video'
 
-  // --- Model lists per mode ---
+  const currentModels = isImage ? IMAGE_MODELS : VIDEO_MODELS
   const imageModel = IMAGE_MODELS.find((m) => m.id === data.modelProvider)
   const videoModel = VIDEO_MODELS.find((m) => m.id === data.modelProvider)
-  const currentModels = isImage ? IMAGE_MODELS : VIDEO_MODELS
   const [durMin, durMax] = isVideo ? (videoModel?.durationRange || [3, 15]) : [3, 15]
-
-  // --- Cancel ---
-  const handleCancel = useCallback(() => {
-    useCanvasStore.getState().abortGeneration(id)
-    setGenLoading(false)
-    updateNodeData(id, { status: 'idle', errorMessage: '' })
-  }, [id, updateNodeData])
-
-  // --- Version helpers ---
   const imageVersions = data.imageVersions || []
   const videoVersions = data.videoVersions || []
   const [currentImgVer, setCurrentImgVer] = useState(imageVersions.length > 0 ? imageVersions.length - 1 : 0)
   const [currentVidVer, setCurrentVidVer] = useState(videoVersions.length > 0 ? videoVersions.length - 1 : 0)
 
-  // Build display list: versions + current (if any)
   const allImageVersions = [...imageVersions]
   if (data.generatedImages?.length > 0 && !imageVersions.includes(data.generatedImages)) {
     allImageVersions.push(data.generatedImages)
@@ -89,12 +59,15 @@ export const MediaGenNode = memo(({ id, data }) => {
     allVideoVersions.push(data.generatedVideo)
   }
 
-  // --- Generate ---
+  const handleCancel = useCallback(() => {
+    useCanvasStore.getState().abortGeneration(id)
+    setGenLoading(false)
+    updateNodeData(id, { status: 'idle', errorMessage: '' })
+  }, [id, updateNodeData])
+
   const handleGenerate = async () => {
-    // Video mode can use sourceImage (img2vid) without prompt; image mode requires prompt
     if (!data.prompt && (isImage || !data.sourceImage)) return
     setGenLoading(true)
-    // Save current to versions before generating new
     const versPatch = {}
     if (isImage && data.generatedImages?.length > 0) {
       versPatch.imageVersions = [...(data.imageVersions || []), data.generatedImages]
@@ -117,8 +90,6 @@ export const MediaGenNode = memo(({ id, data }) => {
         })
         if (ctrl.signal.aborted) return
         updateNodeData(id, { generatedImages: r.images || [], status: 'done' })
-        // Auto-create Preview node if no downstream preview exists
-        ensurePreviewDownstream(id)
       } else {
         const { generateVideo, pollVideoGeneration } = await import('../../../lib/canvasApi')
         const { jobId } = await generateVideo(data.prompt || data.sourceImage, {
@@ -128,18 +99,13 @@ export const MediaGenNode = memo(({ id, data }) => {
         })
         if (ctrl.signal.aborted) return
         let lastP = -1
-        for await (const u of pollVideoGeneration(jobId, {
-          provider: data.modelProvider || 'sora',
-          signal: ctrl.signal,
-        })) {
+        for await (const u of pollVideoGeneration(jobId, { provider: data.modelProvider || 'sora', signal: ctrl.signal })) {
           if (ctrl.signal.aborted) return
           const p = u.progress || 0
           if (u.status !== 'done' && p - lastP < 5 && lastP >= 0) continue
           lastP = p
-          // Single atomic update: merge progress + video data into one call
           if (u.status === 'done') {
             updateNodeData(id, { generatedVideo: u, status: 'done', progress: 100 })
-            ensurePreviewDownstream(id)
             break
           }
           updateNodeData(id, { progress: p, status: 'generating', stage: u.stage })
@@ -154,22 +120,16 @@ export const MediaGenNode = memo(({ id, data }) => {
     }
   }
 
-  // Listen for retry event from Preview node
   useEffect(() => {
     const handler = (e) => {
       const s = useCanvasStore.getState()
-      const isUpstream = s.edges.some(
-        edge => edge.source === id && edge.target === e.detail?.previewId
-      )
-      if (isUpstream && !genLoading && data.prompt) {
-        handleGenerate()
-      }
+      const isUpstream = s.edges.some(edge => edge.source === id && edge.target === e.detail?.previewId)
+      if (isUpstream && !genLoading && data.prompt) { handleGenerate() }
     }
     window.addEventListener('preview-retry', handler)
     return () => window.removeEventListener('preview-retry', handler)
   }, [id, genLoading, data.prompt])
 
-  // --- Download ---
   const handleDownload = useCallback((img, e) => {
     e.stopPropagation()
     const a = document.createElement('a')
@@ -186,242 +146,178 @@ export const MediaGenNode = memo(({ id, data }) => {
     document.body.appendChild(a); a.click(); document.body.removeChild(a)
   }, [data.generatedVideo])
 
+  const handlePaste = useCallback((e) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile()
+        if (!file) continue
+        const reader = new FileReader()
+        reader.onload = () => updateNodeData(id, { sourceImage: reader.result })
+        reader.readAsDataURL(file)
+        break
+      }
+    }
+  }, [id, updateNodeData])
+
   const imgItems = (data.generatedImages || []).map((img, i) => ({
-    url: img.url || img.base64, type: 'image', name: img.revised_prompt || `Generated ${i + 1}`,
+    url: img.url || img.base64, type: 'image', name: img.revised_prompt || 'Generated ' + (i + 1),
   }))
 
+  const accentColor = isImage ? '#e94560' : '#0f3460'
+
   return (
-    <div className="canvas-node media-gen-node" style={{ minWidth: 280, maxWidth: 400 }}>
-      {/* --- Handles --- */}
+    <div className="canvas-node" style={{ borderColor: accentColor + '40' }}>
       <Handle type="target" position={Position.Left} id={HANDLE_IDS.target.prompt}
-        style={{ ...handleStyle('var(--accent-music)'), top: '18%' }} />
+        style={{ background: isImage ? '#e94560' : '#0f3460', border: '2px solid #1e1e32', width: 12, height: 12, top: '18%' }} />
       <Handle type="target" position={Position.Left} id={HANDLE_IDS.target.image}
-        style={{ ...handleStyle('var(--accent-clone)'), top: '36%' }} />
+        style={{ background: '#4ade80', border: '2px solid #1e1e32', width: 12, height: 12, top: '38%' }} />
 
-      {/* === TOP: Media Preview Area === */}
-
-      {/* Media type toggle */}
-      <div className="media-tabs">
-        <button className={`media-tab ${isImage ? 'active' : ''}`}
-          onClick={() => updateNodeData(id, { mediaType: 'image' })}>
-          🎨 生图
-        </button>
-        <button className={`media-tab ${isVideo ? 'active' : ''}`}
-          onClick={() => updateNodeData(id, { mediaType: 'video' })}>
-          🎬 生视频
-        </button>
-        <span style={{ fontSize: 10, fontWeight: 600, marginLeft: 'auto', color:
-          data.status === 'done' ? 'var(--success)' :
-          data.status === 'error' ? '#ef4444' :
-          data.status === 'generating' ? 'var(--brand)' : 'var(--text-muted)' }}>
-          {data.status === 'generating' ? '⏳' : data.status === 'done' ? '✅' :
-           data.status === 'error' ? '❌' : ''}
+      {/* Header */}
+      <div className="node-header">
+        <span className="node-icon">{isImage ? 'IMG' : 'VID'}</span>
+        <span className="node-title">{data.label || (isImage ? 'Image Gen' : 'Video Gen')}</span>
+        <span className={'node-status ' + (data.status === 'done' ? 'done' : data.status === 'generating' ? 'generating' : data.status === 'error' ? 'error' : 'idle')}>
+          {data.status === 'generating' ? '...' : data.status === 'done' ? 'OK' : data.status === 'error' ? 'ERR' : ''}
         </span>
       </div>
 
-      {/* Version indicator (image mode) */}
-      {isImage && allImageVersions.length > 1 && (
-        <VersionNav current={currentImgVer} total={allImageVersions.length}
-          onChange={(v) => {
-            setCurrentImgVer(v)
-            updateNodeData(id, { generatedImages: allImageVersions[v] || data.generatedImages })
-          }} />
-      )}
-
-      {/* Image mode: gallery */}
-      {isImage && data.generatedImages?.length > 0 && (
-        <div className="img-gallery" style={{ marginBottom: 8 }}>
-          {data.generatedImages.map((img, i) => (
-            <div key={i} className="img-gallery-item"
-              draggable onDragStart={(e) => onImageDragStart(e, img)}>
-              <img src={img.url || img.base64} alt=""
-                className="img-gallery-thumb" style={{ maxHeight: 220 }}
-                onClick={() => setLightboxIdx(i)} />
-              <div className="img-gallery-actions">
-                <button className="img-action-btn" onClick={() => setLightboxIdx(i)}>🔍</button>
-                <button className="img-action-btn" draggable onDragStart={(e) => onImageDragStart(e, img)}
-                  style={{ cursor: 'grab' }}>⚡</button>
-                <button className="img-action-btn" onClick={(e) => handleDownload(img, e)}>⬇</button>
-              </div>
-            </div>
-          ))}
+      <div className="node-body">
+        {/* Media Type Tabs */}
+        <div className="media-tabs">
+          <button className={'media-tab' + (isImage ? ' active' : '')} onClick={() => updateNodeData(id, { mediaType: 'image' })}>Image</button>
+          <button className={'media-tab' + (isVideo ? ' active' : '')} onClick={() => updateNodeData(id, { mediaType: 'video' })}>Video</button>
         </div>
-      )}
 
-      {/* Image mode: empty placeholder */}
-      {isImage && !data.generatedImages?.length && data.status !== 'generating' && (
-        <div className="media-placeholder" style={{ minHeight: 90, borderRadius: 10,
-          background: 'linear-gradient(135deg, var(--bg-root), var(--bg-elevated))',
-          border: '2px dashed var(--border)', gap: 8 }}>
-          <span style={{ fontSize: 32, opacity: 0.5 }}>🎨</span>
-          <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>输入提示词，点击生成</span>
-          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>支持从上游节点拖入参考图片</span>
-        </div>
-      )}
-
-      {/* Version indicator (video mode) */}
-      {isVideo && allVideoVersions.length > 1 && (
-        <VersionNav current={currentVidVer} total={allVideoVersions.length}
-          onChange={(v) => {
-            setCurrentVidVer(v)
-            updateNodeData(id, { generatedVideo: allVideoVersions[v] || data.generatedVideo })
-          }} />
-      )}
-
-      {/* Video mode: player or progress */}
-      {isVideo && (
-        <>
-          {data.generatedVideo?.url ? (
-            <div className="video-preview-wrap" style={{ marginBottom: 8 }}>
-              <video src={data.generatedVideo.url} controls
-                style={{ width: '100%', maxHeight: 200, borderRadius: 6, background: '#000' }} />
-              <div className="media-actions">
-                <button className="img-action-btn" onClick={() => setVideoLightbox(true)}>🔍</button>
-                <button className="img-action-btn" onClick={handleDownloadVideo}>⬇</button>
+        {/* Image Preview */}
+        {isImage && data.generatedImages?.length > 0 && (
+          <div className="img-gallery">
+            {data.generatedImages.map((img, i) => (
+              <div key={i} className="img-gallery-item" draggable onDragStart={(e) => onImageDragStart(e, img)}>
+                <img src={img.url || img.base64} alt="" className="img-gallery-thumb" onClick={() => setLightboxIdx(i)} />
+                <div className="img-gallery-actions">
+                  <button className="img-action-btn" onClick={() => setLightboxIdx(i)}>+</button>
+                  <button className="img-action-btn" onClick={(e) => handleDownload(img, e)}>v</button>
+                </div>
               </div>
+            ))}
+          </div>
+        )}
+
+        {/* Image Placeholder */}
+        {isImage && !data.generatedImages?.length && data.status !== 'generating' && (
+          <div className="node-preview-placeholder">
+            <span className="ph-icon">[ ]</span>
+            <span>Enter prompt and generate</span>
+          </div>
+        )}
+
+        {/* Video Preview */}
+        {isVideo && data.generatedVideo?.url && (
+          <div className="video-preview-wrap">
+            <video src={data.generatedVideo.url} controls className="video-preview" />
+            <div className="media-actions">
+              <button className="img-action-btn" onClick={() => setVideoLightbox(true)}>+</button>
+              <button className="img-action-btn" onClick={handleDownloadVideo}>v</button>
             </div>
-          ) : data.status !== 'generating' ? (
-            <div className="media-placeholder" style={{ minHeight: 90, borderRadius: 10,
-              background: 'linear-gradient(135deg, var(--bg-root), var(--bg-elevated))',
-              border: '2px dashed var(--border)', gap: 8 }}>
-              <span style={{ fontSize: 32, opacity: 0.5 }}>🎬</span>
-              <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>输入提示词，点击生成</span>
-              <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>图生视频：从上游图片节点拖入</span>
-            </div>
-          ) : null}
+          </div>
+        )}
 
-          {data.status === 'generating' && (
-            <div style={{ padding: '6px 0 10px' }}>
-              <div style={{ background: 'var(--border)', borderRadius: 6, height: 12, marginBottom: 6, overflow: 'hidden' }}>
-                <div style={{ width: `${data.progress || 0}%`, height: '100%',
-                  background: 'linear-gradient(90deg, var(--accent-sfx), #fb923c, #f97316)',
-                  borderRadius: 6, transition: 'width 0.8s ease',
-                  boxShadow: '0 0 12px rgba(249,115,22,0.3)' }} />
-              </div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'center' }}>
-                {data.progress >= 95 ? '✨ 即将完成...' : `⏳ 生成中 ${data.progress || 0}%`}
-              </div>
-            </div>
-          )}
-        </>
-      )}
+        {/* Video Placeholder */}
+        {isVideo && !data.generatedVideo?.url && data.status !== 'generating' && (
+          <div className="node-preview-placeholder">
+            <span className="ph-icon">[V]</span>
+            <span>Enter prompt, click generate</span>
+          </div>
+        )}
 
-      {/* === MIDDLE: Model + Params === */}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-        <select value={data.modelProvider || (isImage ? 'gpt-image-1' : 'sora')}
-          onChange={(e) => updateNodeData(id, { modelProvider: e.target.value })}
-          className="node-select" style={{ flex: 1, minWidth: 100 }}>
-          {currentModels.map((m) => {
-            const hasKey = m.keyReuse ? userKeys.has(m.keyReuse) : false
-            return <option key={m.id} value={m.id}>{hasKey ? '✅' : '🔑'} {m.name}</option>
-          })}
-        </select>
-      </div>
+        {/* Progress bar for video generation */}
+        {isVideo && data.status === 'generating' && (
+          <div className="node-progress-bar">
+            <div className={'node-progress-fill video'} style={{ width: (data.progress || 0) + '%' }} />
+          </div>
+        )}
 
-      {/* Aspect ratio (image) or Duration (video) */}
-      {isImage && (
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 6 }}>
-          {(imageModel?.sizes || ['1024x1024']).map((s) => (
-            <button key={s} className="node-pill"
-              style={{ background: data.aspectRatio === s ? 'var(--accent-music)' : 'var(--bg-root)',
-                color: data.aspectRatio === s ? '#fff' : 'var(--text-dim)' }}
-              onClick={() => updateNodeData(id, { aspectRatio: s })}>{s}</button>
-          ))}
-        </div>
-      )}
+        {/* Version navigation */}
+        {isImage && allImageVersions.length > 1 && (
+          <div className="version-nav">
+            <button onClick={() => { const v = Math.max(0, currentImgVer - 1); setCurrentImgVer(v); updateNodeData(id, { generatedImages: allImageVersions[v] }) }} disabled={currentImgVer <= 0}>Prev</button>
+            <span>v{currentImgVer + 1}/{allImageVersions.length}</span>
+            <button onClick={() => { const v = Math.min(allImageVersions.length - 1, currentImgVer + 1); setCurrentImgVer(v); updateNodeData(id, { generatedImages: allImageVersions[v] }) }} disabled={currentImgVer >= allImageVersions.length - 1}>Next</button>
+          </div>
+        )}
 
-      {isVideo && (
-        <div className="duration-control" style={{ marginBottom: 6 }}>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', minWidth: 24 }}>{data.duration || 5}s</span>
-          <input type="range" min={durMin} max={durMax} step={1}
-            value={data.duration || 5}
-            onChange={(e) => updateNodeData(id, { duration: parseInt(e.target.value) })}
-            style={{ flex: 1 }} />
-          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{durMin}-{durMax}s</span>
-        </div>
-      )}
-
-      {/* === BOTTOM: Prompt + Generate === */}
-      <textarea
-        value={data.prompt || ''}
-        onChange={(e) => updateNodeData(id, { prompt: e.target.value })}
-        placeholder={isImage ? '描述你想生成的画面...' : '描述视频场景... 支持图生视频：从上游拖入图片'}
-        rows={3} className="node-textarea"
-        style={{ marginBottom: 6 }}
-        onClick={(e) => e.stopPropagation()}
-      />
-
-      {/* Generate / Cancel */}
-      <div style={{ display: 'flex', gap: 6 }}>
-        <button className="node-btn node-btn-primary"
-          onClick={handleGenerate} disabled={genLoading || (!data.prompt && (isImage || !data.sourceImage))}
-          style={{ flex: 1,
-            background: isImage
-              ? 'linear-gradient(135deg, var(--accent-music), #7c3aed)'
-              : 'linear-gradient(135deg, var(--accent-sfx), #f97316)',
-            color: '#fff', fontWeight: 700, fontSize: 13, letterSpacing: '0.02em',
-            boxShadow: isImage
-              ? '0 2px 12px rgba(139,92,246,0.25)'
-              : '0 2px 12px rgba(249,115,22,0.25)',
-            opacity: (genLoading || !data.prompt) ? 0.5 : 1 }}>
-          {genLoading
-            ? (isImage ? '⏳ 生成中...' : `⏳ ${data.progress || 0}%`)
-            : (isImage ? '🎨 生成图片' : '🎬 生成视频')}
+        {/* Show/Hide Parameters toggle */}
+        <button onClick={() => setShowParams(!showParams)}
+          style={{ background: 'transparent', border: 'none', color: '#888', fontSize: 10, cursor: 'pointer', textAlign: 'left', padding: 0 }}>
+          {showParams ? 'Hide' : 'Show'} parameters...
         </button>
-        {genLoading && (
-          <button className="node-btn node-btn-danger" onClick={handleCancel}
-            style={{ background: '#ef4444', color: '#fff' }}>✕</button>
+
+        {/* Model selector (collapsed by default) */}
+        {showParams && (
+          <>
+            <select value={data.modelProvider || (isImage ? 'gpt-image-1' : 'sora')}
+              onChange={(e) => updateNodeData(id, { modelProvider: e.target.value })}
+              className="node-select">
+              {currentModels.map((m) => {
+                const hasKey = m.keyReuse ? userKeys.has(m.keyReuse) : false
+                return <option key={m.id} value={m.id}>{hasKey ? '*' : '-'} {m.name}</option>
+              })}
+            </select>
+
+            {isImage && (
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {(imageModel?.sizes || ['1024x1024']).map((s) => (
+                  <button key={s} className={'node-pill' + (data.aspectRatio === s ? ' active' : '')}
+                    onClick={() => updateNodeData(id, { aspectRatio: s })}>{s}</button>
+                ))}
+              </div>
+            )}
+
+            {isVideo && (
+              <div className="duration-control">
+                <span style={{fontSize:11,color:'#888'}}>{data.duration || 5}s</span>
+                <input type="range" min={durMin} max={durMax} step={1} value={data.duration || 5}
+                  onChange={(e) => updateNodeData(id, { duration: parseInt(e.target.value) })} style={{ flex: 1 }} />
+                <span style={{fontSize:10,color:'#666'}}>{durMin}-{durMax}s</span>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Prompt textarea */}
+        <textarea ref={promptRef} value={data.prompt || ''}
+          onChange={(e) => updateNodeData(id, { prompt: e.target.value })}
+          placeholder={isImage ? 'Describe what you want to generate...' : 'Describe video scene...'}
+          className="node-textarea" rows={2} style={{minHeight:48}}
+          onPasteCapture={handlePaste} />
+
+        {/* Generate / Cancel buttons */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button className={'node-btn-generate ' + (isImage ? 'image' : 'video')}
+            onClick={handleGenerate} disabled={genLoading || (!data.prompt && (isImage || !data.sourceImage))}>
+            {genLoading ? (isImage ? 'Generating...' : (data.progress || 0) + '%') : (isImage ? 'Generate Image' : 'Generate Video')}
+          </button>
+          {genLoading && (
+            <button className="node-btn-danger" onClick={handleCancel}>X</button>
+          )}
+        </div>
+
+        {data.status === 'error' && (
+          <div className="node-error">{data.errorMessage}</div>
         )}
       </div>
 
-      {/* Error + retry */}
-      {data.status === 'error' && (
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
-          <div className="node-error" style={{ flex: 1, margin: 0 }}>{data.errorMessage}</div>
-          <button onClick={handleGenerate}
-            style={{ padding: '4px 10px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)',
-              background: 'var(--bg-root)', color: 'var(--text)', cursor: 'pointer' }}>🔄 重试</button>
-        </div>
-      )}
-
-      {/* --- Lightbox --- */}
       {lightboxIdx >= 0 && isImage && imgItems.length > 0 && (
         <Lightbox items={imgItems} index={lightboxIdx} onClose={() => setLightboxIdx(-1)} />
       )}
       {videoLightbox && data.generatedVideo?.url && (
-        <Lightbox items={[{ url: data.generatedVideo.url, type: 'video' }]} index={0}
-          onClose={() => setVideoLightbox(false)} />
+        <Lightbox items={[{ url: data.generatedVideo.url, type: 'video' }]} index={0} onClose={() => setVideoLightbox(false)} />
       )}
 
       <Handle type="source" position={Position.Right} id={HANDLE_IDS.source}
-        style={{ ...handleStyle(isImage ? 'var(--accent-music)' : 'var(--accent-sfx)'), top: '70%' }} />
+        style={{ background: isImage ? '#e94560' : '#0f3460', border: '2px solid #1e1e32', width: 12, height: 12, top: '70%' }} />
     </div>
   )
 })
-
-// === Version Navigation Component ===
-function VersionNav({ current, total, onChange }) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-      padding: '2px 6px', marginBottom: 4, borderRadius: 4,
-      background: 'var(--bg-root)', fontSize: 10,
-    }}>
-      <button onClick={() => onChange(Math.max(0, current - 1))} disabled={current <= 0}
-        style={navBtnStyle}>◀</button>
-      <span style={{ fontWeight: 600, color: 'var(--text)' }}>
-        v{current + 1}/{total}
-      </span>
-      <button onClick={() => onChange(Math.min(total - 1, current + 1))} disabled={current >= total - 1}
-        style={navBtnStyle}>▶</button>
-    </div>
-  )
-}
-
-const navBtnStyle = {
-  background: 'transparent', border: '1px solid var(--border)',
-  borderRadius: 3, padding: '0px 4px', cursor: 'pointer',
-  fontSize: 9, color: 'var(--text-muted)',
-}
-
-const handleStyle = (c) => ({ background: c, border: '2px solid var(--bg-surface)', width: 12, height: 12 })

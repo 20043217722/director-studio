@@ -34,7 +34,7 @@ export const nodeDefaults = {
     template: '1080x1920/image_default.html', tts: 'edge', bgm: 'uplift',
     progress: 0, generatedVideo: null, status: 'idle', errorMessage: '',
   },
-  mediaGen: {
+  mediaGen: { imageGen: ['prompt','image'], videoGen: ['prompt','image'],
     label: '媒体生成', prompt: '', mediaType: 'image',
     modelProvider: 'gpt-image-1', aspectRatio: '1:1', imageCount: 1,
     duration: 5, sourceImage: null,
@@ -89,7 +89,7 @@ export const validConnections = {
   // 🎞️ 短视频 → 预览
   pixelleVideo: { preview: ['input'] },
   // 🎨 媒体生成 → 多向下游
-  mediaGen: {
+  mediaGen: { imageGen: ['prompt','image'], videoGen: ['prompt','image'],
     preview: ['input'], videoGen: ['image'], agent: ['prompt'],
     textPrompt: ['prompt'],    // 生成结果→提示词迭代
     mediaGen: ['prompt', 'image'],  // 链式生成(图→视频等)

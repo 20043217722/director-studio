@@ -1,67 +1,34 @@
-import { memo, useMemo, useCallback, useState } from 'react'
+import { memo, useMemo, useCallback } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { useCanvasStore } from '../utils/canvasStore'
-import { cardHeader, cardBody, cardFooter, genButtonStyle, textareaStyle, sectionLabel } from '../utils/cardStyle'
-import { NODE_COLORS, STATUS_COLORS, statusDotStyle } from '../utils/canvasTheme'
+import { NODE_COLORS } from '../utils/canvasTheme'
 
-// ===== Intent Detection Patterns =====
 const INTENTS = [
-  { key: 'image', label: '🎨 生图', patterns: [/生成图|画.*图|文生图|生成.*图|图生图|配图|插图|海报|生成一张|画一张|create image/i, /sd|dall.e|midjourney|flux|seedream/i] },
-  { key: 'video', label: '🎬 生视频', patterns: [/生成视频|做.*视频|文生视频|图生视频|生成一段|短视频|create video/i, /可灵|kling|seedance|runway|sora|wan/i] },
-  { key: 'agent', label: '🧠 分析', patterns: [/分析|设计角色|设计场景|解析|诊断|拆解|帮我写|帮我设计|帮我分析|写.*剧本|设计.*人物/i] },
+  { key: 'image', label: 'Image', patterns: [/生成图|画.*图|文生图|配图|插图|海报|生成一张|^\/image/i, /dall.e|midjourney|flux|seedream/i] },
+  { key: 'video', label: 'Video', patterns: [/生成视频|文生视频|图生视频|短视频|^\/video/i, /可灵|kling|seedance|runway|sora|wan/i] },
+  { key: 'agent', label: 'Agent', patterns: [/分析|设计角色|设计场景|解析|诊断|拆解|帮我写|写.*剧本|^\/agent/i] },
 ]
 
-// ===== Parameter Extraction =====
 function extractParams(text) {
   const params = {}
-
-  // Aspect ratio
-  const ratioMatch = text.match(/(\d+:\d+)\s*(比例|尺寸|画幅|比例)?/)
+  const ratioMatch = text.match(/(\d+:\d+)\s*(比例|尺寸|画幅)?/)
   if (ratioMatch) params.aspectRatio = ratioMatch[1]
-
-  // Duration
   const durMatch = text.match(/(\d+)\s*(秒|s|sec)/i)
-  if (durMatch) params.duration = parseInt(durMatch[1])
-
-  // Resolution
-  const resMatch = text.match(/(\d+)\s*(k|K)\b/)
-  if (resMatch) params.resolution = resMatch[1] + 'K'
-
-  // Negative prompts
-  const negMatch = text.match(/(?:不要|排除|避免|禁止|负面|no\s|without\s|exclude\s)(.+?)(?:[，。,\.\n]|$)/gi)
-  if (negMatch) params.negativePrompt = negMatch.map((m) => m.replace(/(?:不要|排除|避免|禁止|负面|no\s|without\s|exclude\s)/i, '').trim()).join(', ')
-
-  // Style keywords
-  const styleBank = ['赛博朋克', '古装', '现代', '复古', '科幻', '写实', '二次元', '水墨', '油画',
-    '极简', '暗黑', '清新', '日系', '韩系', '欧美', '港风', '蒸汽波', '废土', '梦幻',
-    'cyberpunk', 'realistic', 'anime', 'oil painting', 'minimalist', 'dark', 'vintage']
-  const found = styleBank.filter((s) => text.toLowerCase().includes(s.toLowerCase()))
-  if (found.length) params.styles = found.slice(0, 5)
-
-  // Count
-  const countMatch = text.match(/(\d+)\s*(张|幅|个|组)/)
-  if (countMatch) params.imageCount = parseInt(countMatch[1])
-
-  // Model preference
-  const modelBank = { 'dall-e': 'openai', 'dalle': 'openai', 'sd': 'stability', 'stable diffusion': 'stability',
-    'flux': 'flux', 'midjourney': 'midjourney', 'mj': 'midjourney', 'seedream': 'seedream', '通义': 'qwen',
-    '可灵': 'kling', 'kling': 'kling', 'seedance': 'seedance', 'wan': 'wan', 'sora': 'sora' }
+  if (durMatch) params.duration = Math.max(3, Math.min(15, parseInt(durMatch[1])))
+  const modelBank = { 'dall-e': 'openai', 'dalle': 'openai', 'flux': 'flux', 'midjourney': 'midjourney',
+    'seedream': 'seedream', '可灵': 'kling', 'kling': 'kling', 'seedance': 'seedance', 'wan': 'wan', 'sora': 'sora' }
   for (const [kw, model] of Object.entries(modelBank)) {
     if (text.toLowerCase().includes(kw)) { params.modelProvider = model; break }
   }
-
   return params
 }
 
-// ===== Node Component =====
 export const TextPromptNode = memo(({ id, data }) => {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData)
   const autoBuild = useCanvasStore((s) => s.autoBuild)
-  const [showParams, setShowParams] = useState(false)
-
   const text = data.prompt || ''
+  const col = NODE_COLORS.textPrompt || NODE_COLORS.agent
 
-  // Detect intent
   const detectedIntent = useMemo(() => {
     if (!text.trim()) return null
     for (const intent of INTENTS) {
@@ -70,97 +37,51 @@ export const TextPromptNode = memo(({ id, data }) => {
     return null
   }, [text])
 
-  // Extract params
   const params = useMemo(() => text ? extractParams(text) : {}, [text])
-  const paramCount = Object.keys(params).length
 
-  // Build downstream with extracted params
   const handleChange = useCallback((e) => {
     updateNodeData(id, { prompt: e.target.value })
   }, [id, updateNodeData])
 
   const handleAutoBuild = useCallback(() => {
     if (!detectedIntent) return
-    const targetType = { image: 'imageGen', video: 'videoGen', agent: 'agent' }[detectedIntent.key] || 'preview'
-
-    const genData = { prompt: text }
+    const targetType = { image: 'mediaGen', video: 'mediaGen', agent: 'agent' }[detectedIntent.key] || 'mediaGen'
+    const genData = { prompt: text, mediaType: detectedIntent.key === 'video' ? 'video' : 'image' }
     if (params.aspectRatio) genData.aspectRatio = params.aspectRatio
-    if (params.duration) genData.duration = Math.max(3, Math.min(15, params.duration))
+    if (params.duration) genData.duration = params.duration
     if (params.modelProvider) genData.modelProvider = params.modelProvider
-    if (params.negativePrompt) genData.negativePrompt = params.negativePrompt
-    if (params.imageCount) genData.imageCount = Math.min(4, params.imageCount)
-
     autoBuild(id, targetType, genData, detectedIntent.key !== 'agent')
   }, [detectedIntent, id, text, params, autoBuild])
 
-  // Manually connect to downstream
-  const handleConnectTo = useCallback((targetType) => {
-    const genData = { prompt: text }
-    if (params.aspectRatio) genData.aspectRatio = params.aspectRatio
-    if (params.modelProvider) genData.modelProvider = params.modelProvider
-    if (params.duration) genData.duration = Math.max(3, Math.min(15, params.duration))
-    autoBuild(id, targetType, genData, false)
-  }, [id, text, params, autoBuild])
-
-    const col = NODE_COLORS.textPrompt || NODE_COLORS.agent
-  const statusColor = data.status === 'generating' ? STATUS_COLORS.running : data.status === 'success' ? STATUS_COLORS.success : data.status === 'error' ? STATUS_COLORS.error : STATUS_COLORS.idle
-
   return (
-    <div style={{
-      background: col.bg, border: `1.5px solid ${col.border}`, borderRadius: 10,
-      boxShadow: `0 0 12px ${col.glow}`, minWidth: 260, maxWidth: 400,
-      overflow: 'hidden', fontFamily: 'system-ui, -apple-system, sans-serif',
-    }}>
-      {/* Header */}
-      <div style={cardHeader('textPrompt', 'Text Prompt', data.status)}>
-        <span style={statusDotStyle(data.status)} />
-        <span>📝 {data.label || 'Text Prompt'}</span>
-        <span style={{flex:1}} />
-        <span style={{fontSize:10,opacity:0.5}}>text</span>
+    <div className="canvas-node" style={{ borderColor: col.border + '66', boxShadow: '0 2px 16px rgba(0,0,0,0.3), 0 0 12px ' + col.glow }}>
+      <div className="node-header">
+        <span className="node-icon">[TX]</span>
+        <span className="node-title">{data.label || 'Text Prompt'}</span>
+        <span className="node-status idle">{text.length ? text.length + 'ch' : 'idle'}</span>
       </div>
-      {/* Body */}
-      <div style={cardBody()}>
-        <div style={sectionLabel()}>Prompt</div>
-        <textarea
-          value={text}
-          onChange={handleChange}
-          placeholder='describe what you want to create...
-e.g. "a cinematic shot of a lone figure standing in rain at night, neon reflections on wet pavement, 1990s crime drama style"'
-          style={textareaStyle()}
-        />
+      <div className="node-body">
+        <div className="node-section-label">PROMPT</div>
+        <textarea value={text} onChange={handleChange}
+          placeholder={'Describe what you want to create...\ne.g. a cinematic shot of a lone figure standing in rain at night'}
+          className="node-textarea" rows={3} />
         {detectedIntent && (
-          <div style={{fontSize:11, color:col.icon, padding:'4px 8px', background:col.glow, borderRadius:4}}>
-            ➜ Detected: {detectedIntent.label}
+          <div style={{fontSize:11, color:col.icon, padding:'4px 10px', background:'rgba(108,99,255,0.08)', borderRadius:6}}>
+            Detected: {detectedIntent.label}
           </div>
         )}
-        {paramCount > 0 && !showParams && (
-          <button onClick={() => setShowParams(true)}
-            style={{fontSize:11, color:col.icon, background:'transparent', border:'none', cursor:'pointer', padding:0, textAlign:'left'}}>
-            📋 {paramCount} parameter(s) extracted — click to view
+        <div style={{display:'flex', gap:6, alignItems:'center'}}>
+          <span style={{fontSize:10, color:'#666', flex:1}}>{text.length} chars</span>
+          <button onClick={handleAutoBuild} disabled={!detectedIntent}
+            className="node-btn node-btn-primary" style={{fontSize:11, padding:'5px 14px'}}>
+            Auto Build
           </button>
-        )}
+        </div>
       </div>
-      {/* Footer */}
-      <div style={cardFooter()}>
-        <span style={{fontSize:10, color:'#666'}}>{text.length} chars</span>
-        <button onClick={handleAutoBuild} disabled={!detectedIntent}
-          style={genButtonStyle('textPrompt', !detectedIntent)}>
-          ⚡ Auto Build
-        </button>
-      </div>
-
       <Handle type="target" position={Position.Left} id="prompt"
-        style={{ background: "var(--accent-tts)", border: "2px solid var(--bg-surface)", width: 14, height: 14 }} />
+        style={{ background: col.border, border: '2px solid #1e1e32', width: 12, height: 12, top: '30%' }} />
       <Handle type="source" position={Position.Right} id="output"
-        style={{ background: "var(--accent-tts)", border: "2px solid var(--bg-surface)", width: 14, height: 14 }} />
+        style={{ background: col.border, border: '2px solid #1e1e32', width: 12, height: 12, top: '70%' }} />
     </div>
   )
 })
-
-function ParamPill({ label, color }) {
-  return (
-    <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: color, color: '#fff', fontWeight: 600, opacity: 0.85 }}>
-      {label}
-    </span>
-  )
-}

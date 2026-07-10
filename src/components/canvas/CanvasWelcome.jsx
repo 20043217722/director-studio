@@ -1,58 +1,29 @@
 import { useState, useCallback } from 'react'
 import { useCanvasStore } from './utils/canvasStore'
-import { WORKFLOW_TEMPLATES } from './utils/workflowTemplates'
-import { NODE_COLORS } from './utils/canvasTheme'
 
 const QUICK_STARTS = [
-  {
-    icon: '🖼️', label: '文生图', desc: '文本 → 图片生成 → 预览',
-    nodes: [
-      { type: 'textPrompt', position: { x: 80, y: 200 } },
-      { type: 'imageGen', position: { x: 380, y: 180 } },
-      { type: 'preview', position: { x: 720, y: 200 } },
-    ],
-    edges: [{ source: 0, target: 1 }, { source: 1, target: 2 }],
-  },
-  {
-    icon: '🎬', label: '图生视频', desc: '参考图 → 视频生成 → 预览',
-    nodes: [
-      { type: 'reference', position: { x: 80, y: 200 } },
-      { type: 'videoGen', position: { x: 380, y: 180 } },
-      { type: 'preview', position: { x: 720, y: 200 } },
-    ],
-    edges: [{ source: 0, target: 1 }, { source: 1, target: 2 }],
-  },
-  {
-    icon: '🧠', label: '多Agent协作', desc: '人物 → 场景 → 剧幕分析',
-    nodes: [
-      { type: 'textPrompt', position: { x: 60, y: 200 } },
-      { type: 'agent', position: { x: 380, y: 40 }, data: { agentMode: 'character' } },
-      { type: 'agent', position: { x: 380, y: 200 }, data: { agentMode: 'scene' } },
-      { type: 'agent', position: { x: 380, y: 360 }, data: { agentMode: 'seedance' } },
-      { type: 'preview', position: { x: 720, y: 200 } },
-    ],
-    edges: [{ source: 0, target: 1 }, { source: 0, target: 2 }, { source: 0, target: 3 },
-      { source: 1, target: 4 }, { source: 2, target: 4 }, { source: 3, target: 4 }],
-  },
-  {
-    icon: '📝', label: '文生视频', desc: '文本 → 视频生成 → 预览',
-    nodes: [
-      { type: 'textPrompt', position: { x: 80, y: 200 } },
-      { type: 'videoGen', position: { x: 380, y: 180 } },
-      { type: 'preview', position: { x: 720, y: 200 } },
-    ],
-    edges: [{ source: 0, target: 1 }, { source: 1, target: 2 }],
-  },
+  { icon: 'IMG', label: 'Text to Image', desc: 'Text -> Image Gen -> Preview',
+    nodes: [ { type: 'textPrompt', position: { x: 80, y: 200 } },
+             { type: 'mediaGen', position: { x: 380, y: 180 }, data: { mediaType: 'image' } },
+             { type: 'preview', position: { x: 720, y: 200 } } ],
+    edges: [{ source: 0, target: 1 }, { source: 1, target: 2 }] },
+  { icon: 'VID', label: 'Image to Video', desc: 'Reference -> Video Gen -> Preview',
+    nodes: [ { type: 'reference', position: { x: 80, y: 200 } },
+             { type: 'mediaGen', position: { x: 380, y: 180 }, data: { mediaType: 'video' } },
+             { type: 'preview', position: { x: 720, y: 200 } } ],
+    edges: [{ source: 0, target: 1 }, { source: 1, target: 2 }] },
+  { icon: 'AI', label: 'Multi-Agent', desc: 'Text -> Agents -> Preview',
+    nodes: [ { type: 'textPrompt', position: { x: 60, y: 200 } },
+             { type: 'agent', position: { x: 380, y: 40 }, data: { agentMode: 'character' } },
+             { type: 'agent', position: { x: 380, y: 200 }, data: { agentMode: 'scene' } },
+             { type: 'preview', position: { x: 720, y: 200 } } ],
+    edges: [{ source: 0, target: 1 }, { source: 0, target: 2 }, { source: 1, target: 3 }, { source: 2, target: 3 }] },
+  { icon: 'TXT', label: 'Text to Video', desc: 'Text -> Video Gen -> Preview',
+    nodes: [ { type: 'textPrompt', position: { x: 80, y: 200 } },
+             { type: 'mediaGen', position: { x: 380, y: 180 }, data: { mediaType: 'video' } },
+             { type: 'preview', position: { x: 720, y: 200 } } ],
+    edges: [{ source: 0, target: 1 }, { source: 1, target: 2 }] },
 ]
-
-// Intent detection (shared with CanvasInputBar)
-function detectIntent(text) {
-  if (!text.trim()) return null
-  if (/生成图|画.*图|文生图|配图|插图|海报|生成一张|^\/image/i.test(text)) return 'imageGen'
-  if (/生成视频|做.*视频|文生视频|图生视频|短视频|^\/video/i.test(text)) return 'videoGen'
-  if (/分析|设计角色|设计场景|帮我写|写.*剧本|^\/agent/i.test(text)) return 'agent'
-  return 'imageGen'
-}
 
 export function CanvasWelcome() {
   const batchAddNodes = useCanvasStore((s) => s.batchAddNodes)
@@ -61,139 +32,60 @@ export function CanvasWelcome() {
 
   const handleNlSubmit = useCallback(() => {
     if (!nlInput.trim()) return
-    if (nodes.length > 0 && !window.confirm('画布已有节点，是否清空并应用此模板？')) return
+    if (nodes.length > 0 && !window.confirm('Canvas has existing nodes. Clear and apply template?')) return
     if (nodes.length > 0) useCanvasStore.getState().clearCanvas()
-
-    const targetType = detectIntent(nlInput)
     const s = useCanvasStore.getState()
     const beforeCount = s.nodes.length
     s.batchAddNodes({
       nodes: [
         { type: 'textPrompt', position: { x: 80, y: 200 } },
-        { type: targetType, position: { x: 420, y: 180 } },
+        { type: 'mediaGen', position: { x: 420, y: 180 }, data: { mediaType: 'image' } },
         { type: 'preview', position: { x: 760, y: 200 } },
       ],
       edges: [{ source: 0, target: 1 }, { source: 1, target: 2 }],
     })
-    // Find the textPrompt node by scanning from beforeCount
     const afterNodes = s.nodes
     for (let i = beforeCount; i < afterNodes.length; i++) {
-      if (afterNodes[i].type === 'textPrompt') {
-        s.updateNodeData(afterNodes[i].id, { prompt: nlInput.trim() })
-        break
-      }
+      if (afterNodes[i].type === 'textPrompt') { s.updateNodeData(afterNodes[i].id, { prompt: nlInput.trim() }); break }
     }
     setNlInput('')
   }, [nlInput, nodes])
 
   const handleTemplate = (template) => {
-    if (nodes.length > 0 && !window.confirm('画布已有节点，是否清空并应用此模板？')) return
+    if (nodes.length > 0 && !window.confirm('Canvas has existing nodes. Clear and apply template?')) return
     if (nodes.length > 0) useCanvasStore.getState().clearCanvas()
     batchAddNodes({ ...template })
   }
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 5 }}>
-      <div className="pointer-events-auto text-center p-8 rounded-2xl"
-        style={{
-          background: 'var(--glass-bg)', backdropFilter: 'var(--glass-blur)',
-          border: '1px solid var(--glass-border)', maxWidth: 520,
-        }}>
-        <div style={{ fontSize: 40, marginBottom: 4 }}>♾️</div>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
-          无限画布
-        </h2>
+    <div className="canvas-welcome">
+      <div className="canvas-welcome-card">
+        <div style={{ fontSize: 32, marginBottom: 8 }}>+</div>
+        <h2 style={{fontSize:18,fontWeight:700,color:'#e0e0f0',marginBottom:6}}>Infinite Canvas</h2>
 
-        {/* Natural language input */}
-        <div style={{
-          display: 'flex', gap: 6, marginBottom: 16,
-          background: 'var(--bg-root)', borderRadius: 10, padding: '4px 6px',
-          border: '1px solid var(--border)',
-        }}>
-          <input
-            value={nlInput}
-            onChange={(e) => setNlInput(e.target.value)}
+        <div className="canvas-welcome-input">
+          <input value={nlInput} onChange={(e) => setNlInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleNlSubmit() }}
-            placeholder="输入创作需求，Enter 一键搭建..."
-            style={{
-              flex: 1, background: 'transparent', border: 'none', outline: 'none',
-              fontSize: 13, color: 'var(--text)', padding: '8px 6px',
-            }}
-          />
-          <button onClick={handleNlSubmit} disabled={!nlInput.trim()}
-            style={{
-              background: 'var(--accent)', color: '#fff', border: 'none',
-              borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600,
-              cursor: 'pointer', opacity: nlInput.trim() ? 1 : 0.4,
-              whiteSpace: 'nowrap',
-            }}>
-            ▶ 生成
-          </button>
+            placeholder="Describe your creative idea, Enter to build..." />
+          <button onClick={handleNlSubmit} disabled={!nlInput.trim()}>Build</button>
         </div>
 
-        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
-          或选择快速模板：
-        </p>
+        <p style={{fontSize:10,color:'#666',marginBottom:10}}>or choose a quick template:</p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+        <div className="canvas-welcome-templates">
           {QUICK_STARTS.map((qs) => (
-            <button key={qs.label} onClick={() => handleTemplate(qs)}
-              style={{
-                padding: '10px', borderRadius: 8, textAlign: 'left',
-                border: '1px solid var(--border)', background: 'var(--bg-elevated)',
-                color: 'var(--text)', cursor: 'pointer', transition: 'all 0.15s',
-              }}
-              onMouseEnter={(e) => { e.target.style.borderColor = 'var(--accent)'; e.target.style.transform = 'translateY(-1px)' }}
-              onMouseLeave={(e) => { e.target.style.borderColor = 'var(--border)'; e.target.style.transform = '' }}
-            >
-              <div style={{ fontSize: 18, marginBottom: 2 }}>{qs.icon}</div>
-              <div style={{ fontSize: 11, fontWeight: 600 }}>{qs.label}</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>{qs.desc}</div>
+            <button key={qs.label} onClick={() => handleTemplate(qs)} className="canvas-welcome-tpl">
+              <div className="tpl-icon">{qs.icon}</div>
+              <div className="tpl-name">{qs.label}</div>
+              <div className="tpl-desc">{qs.desc}</div>
             </button>
           ))}
         </div>
 
-        <div style={{ marginTop: 14, fontSize: 10, color: 'var(--text-muted)' }}>
-          💡 <kbd style={kbdStyle}>Ctrl+Z</kbd> 撤销 <kbd style={kbdStyle}>Del</kbd> 删除
-          {' '}<kbd style={kbdStyle}>右键</kbd> 快速添加
-        {/* Workflow Template Gallery — libtv-style quick start */}
-  <div style={{marginTop:32,textAlign:'center'}}>
-    <h3 style={{fontSize:16,fontWeight:700,color:'var(--text)',marginBottom:8}}>一键搭建工作流</h3>
-    <p style={{fontSize:12,color:'var(--text-dim)',marginBottom:20}}>选择一个预设管线，自动创建节点和连线</p>
-    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:10,maxWidth:700,margin:'0 auto'}}>
-      {WORKFLOW_TEMPLATES.map(tpl => {
-        const border = NODE_COLORS[tpl.nodes[0]?.type]?.border || '#555'
-        return (
-          <div key={tpl.id}
-            onClick={() => {
-              const { nodes, edges } = buildTemplateWorkflow(tpl)
-              useCanvasStore.getState().setNodes(nodes)
-              useCanvasStore.getState().setEdges(edges)
-              setTimeout(() => useCanvasStore.getState().fitView?.(), 100)
-            }}
-            style={{
-              background:'var(--bg-card)',border:`1px solid ${border}33`,borderRadius:8,padding:14,
-              cursor:'pointer',transition:'all 0.15s',textAlign:'left',
-            }}
-            onMouseEnter={(e) => {e.currentTarget.style.borderColor=border;e.currentTarget.style.boxShadow='0 0 12px '+border+'22'}}
-            onMouseLeave={(e) => {e.currentTarget.style.borderColor=border+'33';e.currentTarget.style.boxShadow='none'}}
-          >
-            <div style={{fontSize:20,marginBottom:6}}>{tpl.icon}</div>
-            <div style={{fontSize:13,fontWeight:600,color:'var(--text)',marginBottom:4}}>{tpl.name}</div>
-            <div style={{fontSize:11,color:'var(--text-dim)',lineHeight:1.4}}>{tpl.desc}</div>
-            <div style={{fontSize:10,color:border,marginTop:8}}>{tpl.nodes.length}节点 · {tpl.edges.length}连线</div>
-          </div>
-        )
-      })}
-    </div>
-  </div>
-</div>
+        <div style={{marginTop:12,fontSize:10,color:'#555'}}>
+          Ctrl+Z Undo | Del Delete | Right-click Add
+        </div>
       </div>
     </div>
   )
-}
-
-const kbdStyle = {
-  background: 'var(--bg-root)', border: '1px solid var(--border)',
-  borderRadius: 3, padding: '1px 5px', fontSize: 10, fontFamily: 'monospace',
 }

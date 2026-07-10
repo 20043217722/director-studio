@@ -517,7 +517,7 @@ export const useCanvasStore = create(
         const newEdges = [...get().edges, {
           ...connection,
           id: `e_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-          type: 'smoothstep', animated: true,
+          type: 'default', animated: true,
           label,
           labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
           labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
@@ -567,7 +567,7 @@ export const useCanvasStore = create(
             target: ids[e.target],
             sourceHandle: e.sourceHandle || 'output',
             targetHandle: e.targetHandle || 'prompt',
-            type: 'smoothstep', animated: true, label,
+            type: 'default', animated: true, label,
             labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
             labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
             labelBgPadding: [4, 3], labelBgBorderRadius: 3,
@@ -600,7 +600,7 @@ export const useCanvasStore = create(
         const newEdges = [...s.edges, {
           id: `e_${Date.now()}_a`, source: sourceId, sourceHandle: 'output',
           target: genId, targetHandle: 'prompt',
-          type: 'smoothstep', animated: true, label: edgeLabel,
+          type: 'default', animated: true, label: edgeLabel,
           labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
           labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
           labelBgPadding: [4, 3], labelBgBorderRadius: 3,
@@ -619,7 +619,7 @@ export const useCanvasStore = create(
           newEdges.push({
             id: `e_${Date.now()}_b`, source: genId, sourceHandle: 'output',
             target: previewId, targetHandle: 'input',
-            type: 'smoothstep', animated: true, label: previewEdgeLabel,
+            type: 'default', animated: true, label: previewEdgeLabel,
             labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
             labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
             labelBgPadding: [4, 3], labelBgBorderRadius: 3,
@@ -740,7 +740,7 @@ export const useCanvasStore = create(
             {
               id: `e_${Date.now()}_a`, source: srcNode.id, target: newId,
               sourceHandle: HANDLE_IDS.source, targetHandle: HANDLE_IDS.target.prompt,
-              type: 'smoothstep', animated: true, label: label1,
+              type: 'default', animated: true, label: label1,
               labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
               labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
               labelBgPadding: [4, 3], labelBgBorderRadius: 3,
@@ -749,7 +749,7 @@ export const useCanvasStore = create(
             {
               id: `e_${Date.now()}_b`, source: newId, target: tgtNode.id,
               sourceHandle: HANDLE_IDS.source, targetHandle: edge.targetHandle || HANDLE_IDS.target.input,
-              type: 'smoothstep', animated: true, label: label2,
+              type: 'default', animated: true, label: label2,
               labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
               labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
               labelBgPadding: [4, 3], labelBgBorderRadius: 3,
