@@ -14,7 +14,7 @@ import ThemeSwitcher, { getEffectiveTheme } from "./components/ThemeSwitcher";
 import MobileTabBar from "./components/MobileTabBar";
 import { loadSessionHistory, saveSessionHistory } from "./lib/sessionStore";
 import AgentIcon from "./components/AgentIcon";
-import CanvasWorkspace from "./components/canvas/CanvasWorkspace";
+
 import ErrorBoundary from "./components/ErrorBoundary";
 import PassGate from "./components/PassGate";
 
@@ -50,6 +50,16 @@ export default function App() {
       window.location.search = "";
     }
   }, []);
+
+  useEffect(() => {
+    if (mode === 'canvas' && !canvasModule && !canvasError) {
+      import('./components/canvas/CanvasWorkspace')
+        .then(m => setCanvasModule(() => m.default))
+        .catch(e => setCanvasError(e.message))
+    }
+  }, [mode, canvasModule, canvasError])
+  const [canvasModule, setCanvasModule] = useState(null)
+  const [canvasError, setCanvasError] = useState(null)
   const [mode, setMode] = useState(() => localStorage.getItem("director_studio_last_mode") || "director");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -506,9 +516,7 @@ export default function App() {
           <button onClick={clearHistory} className="p-1.5 rounded-lg opacity-45 hover:opacity-80 transition-opacity text-sm" title="清空记录">🗑</button>
           <button onClick={() => setSettingsOpen(true)} style={{padding:'6px 12px',borderRadius:6,border:'1px solid var(--border-glow)',background:'var(--bg-card)',color:'var(--text)',cursor:'pointer',fontSize:13,fontWeight:600}} title="设置">⚙ 设置</button>
         </header>
-        {mode === "canvas" ? (
-          <CanvasWorkspace />
-        ) : (
+        {mode === 'canvas' ? (canvasError ? (<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%',color:'#ef4444',fontSize:14,flexDirection:'column',gap:8}}><div>画布模块加载失败</div><div style={{fontSize:11,color:'#888'}}>{canvasError}</div><button onClick={() => {setCanvasError(null);setCanvasModule(null)}} style={{marginTop:8,padding:'6px 16px',borderRadius:6,border:'1px solid #2a2a45',background:'#1e1e32',color:'#c0c0d0',cursor:'pointer'}}>重试</button></div>) : canvasModule ? React.createElement(canvasModule) : (<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%',color:'#888',fontSize:14}}>加载中...</div>)) : (
           <>
             {/* Agent tabs */}
             <div style={{display:"flex",gap:2,padding:"2px 6px",overflowX:"auto",background:"var(--bg-root)",borderBottom:"1px solid var(--border)",minHeight:30,alignItems:"flex-end"}}>
