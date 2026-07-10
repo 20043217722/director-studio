@@ -29,9 +29,9 @@ export const ReferenceNode = memo(({ id, data }) => {
   const onPaste = useCallback((e) => { const items = e.clipboardData?.items; if (items) { for (const item of items) { if (item.type.startsWith('image/')) { handleFile(item.getAsFile()); break } } } }, [handleFile])
 
   return (
-    <div className="canvas-node" style={{borderColor:'#4ade8040'}} onDrop={onDrop} onDragOver={(e) => { e.preventDefault(); setDragOver(true) }} onDragLeave={() => setDragOver(false)} onPasteCapture={onPaste}>
+    <div className={canvas-node} style={{borderColor:'#4ade8040'}} onDrop={onDrop} onDragOver={(e) => { e.preventDefault(); setDragOver(true) }} onDragLeave={() => setDragOver(false)} onPasteCapture={onPaste}>
       <div className="node-header">
-        <span className="node-icon">参考</span>
+        <div className='node-header-accent reference' /><span className='node-icon'>参考</span>
         <span className="node-title">{data.label || '参考素材'}</span>
       </div>
       <div className="node-body">
@@ -49,6 +49,7 @@ export const ReferenceNode = memo(({ id, data }) => {
         )}
       </div>
       <Handle type="source" position={Position.Right} id="output" style={{ background: '#4ade80', border: '2px solid #1e1e32', width: 12, height: 12 }} />
+      <div className='handle-label handle-label-right' style={{top:'50%',marginTop:-8}}>素材输出</div>
     </div>
   )
 })

@@ -32,12 +32,14 @@ export const PreviewNode = memo(({ id, data }) => {
   }, [id])
 
   return (
-    <div className="canvas-node" style={{borderColor:'#38bdf840'}}>
+    <div className={canvas-node} style={{borderColor:'#38bdf840'}}>
       <Handle type="target" position={Position.Left} id="input" style={{ background: '#38bdf8', border: '2px solid #1e1e32', width: 12, height: 12 }} />
+      <div className='handle-label handle-label-left' style={{top:'50%',marginTop:-8}}>输入</div>
       <Handle type="source" position={Position.Right} id="output" style={{ background: '#38bdf8', border: '2px solid #1e1e32', width: 12, height: 12 }} />
+      <div className='handle-label handle-label-right' style={{top:'50%',marginTop:-8}}>输出</div>
 
       <div className="node-header">
-        <span className="node-icon">预览</span>
+        <div className='node-header-accent preview' /><span className='node-icon'>预览</span>
         <span className="node-title">{data.label || '预览输出'}</span>
         <span className={'node-status ' + (hasContent ? 'done' : 'idle')}>{hasContent ? '完成' : '待输入'}</span>
       </div>
