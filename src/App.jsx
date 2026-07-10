@@ -51,7 +51,7 @@ export default function App() {
     }
   }, []);
   const [mode, setMode] = useState(() => localStorage.getItem("director_studio_last_mode") || "director");
-  const [messages, setMessages] = useState(() => loadSessionHistory(mode));
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const sessionsRef = useRef({});
   const [activeTabs, setActiveTabs] = useState(() => [localStorage.getItem("director_studio_last_mode") || "director"]);
@@ -105,6 +105,7 @@ export default function App() {
 
   // Save last active mode
   useEffect(() => { localStorage.setItem("director_studio_last_mode", mode); }, [mode]);
+  useEffect(() => { try { setMessages(loadSessionHistory(mode)) } catch { setMessages([]) } }, [mode]);
 
   function switchMode(newMode) {
     const cur = sessionsRef.current[mode] || {};
