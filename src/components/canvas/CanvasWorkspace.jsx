@@ -3,7 +3,7 @@ import { ReactFlow, ReactFlowProvider, Background, Controls, MiniMap, useReactFl
 import '@xyflow/react/dist/style.css'
 import { useCanvasStore, validateConnection } from './utils/canvasStore'
 import { validateHandleTypes, DATA_TYPES } from './utils/typeSystem'
-import { getFavorites, toggleFavorite, getRecents, addRecent } from './utils/nodeDefaults'
+import { getFavorites, toggleFavorite, getRecents, addRecent } from './utils/paletteStore'
 import { TextPromptNode } from './nodes/TextPromptNode'
 import { MediaGenNode } from './nodes/MediaGenNode'
 import { ReferenceNode } from './nodes/ReferenceNode'

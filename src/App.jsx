@@ -3,6 +3,7 @@ import { loadKeys, watchNetwork, callAgentStream, MODEL_PRESETS, sanitizePrompt 
 import { parseFile, fileToBase64, fileToBase64Resized, fileToObjectURL, isImage } from "./lib/fileParser";
 import { updatePreferences, getLikedMessages, getPreferenceInjection } from "./lib/preferences";
 import { trackPageView, recordVisit } from "./lib/analytics";
+import CanvasWorkspace from "./components/canvas/CanvasWorkspace";
 import Sidebar from "./components/Sidebar";
 import AdminDashboard from "./components/AdminDashboard";
 import AdminGate from "./components/AdminGate";
@@ -50,16 +51,6 @@ export default function App() {
       window.location.search = "";
     }
   }, []);
-
-  useEffect(() => {
-    if (mode === 'canvas' && !canvasModule && !canvasError) {
-      import('./components/canvas/CanvasWorkspace')
-        .then(m => setCanvasModule(() => m.default))
-        .catch(e => setCanvasError(e.message))
-    }
-  }, [mode, canvasModule, canvasError])
-  const [canvasModule, setCanvasModule] = useState(null)
-  const [canvasError, setCanvasError] = useState(null)
   const [mode, setMode] = useState(() => localStorage.getItem("director_studio_last_mode") || "director");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -516,7 +507,9 @@ export default function App() {
           <button onClick={clearHistory} className="p-1.5 rounded-lg opacity-45 hover:opacity-80 transition-opacity text-sm" title="清空记录">🗑</button>
           <button onClick={() => setSettingsOpen(true)} style={{padding:'6px 12px',borderRadius:6,border:'1px solid var(--border-glow)',background:'var(--bg-card)',color:'var(--text)',cursor:'pointer',fontSize:13,fontWeight:600}} title="设置">⚙ 设置</button>
         </header>
-        {mode === 'canvas' ? (canvasError ? (<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%',color:'#ef4444',fontSize:14,flexDirection:'column',gap:8}}><div>画布模块加载失败</div><div style={{fontSize:11,color:'#888'}}>{canvasError}</div><button onClick={() => {setCanvasError(null);setCanvasModule(null)}} style={{marginTop:8,padding:'6px 16px',borderRadius:6,border:'1px solid #2a2a45',background:'#1e1e32',color:'#c0c0d0',cursor:'pointer'}}>重试</button></div>) : canvasModule ? React.createElement(canvasModule) : (<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100%',color:'#888',fontSize:14}}>加载中...</div>)) : (
+        {mode === "canvas" ? (
+          <CanvasWorkspace />
+        ) : (
           <>
             {/* Agent tabs */}
             <div style={{display:"flex",gap:2,padding:"2px 6px",overflowX:"auto",background:"var(--bg-root)",borderBottom:"1px solid var(--border)",minHeight:30,alignItems:"flex-end"}}>
