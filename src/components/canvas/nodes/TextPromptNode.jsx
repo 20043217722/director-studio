@@ -1,6 +1,8 @@
 import { memo, useMemo, useCallback, useState } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import { useCanvasStore } from '../utils/canvasStore'
+import { cardHeader, cardBody, cardFooter, genButtonStyle, textareaStyle, sectionLabel } from '../utils/cardStyle'
+import { NODE_COLORS, STATUS_COLORS } from '../utils/canvasTheme'
 
 // ===== Intent Detection Patterns =====
 const INTENTS = [
@@ -96,8 +98,52 @@ export const TextPromptNode = memo(({ id, data }) => {
     autoBuild(id, targetType, genData, false)
   }, [id, text, params, autoBuild])
 
+    const col = NODE_COLORS.textPrompt || NODE_COLORS.agent
+  const statusColor = data.status === 'generating' ? STATUS_COLORS.running : data.status === 'success' ? STATUS_COLORS.success : data.status === 'error' ? STATUS_COLORS.error : STATUS_COLORS.idle
+
   return (
-    <div className="canvas-node" style={{ minWidth: 260, maxWidth: 340 }}>
+    <div style={{
+      background: col.bg, border: `1.5px solid ${col.border}`, borderRadius: 10,
+      boxShadow: `0 0 12px ${col.glow}`, minWidth: 260, maxWidth: 400,
+      overflow: 'hidden', fontFamily: 'system-ui, -apple-system, sans-serif',
+    }}>
+      {/* Header */}
+      <div style={cardHeader('textPrompt', 'Text Prompt', data.status)}>
+        <span style={statusDotStyle(data.status)} />
+        <span>📝 {data.label || 'Text Prompt'}</span>
+        <span style={{flex:1}} />
+        <span style={{fontSize:10,opacity:0.5}}>text</span>
+      </div>
+      {/* Body */}
+      <div style={cardBody()}>
+        <div style={sectionLabel()}>Prompt</div>
+        <textarea
+          value={text}
+          onChange={handleChange}
+          placeholder='describe what you want to create...
+e.g. "a cinematic shot of a lone figure standing in rain at night, neon reflections on wet pavement, 1990s crime drama style"'
+          style={textareaStyle()}
+        />
+        {detectedIntent && (
+          <div style={{fontSize:11, color:col.icon, padding:'4px 8px', background:col.glow, borderRadius:4}}>
+            ➜ Detected: {detectedIntent.label}
+          </div>
+        )}
+        {paramCount > 0 && !showParams && (
+          <button onClick={() => setShowParams(true)}
+            style={{fontSize:11, color:col.icon, background:'transparent', border:'none', cursor:'pointer', padding:0, textAlign:'left'}}>
+            📋 {paramCount} parameter(s) extracted — click to view
+          </button>
+        )}
+      </div>
+      {/* Footer */}
+      <div style={cardFooter()}>
+        <span style={{fontSize:10, color:'#666'}}>{text.length} chars</span>
+        <button onClick={handleAutoBuild} disabled={!detectedIntent}
+          style={genButtonStyle('textPrompt', !detectedIntent)}>
+          ⚡ Auto Build
+        </button>
+      </div> className="canvas-node" style={{ minWidth: 260, maxWidth: 340 }}>
       <div className="node-header" style={{ borderLeftColor: 'var(--accent-tts)' }}>
         <span>📝 {data.label}</span>
         {detectedIntent && (
