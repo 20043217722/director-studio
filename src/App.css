@@ -1401,3 +1401,222 @@ button, .agent-card, .mobile-tab, .update-badge, .provider-grid-btn,
   font-weight: 700;
   margin-left: 4px;
 }
+
+/* ============================================
+   EDGE DIRECTION ARROWS — SVG markers
+   ============================================ */
+.react-flow__edge-path {
+  marker-end: url(#edge-arrow);
+}
+.react-flow__edges {
+  /* ensure markers render */
+}
+.react-flow__edge.edge-prompt .react-flow__edge-path { marker-end: url(#edge-arrow-prompt); }
+.react-flow__edge.edge-image .react-flow__edge-path { marker-end: url(#edge-arrow-image); }
+.react-flow__edge.edge-video .react-flow__edge-path { marker-end: url(#edge-arrow-video); }
+.react-flow__edge.edge-agent .react-flow__edge-path { marker-end: url(#edge-arrow-agent); }
+.react-flow__edge.edge-reference .react-flow__edge-path { marker-end: url(#edge-arrow-reference); }
+.react-flow__edge.edge-media .react-flow__edge-path { marker-end: url(#edge-arrow-media); }
+.react-flow__edge.edge-preview .react-flow__edge-path { marker-end: url(#edge-arrow-preview); }
+
+/* ============================================
+   NODE GROUP VISUALIZATION
+   ============================================ */
+.canvas-group {
+  position: absolute;
+  border: 2px solid #2a2a45;
+  border-radius: 14px;
+  background: rgba(30,30,50,0.3);
+  pointer-events: none;
+  z-index: 0;
+  transition: border-color 0.2s;
+}
+.canvas-group-header {
+  position: absolute;
+  top: -14px;
+  left: 12px;
+  padding: 2px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #e0e0f0;
+  background: #1e1e32;
+  border: 1px solid #2a2a45;
+  pointer-events: auto;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.canvas-group-header:hover {
+  border-color: #6c63ff;
+  color: #6c63ff;
+}
+
+/* ============================================
+   BOOKMARK INDICATOR
+   ============================================ */
+.canvas-bookmarks {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  gap: 6px;
+}
+.canvas-bookmark-btn {
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid #2a2a45;
+  background: rgba(30,30,50,0.9);
+  color: #888;
+  cursor: pointer;
+  transition: all 0.12s;
+  backdrop-filter: blur(8px);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.canvas-bookmark-btn:hover {
+  border-color: #6c63ff;
+  color: #e0e0f0;
+  background: #2a2a45;
+}
+.canvas-bookmark-add {
+  background: rgba(108,99,255,0.15);
+  border-color: rgba(108,99,255,0.3);
+  color: #6c63ff;
+}
+
+/* ============================================
+   NODE PALETTE — floating searchable panel
+   ============================================ */
+.canvas-node-palette {
+  position: absolute;
+  top: 12px;
+  left: 60px;
+  z-index: 12;
+  background: rgba(30,30,50,0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid #2a2a45;
+  border-radius: 12px;
+  width: 220px;
+  max-height: 480px;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.canvas-node-palette input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 12px;
+  border: none;
+  border-bottom: 1px solid #2a2a45;
+  background: transparent;
+  color: #d0d0e0;
+  outline: none;
+}
+.canvas-node-palette input::placeholder { color: #555; }
+.palette-category {
+  padding: 6px 14px 2px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 14px;
+  font-size: 11px;
+  border: none;
+  background: transparent;
+  color: #c0c0d0;
+  cursor: pointer;
+  transition: background 0.08s;
+  text-align: left;
+}
+.palette-item:hover {
+  background: #2a2a45;
+  color: #e0e0f0;
+}
+.palette-item-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.palette-item-desc {
+  font-size: 9px;
+  color: #555;
+  margin-left: auto;
+}
+.palette-toggle-btn {
+  position: absolute;
+  top: 12px;
+  left: 60px;
+  z-index: 11;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid #2a2a45;
+  background: rgba(30,30,50,0.9);
+  color: #888;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.12s;
+  backdrop-filter: blur(8px);
+}
+.palette-toggle-btn:hover { background: #2a2a45; color: #e0e0f0; }
+
+/* ============================================
+   SMART CONNECTION LINE — routing around nodes
+   ============================================ */
+.react-flow__connection-line {
+  stroke: #6c63ff !important;
+  stroke-width: 2.5 !important;
+  stroke-linecap: round !important;
+  animation: dashFlow 0.5s linear infinite;
+}
+.react-flow__edge-path {
+  stroke-linejoin: round;
+  transition: all 0.2s ease;
+}
+
+/* ============================================
+   EDGE HOVER THUMBNAIL TOOLTIP
+   ============================================ */
+.edge-tooltip {
+  position: fixed;
+  pointer-events: none;
+  z-index: 100;
+  background: #1e1e32;
+  border: 1px solid #2a2a45;
+  border-radius: 8px;
+  padding: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  font-size: 9px;
+  color: #888;
+  max-width: 120px;
+}
+.edge-tooltip img {
+  width: 100%;
+  max-height: 80px;
+  object-fit: cover;
+  border-radius: 4px;
+  display: block;
+  margin-top: 4px;
+}

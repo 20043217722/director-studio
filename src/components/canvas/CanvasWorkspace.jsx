@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect, useRef, useMemo } from 'react'
-import { ReactFlow, ReactFlowProvider, Background, Controls, MiniMap, useReactFlow } from '@xyflow/react'
+import { ReactFlow, ReactFlowProvider, Background, Controls, MiniMap, useReactFlow, useStore } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useCanvasStore, validateConnection } from './utils/canvasStore'
 import { TextPromptNode } from './nodes/TextPromptNode'
@@ -20,34 +20,62 @@ function getConnectedNodeIds(nodeId, edges) {
   return ids
 }
 
-function getEdgeTypeClass(sourceType, targetType) {
-  if (sourceType === 'textPrompt') return 'edge-prompt'
-  if (sourceType === 'reference') return 'edge-reference'
-  if (sourceType === 'agent') return 'edge-agent'
-  if (sourceType === 'preview') return 'edge-preview'
-  if (sourceType === 'mediaGen' || sourceType === 'imageGen' || sourceType === 'videoGen') {
-    if (targetType === 'preview') return sourceType === 'videoGen' ? 'edge-video' : 'edge-image'
-    return 'edge-media'
-  }
-  return 'edge-prompt'
-}
-
 const nodeTypes = {
-  textPrompt: TextPromptNode, mediaGen: MediaGenNode,
-  imageGen: MediaGenNode, videoGen: MediaGenNode,
-  reference: ReferenceNode, preview: PreviewNode,
-  agent: AgentNode, pixelleVideo: PixelleVideoNode,
+  textPrompt: TextPromptNode, mediaGen: MediaGenNode, imageGen: MediaGenNode, videoGen: MediaGenNode,
+  reference: ReferenceNode, preview: PreviewNode, agent: AgentNode, pixelleVideo: PixelleVideoNode,
 }
 
-const QUICK_ADD_NODES = [
-  { type: 'textPrompt', label: '文本提示词' },
-  { type: 'mediaGen', label: '媒体生成' },
-  { type: 'reference', label: '参考素材' },
-  { type: 'agent', label: 'AI 智能体' },
-  { type: 'preview', label: '预览输出' },
+// === NODE CATEGORIES for palette and context menu ===
+const NODE_CATEGORIES = [
+  { name: '输入节点', items: [
+    { type: 'textPrompt', label: '文本提示词', icon: 'T', color: '#6c63ff', desc: '输入创作描述' },
+    { type: 'reference', label: '参考素材', icon: 'R', color: '#4ade80', desc: '上传图片/视频' },
+  ]},
+  { name: '生成节点', items: [
+    { type: 'mediaGen', label: '媒体生成', icon: 'M', color: '#e94560', desc: '图片/视频生成' },
+    { type: 'pixelleVideo', label: '短视频', icon: 'V', color: '#f472b6', desc: '一键短视频' },
+  ]},
+  { name: '分析节点', items: [
+    { type: 'agent', label: 'AI 智能体', icon: 'A', color: '#f5c518', desc: '智能分析协作' },
+  ]},
+  { name: '输出节点', items: [
+    { type: 'preview', label: '预览输出', icon: 'P', color: '#38bdf8', desc: '查看生成结果' },
+  ]},
 ]
 
-// Alignment helper
+// === SMART LAYOUT: topological sort + layer assignment ===
+function smartAutoLayout(nodes, edges) {
+  if (!nodes.length) return nodes
+  // Build adjacency: source -> [targets], and in-degree map
+  const adj = {}; const inDeg = {}
+  nodes.forEach(n => { adj[n.id] = []; inDeg[n.id] = 0 })
+  edges.forEach(e => {
+    if (adj[e.source] && adj[e.target] !== undefined) { adj[e.source].push(e.target); inDeg[e.target] = (inDeg[e.target]||0) + 1 }
+  })
+  // Kahn's algorithm for topological sort
+  const queue = nodes.filter(n => inDeg[n.id] === 0).map(n => n.id)
+  const layers = []; const layerMap = {}
+  if (!queue.length) { queue.push(nodes[0].id) }  // all nodes in cycle, pick one
+  while (queue.length) {
+    const level = []; const nextQueue = []
+    for (const id of queue) { level.push(id); layerMap[id] = layers.length; for (const t of adj[id]) { inDeg[t]--; if (inDeg[t] === 0) nextQueue.push(t) } }
+    layers.push(level); queue.length = 0; queue.push(...nextQueue)
+  }
+  // Assign any remaining nodes (cycles) to the last layer
+  nodes.forEach(n => { if (layerMap[n.id] === undefined) { layerMap[n.id] = layers.length; layers.push([n.id]) } })
+  // Position nodes: each layer = one column
+  const layerXs = layers.map((_, i) => 80 + i * 340)
+  const positioned = nodes.map(n => {
+    const layer = layerMap[n.id]
+    const idxInLayer = layers[layer]?.indexOf(n.id) || 0
+    const totalInLayer = layers[layer]?.length || 1
+    const y = 80 + (idxInLayer - (totalInLayer - 1) / 2) * 280
+    return { ...n, position: { x: layerXs[layer], y: Math.max(0, y) } }
+  })
+  return positioned
+}
+
+// === ALIGNMENT HELPERS ===
 function alignSelectedNodes(nodes, alignment) {
   if (nodes.length < 2) return nodes
   let refVal
@@ -60,13 +88,7 @@ function alignSelectedNodes(nodes, alignment) {
     case 'bottom': refVal = Math.max(...nodes.map(n => n.position.y)); break
     default: return nodes
   }
-  return nodes.map(n => ({
-    ...n,
-    position: {
-      x: ['left','center','right'].includes(alignment) ? refVal : n.position.x,
-      y: ['top','middle','bottom'].includes(alignment) ? refVal : n.position.y,
-    }
-  }))
+  return nodes.map(n => ({ ...n, position: { x: ['left','center','right'].includes(alignment) ? refVal : n.position.x, y: ['top','middle','bottom'].includes(alignment) ? refVal : n.position.y } }))
 }
 
 function distributeNodes(nodes, direction) {
@@ -87,21 +109,27 @@ export default function CanvasWorkspace() { return <ReactFlowProvider><CanvasInn
 function CanvasInner() {
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, selectedNodeId, selectedEdgeId,
     deselectNode, deleteEdge, deleteNode, undo, redo, duplicateNode, addNode, selectNode,
-    insertNodeBetween, updateNodeData } = useCanvasStore()
+    insertNodeBetween, updateNodeData, groups, createGroup, deleteGroup } = useCanvasStore()
   const [zoom, setZoom] = useState(1)
   const [contextMenu, setContextMenu] = useState(null)
   const [renameModal, setRenameModal] = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const [paletteSearch, setPaletteSearch] = useState('')
   const [selectedNodeIds, setSelectedNodeIds] = useState([])
-  const { screenToFlowPosition, fitView } = useReactFlow()
-  const wrapperRef = useRef(null)
-  const searchRef = useRef(null)
+  const [bookmarks, setBookmarks] = useState([])
+  const [edgeTooltip, setEdgeTooltip] = useState(null)
+  const { screenToFlowPosition, fitView, getViewport } = useReactFlow()
+  const wrapperRef = useRef(null); const searchRef = useRef(null); const viewportRef = useRef(getViewport())
 
   const connectedNodeIds = useMemo(() => selectedNodeId ? getConnectedNodeIds(selectedNodeId, edges) : new Set(), [selectedNodeId, edges])
   const closeMenu = useCallback(() => setContextMenu(null), [])
 
-  // Keyboard shortcuts
+  // Track viewport for bookmarks
+  useEffect(() => { viewportRef.current = getViewport() })
+
+  // === KEYBOARD SHORTCUTS ===
   useEffect(() => {
     const handle = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
@@ -114,69 +142,110 @@ function CanvasInner() {
       if (e.ctrlKey && e.key === 'd') { e.preventDefault(); if (s.selectedNodeId) s.duplicateNode(s.selectedNodeId) }
       if (e.ctrlKey && e.key === 'f') { e.preventDefault(); setSearchOpen(true); setTimeout(() => searchRef.current?.focus(), 50) }
       if (e.ctrlKey && e.key === 'm' && s.selectedNodeId) { e.preventDefault(); s.updateNodeData(s.selectedNodeId, { muted: !s.nodes.find(n => n.id === s.selectedNodeId)?.data?.muted }) }
-      if ((e.key === 'Delete' || e.key === 'Backspace') && s.selectedNodeId) { s.deleteNode(s.selectedNodeId) }
-      if (e.key === 'Escape') { s.deselectNode(); s.deselectEdge(); setContextMenu(null); setSearchOpen(false) }
+      if (e.ctrlKey && e.key === 'g' && selectedNodeIds.length >= 2) { e.preventDefault(); const name = prompt('输入节点组名称：', '节点组'); if (name) { s.createGroup(name, [...selectedNodeIds], '#6c63ff') } }
+      if (e.ctrlKey && e.key === 'b') { e.preventDefault(); addBookmark() }
+      if (e.ctrlKey && e.key === 'p') { e.preventDefault(); setPaletteOpen(v => !v) }
+      if ((e.key === 'Delete' || e.key === 'Backspace')) {
+        if (s.selectedNodeId) { e.preventDefault(); s.deleteNode(s.selectedNodeId) }
+        if (selectedNodeIds.length >= 2) { selectedNodeIds.forEach(id => s.deleteNode(id)); setSelectedNodeIds([]) }
+      }
+      if (e.key === 'Escape') { s.deselectNode(); s.deselectEdge(); setContextMenu(null); setSearchOpen(false); setPaletteOpen(false) }
     }
     window.addEventListener('keydown', handle)
     return () => window.removeEventListener('keydown', handle)
-  }, [])
+  }, [selectedNodeIds])
 
-  // Search handler
+  // === SEARCH ===
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return []
     return nodes.filter(n => (n.data?.label || n.type || '').toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 8)
   }, [searchQuery, nodes])
+  const gotoNode = useCallback((nodeId) => { const node = nodes.find(n => n.id === nodeId); if (node) { fitView({ nodes: [{ id: nodeId }], duration: 400, maxZoom: 1.5 }); selectNode(nodeId); setSearchOpen(false); setSearchQuery('') } }, [nodes, fitView, selectNode])
 
-  const gotoNode = useCallback((nodeId) => {
-    const node = nodes.find(n => n.id === nodeId)
-    if (node) { fitView({ nodes: [{ id: nodeId }], duration: 400, maxZoom: 1.5 }); selectNode(nodeId); setSearchOpen(false); setSearchQuery('') }
-  }, [nodes, fitView, selectNode])
-
-  // Selection change — for alignment bar
-  const onSelectionChange = useCallback(({ nodes: selNodes }) => {
-    setSelectedNodeIds(selNodes.map(n => n.id))
+  // === SMART LAYOUT (data-flow aware) ===
+  const handleSmartLayout = useCallback(() => {
+    const s = useCanvasStore.getState(); s._pushUndo()
+    const positioned = smartAutoLayout(s.nodes, s.edges)
+    useCanvasStore.setState({ nodes: positioned })
   }, [])
 
+  // === BOOKMARKS ===
+  const addBookmark = useCallback(() => {
+    const vp = getViewport()
+    const name = '视点 ' + (bookmarks.length + 1)
+    setBookmarks(prev => [...prev, { id: Date.now(), name, x: vp.x, y: vp.y, zoom: vp.zoom }])
+  }, [bookmarks, getViewport])
+  const gotoBookmark = useCallback((bm) => {
+    fitView({ duration: 400 })
+    // Use setCenter/setViewport via ReactFlow instance
+  }, [fitView])
+  const removeBookmark = useCallback((id) => { setBookmarks(prev => prev.filter(b => b.id !== id)) }, [])
+
+  // === SELECTION ===
+  const onSelectionChange = useCallback(({ nodes: selNodes }) => { setSelectedNodeIds(selNodes.map(n => n.id)) }, [])
+
+  // === ALIGNMENT ===
   const handleAlign = useCallback((alignment) => {
     if (selectedNodeIds.length < 2) return
     const s = useCanvasStore.getState(); s._pushUndo()
-    const selectedNodes = s.nodes.filter(n => selectedNodeIds.includes(n.id))
-    const aligned = alignSelectedNodes(selectedNodes, alignment)
-    const newNodes = s.nodes.map(n => {
-      const an = aligned.find(a => a.id === n.id)
-      return an || n
-    })
+    const selNodes = s.nodes.filter(n => selectedNodeIds.includes(n.id))
+    const aligned = alignSelectedNodes(selNodes, alignment)
+    const newNodes = s.nodes.map(n => { const an = aligned.find(a => a.id === n.id); return an || n })
     useCanvasStore.setState({ nodes: newNodes })
   }, [selectedNodeIds])
-
   const handleDistribute = useCallback((direction) => {
     if (selectedNodeIds.length < 3) return
     const s = useCanvasStore.getState(); s._pushUndo()
-    const selectedNodes = s.nodes.filter(n => selectedNodeIds.includes(n.id))
-    const dist = distributeNodes(selectedNodes, direction)
+    const selNodes = s.nodes.filter(n => selectedNodeIds.includes(n.id))
+    const dist = distributeNodes(selNodes, direction)
     const newNodes = s.nodes.map(n => { const dn = dist.find(d => d.id === n.id); return dn || n })
     useCanvasStore.setState({ nodes: newNodes })
   }, [selectedNodeIds])
 
-  // Collapse/expand
-  const handleCollapse = useCallback(() => {
-    const s = useCanvasStore.getState()
-    selectedNodeIds.forEach(id => { s.updateNodeData(id, { collapsed: !s.nodes.find(n => n.id === id)?.data?.collapsed }) })
-  }, [selectedNodeIds])
+  // === PALETTE search ===
+  const filteredCategories = useMemo(() => {
+    if (!paletteSearch.trim()) return NODE_CATEGORIES
+    return NODE_CATEGORIES.map(cat => ({
+      ...cat,
+      items: cat.items.filter(item => item.label.includes(paletteSearch) || item.type.includes(paletteSearch) || item.desc.includes(paletteSearch))
+    })).filter(cat => cat.items.length > 0)
+  }, [paletteSearch])
 
-  // Mute/unmute
-  const handleMute = useCallback(() => {
-    const s = useCanvasStore.getState()
-    selectedNodeIds.forEach(id => { s.updateNodeData(id, { muted: !s.nodes.find(n => n.id === id)?.data?.muted }) })
-  }, [selectedNodeIds])
+  const handlePaletteAdd = useCallback((type) => { addNode(type); setPaletteOpen(false); setPaletteSearch('') }, [addNode])
 
+  // === EDGE TOOLTIP ===
+  const onEdgeMouseEnter = useCallback((e, edge) => {
+    const src = nodes.find(n => n.id === edge.source)
+    if (src?.data?.generatedImages?.length) {
+      const img = src.data.generatedImages[0]
+      const url = img.url || img.base64
+      if (url) setEdgeTooltip({ x: e.clientX, y: e.clientY, url, label: '图片数据流' })
+    } else if (edge.label) {
+      setEdgeTooltip({ x: e.clientX, y: e.clientY, url: null, label: edge.label || '' })
+    }
+  }, [nodes])
+  const onEdgeMouseLeave = useCallback(() => setEdgeTooltip(null), [])
+
+  // === GROUP RENDERING ===
+  const groupRects = useMemo(() => {
+    if (!groups || !groups.length) return []
+    return groups.map(g => {
+      const groupNodes = nodes.filter(n => g.nodeIds.includes(n.id))
+      if (!groupNodes.length) return null
+      const minX = Math.min(...groupNodes.map(n => n.position.x)) - 20
+      const minY = Math.min(...groupNodes.map(n => n.position.y)) - 40
+      const maxX = Math.max(...groupNodes.map(n => n.position.x + 280))
+      const maxY = Math.max(...groupNodes.map(n => n.position.y + 200))
+      return { ...g, x: minX, y: minY, width: maxX - minX, height: maxY - minY }
+    }).filter(Boolean)
+  }, [groups, nodes])
+
+  // === DRAG / DROP ===
   const onDragOver = useCallback((e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }, [])
   const onDrop = useCallback((e) => {
     e.preventDefault(); const position = screenToFlowPosition({ x: e.clientX, y: e.clientY })
     const imageData = e.dataTransfer.getData('application/canvas-image')
-    if (imageData) {
-      try { const parsed = JSON.parse(imageData); addNode('reference', position); const s = useCanvasStore.getState(); const newNode = s.nodes[s.nodes.length - 1]; if (newNode) { s.updateNodeData(newNode.id, { label: parsed.name || '图片素材', mediaType: 'image', mediaData: parsed.url, fileName: parsed.name || '生成图片' }) } return } catch {}
-    }
+    if (imageData) { try { const parsed = JSON.parse(imageData); addNode('reference', position); const s = useCanvasStore.getState(); const newNode = s.nodes[s.nodes.length - 1]; if (newNode) s.updateNodeData(newNode.id, { label: parsed.name || '素材', mediaType: 'image', mediaData: parsed.url, fileName: parsed.name || '图片' }); return } catch {} }
     const type = e.dataTransfer.getData('application/reactflow-type'); if (!type) return; addNode(type, position)
   }, [screenToFlowPosition, addNode])
 
@@ -184,7 +253,7 @@ function CanvasInner() {
   const handleRename = useCallback(() => { if (!renameModal) return; useCanvasStore.getState().updateNodeData(renameModal.nodeId, { label: renameModal.name }); setRenameModal(null) }, [renameModal])
   const onNodeContextMenu = useCallback((e, node) => { e.preventDefault(); selectNode(node.id); setContextMenu({ type: 'node', x: e.clientX, y: e.clientY, nodeId: node.id }) }, [selectNode])
   const onPaneContextMenu = useCallback((e) => { e.preventDefault(); const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY }); setContextMenu({ type: 'pane', x: e.clientX, y: e.clientY, position: pos }) }, [screenToFlowPosition])
-  const onPaneClick = useCallback(() => { deselectNode(); useCanvasStore.getState().deselectEdge(); setContextMenu(null) }, [deselectNode])
+  const onPaneClick = useCallback(() => { deselectNode(); useCanvasStore.getState().deselectEdge(); setContextMenu(null); setPaletteOpen(false) }, [deselectNode])
   const onEdgeClick = useCallback((e, edge) => { useCanvasStore.getState().selectEdge(edge.id) }, [])
   const handleEdgeDelete = useCallback((edgeId) => { deleteEdge(edgeId); setContextMenu(null) }, [deleteEdge])
 
@@ -192,7 +261,7 @@ function CanvasInner() {
     if (!selectedEdgeId) { setContextMenu(null); return }
     const edge = useCanvasStore.getState().edges.find((e) => e.id === selectedEdgeId); if (!edge) return
     const src = useCanvasStore.getState().nodes.find((n) => n.id === edge.source); const tgt = useCanvasStore.getState().nodes.find((n) => n.id === edge.target)
-    if (src && tgt) { setContextMenu({ type: 'edge', edgeId: selectedEdgeId, x: (src.position.x + tgt.position.x) / 2 + 80, y: (src.position.y + tgt.position.y) / 2 + 100 }) }
+    if (src && tgt) setContextMenu({ type: 'edge', edgeId: selectedEdgeId, x: (src.position.x + tgt.position.x) / 2 + 80, y: (src.position.y + tgt.position.y) / 2 + 100 })
   }, [selectedEdgeId])
 
   const displayNodes = useMemo(() => {
@@ -200,35 +269,116 @@ function CanvasInner() {
     return nodes.map(n => ({ ...n, className: connectedNodeIds.has(n.id) ? 'node-highlighted' : 'node-dimmed' }))
   }, [nodes, selectedNodeId, connectedNodeIds])
 
+  // === EDGE CREATION with color class + marker ===
+  const onConnectWrapped = useCallback((connection) => {
+    const s = useCanvasStore.getState()
+    const src = s.nodes.find(n => n.id === connection.source)
+    const tgt = s.nodes.find(n => n.id === connection.target)
+    if (!src || !tgt) return
+    s.onConnect(connection)
+    // Add color class to the new edge
+    const cls = src.type === 'textPrompt' ? 'edge-prompt' : src.type === 'agent' ? 'edge-agent' : src.type === 'reference' ? 'edge-reference' : src.type === 'preview' ? 'edge-preview' : 'edge-media'
+    const newEdge = s.edges[s.edges.length - 1]
+    if (newEdge && !newEdge.className) {
+      s.setState({ edges: s.edges.map(e => e.id === newEdge.id ? { ...e, className: cls, markerEnd: 'url(#arrow-' + cls.replace('edge-','') + ')' } : e) })
+    }
+  }, [])
+
   return (
     <div className="w-full h-full relative" ref={wrapperRef} onClick={closeMenu} style={{ outline: 'none' }}>
+      {/* SVG Edge Arrow Markers */}
+      <svg style={{ position: 'absolute', width: 0, height: 0, zIndex: -1 }}>
+        <defs>
+          <marker id="arrow-prompt" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 4 L 0 8 z" fill="#6c63ff" />
+          </marker>
+          <marker id="arrow-image" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 4 L 0 8 z" fill="#e94560" />
+          </marker>
+          <marker id="arrow-video" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 4 L 0 8 z" fill="#0f3460" />
+          </marker>
+          <marker id="arrow-agent" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 4 L 0 8 z" fill="#f5c518" />
+          </marker>
+          <marker id="arrow-reference" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 4 L 0 8 z" fill="#4ade80" />
+          </marker>
+          <marker id="arrow-media" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 4 L 0 8 z" fill="#8b5cf6" />
+          </marker>
+          <marker id="arrow-preview" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 4 L 0 8 z" fill="#38bdf8" />
+          </marker>
+        </defs>
+      </svg>
+
       <ReactFlow nodes={displayNodes} edges={edges}
-        onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect}
+        onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
+        onConnect={onConnectWrapped}
         onPaneClick={onPaneClick} onPaneContextMenu={onPaneContextMenu}
-        onEdgeClick={onEdgeClick} onNodeClick={(_, node) => useCanvasStore.getState().selectNode(node.id)}
+        onEdgeClick={onEdgeClick} onEdgeMouseEnter={onEdgeMouseEnter} onEdgeMouseLeave={onEdgeMouseLeave}
+        onNodeClick={(_, node) => useCanvasStore.getState().selectNode(node.id)}
         onNodeDoubleClick={onNodeDoubleClick} onNodeContextMenu={onNodeContextMenu}
         onDragOver={onDragOver} onDrop={onDrop} nodeTypes={nodeTypes}
         onSelectionChange={onSelectionChange}
         fitView deleteKeyCode={null} multiSelectionKeyCode="Shift" selectionMode="partial"
         snapToGrid snapGrid={[16, 16]}
-        defaultEdgeOptions={{ type: 'default', animated: true, style: { stroke: '#6c63ff', strokeWidth: 3, strokeLinecap: 'round' } }}
+        connectionLineStyle={{ stroke: '#6c63ff', strokeWidth: 2.5, strokeDasharray: '6 4' }}
+        defaultEdgeOptions={{ type: 'default', animated: true, style: { stroke: '#6c63ff', strokeWidth: 2.5, strokeLinecap: 'round' } }}
         proOptions={{ hideAttribution: true }} style={{ background: '#1a1a2e' }}
         onViewportChange={(vp) => setZoom(Math.round(vp?.zoom * 100) / 100)}
         isValidConnection={(connection) => { const s = useCanvasStore.getState(); const src = s.nodes.find((n) => n.id === connection.source); const tgt = s.nodes.find((n) => n.id === connection.target); if (!src || !tgt || src.id === tgt.id) return false; return validateConnection(src, tgt, connection.targetHandle) }}>
         <Background gap={24} size={2} color="#2a2a45" />
         <Background gap={96} size={2} color="#2a2a45" />
         <Controls />
-        <MiniMap nodeColor={(n) => ({ textPrompt: '#6c63ff', mediaGen: '#e94560', imageGen: '#e94560', videoGen: '#0f3460', reference: '#4ade80', preview: '#38bdf8', agent: '#f5c518', pixelleVideo: '#f472b6' }[n.type] || '#6c63ff')} maskColor="rgba(0,0,0,0.4)" pannable zoomable />
+        <MiniMap nodeColor={(n) => ({ textPrompt: '#6c63ff', mediaGen: '#e94560', agent: '#f5c518', reference: '#4ade80', preview: '#38bdf8', pixelleVideo: '#f472b6' }[n.type] || '#6c63ff')} maskColor="rgba(0,0,0,0.4)" pannable zoomable />
       </ReactFlow>
+
+      {/* Group Rects */}
+      {groupRects.map(g => (
+        <div key={g.id} className="canvas-group" style={{ left: g.x, top: g.y, width: g.width, height: g.height }}>
+          <div className="canvas-group-header" onClick={() => fitView({ nodes: g.nodeIds.map(id => ({ id })), duration: 400, padding: 0.3 })}>
+            {g.name} ({g.nodeIds.length})
+          </div>
+        </div>
+      ))}
 
       <div className="zoom-indicator">{Math.round(zoom * 100)}%</div>
 
+      {/* Node Palette Toggle */}
+      <button className="palette-toggle-btn" onClick={() => setPaletteOpen(v => !v)} title="节点面板 Ctrl+P" style={{ position: 'absolute', top: 12, left: 60, zIndex: 11 }}>
+        {paletteOpen ? '×' : '+'}
+      </button>
+
+      {/* Searchable Node Palette */}
+      {paletteOpen && (
+        <div className="canvas-node-palette" onClick={(e) => e.stopPropagation()}>
+          <input value={paletteSearch} onChange={(e) => setPaletteSearch(e.target.value)} placeholder="搜索节点..." autoFocus />
+          {filteredCategories.map(cat => (
+            <div key={cat.name}>
+              <div className="palette-category">{cat.name}</div>
+              {cat.items.map(item => (
+                <button key={item.type} className="palette-item"
+                  onClick={() => handlePaletteAdd(item.type)}
+                  onDragStart={(e) => { e.dataTransfer.setData('application/reactflow-type', item.type); e.dataTransfer.effectAllowed = 'move'; setPaletteOpen(false) }}
+                  draggable>
+                  <span className="palette-item-icon" style={{background: item.color + '22', color: item.color}}>{item.icon}</span>
+                  <span>{item.label}</span>
+                  <span className="palette-item-desc">{item.desc}</span>
+                </button>
+              ))}
+            </div>
+          ))}
+          {filteredCategories.length === 0 && <div style={{padding:20,textAlign:'center',fontSize:11,color:'#666'}}>无匹配节点</div>}
+        </div>
+      )}
+
       {/* Search Bar */}
       {searchOpen && (
-        <div className="canvas-search-bar" onClick={(e) => e.stopPropagation()}>
+        <div className="canvas-search-bar" onClick={(e) => e.stopPropagation()} style={{zIndex:15}}>
           <span style={{fontSize:12,color:'#888'}}>搜索</span>
-          <input ref={searchRef} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="输入节点名称..." autoFocus
+          <input ref={searchRef} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="输入节点名称..." autoFocus
             onKeyDown={(e) => { if (e.key === 'Escape') { setSearchOpen(false); setSearchQuery('') } if (e.key === 'Enter' && searchResults.length > 0) gotoNode(searchResults[0].id) }} />
           <span className="canvas-search-result">{searchResults.length} 个结果</span>
           <button onClick={() => { setSearchOpen(false); setSearchQuery('') }} style={{background:'transparent',border:'none',color:'#888',cursor:'pointer',fontSize:14}}>×</button>
@@ -240,40 +390,64 @@ function CanvasInner() {
         </div>
       )}
 
-      {/* Alignment Bar — shown when multiple nodes selected */}
+      {/* Alignment Bar */}
       {selectedNodeIds.length >= 2 && (
         <div className="canvas-align-bar" onClick={(e) => e.stopPropagation()}>
-          <span style={{fontSize:10,color:'#666',marginRight:4}}>{selectedNodeIds.length} 个节点</span>
-          <button className="canvas-align-btn" onClick={() => handleAlign('left')} title="左对齐">左齐</button>
-          <button className="canvas-align-btn" onClick={() => handleAlign('center')} title="水平居中">中齐</button>
-          <button className="canvas-align-btn" onClick={() => handleAlign('right')} title="右对齐">右齐</button>
-          <button className="canvas-align-btn" onClick={() => handleAlign('top')} title="顶对齐">顶齐</button>
-          <button className="canvas-align-btn" onClick={() => handleAlign('middle')} title="垂直居中">竖中</button>
-          <button className="canvas-align-btn" onClick={() => handleAlign('bottom')} title="底对齐">底齐</button>
+          <span style={{fontSize:10,color:'#666',marginRight:4}}>{selectedNodeIds.length} 选中</span>
+          <button className="canvas-align-btn" onClick={() => handleAlign('left')}>左齐</button>
+          <button className="canvas-align-btn" onClick={() => handleAlign('center')}>中齐</button>
+          <button className="canvas-align-btn" onClick={() => handleAlign('right')}>右齐</button>
+          <button className="canvas-align-btn" onClick={() => handleAlign('top')}>顶齐</button>
+          <button className="canvas-align-btn" onClick={() => handleAlign('middle')}>竖中</button>
+          <button className="canvas-align-btn" onClick={() => handleAlign('bottom')}>底齐</button>
           <div style={{width:1,height:16,background:'#2a2a45',margin:'0 4px'}} />
-          <button className="canvas-align-btn" onClick={() => handleDistribute('horizontal')} title="水平等距">横分</button>
-          <button className="canvas-align-btn" onClick={() => handleDistribute('vertical')} title="垂直等距">竖分</button>
-          <div style={{width:1,height:16,background:'#2a2a45',margin:'0 4px'}} />
-          <button className="canvas-align-btn" onClick={handleCollapse} title="折叠/展开">折</button>
-          <button className="canvas-align-btn" onClick={handleMute} title="静音/启用">静</button>
+          <button className="canvas-align-btn" onClick={() => handleDistribute('horizontal')}>横分</button>
+          <button className="canvas-align-btn" onClick={() => handleDistribute('vertical')}>竖分</button>
         </div>
       )}
 
-      {/* Context Menu */}
+      {/* Bookmarks Bar */}
+      {bookmarks.length > 0 && (
+        <div className="canvas-bookmarks">
+          {bookmarks.map(bm => (
+            <button key={bm.id} className="canvas-bookmark-btn" onClick={() => gotoBookmark(bm)} title={bm.name}>
+              {bm.name}
+              <span onClick={(e) => { e.stopPropagation(); removeBookmark(bm.id) }} style={{marginLeft:4,color:'#666',fontSize:10}}>×</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Edge Tooltip */}
+      {edgeTooltip && (
+        <div className="edge-tooltip" style={{ left: edgeTooltip.x + 16, top: edgeTooltip.y - 10 }}>
+          <div>{edgeTooltip.label}</div>
+          {edgeTooltip.url && <img src={edgeTooltip.url} alt="" />}
+        </div>
+      )}
+
+      {/* Categorized Context Menu */}
       {contextMenu && (
         <div className="canvas-context-menu" style={{ position: 'fixed', left: contextMenu.x, top: contextMenu.y, zIndex: 50 }} onClick={(e) => e.stopPropagation()}>
           {contextMenu.type === 'node' && (<>
             <button className="menu-item" onClick={() => { setRenameModal({ nodeId: contextMenu.nodeId, name: useCanvasStore.getState().nodes.find((n) => n.id === contextMenu.nodeId)?.data?.label || '' }); setContextMenu(null) }}><span>重命名</span></button>
             <button className="menu-item" onClick={() => { duplicateNode(contextMenu.nodeId); setContextMenu(null) }}><span>复制</span><span style={{fontSize:10,color:'#666'}}>Ctrl+D</span></button>
-            <button className="menu-item" onClick={() => { const s = useCanvasStore.getState(); s.updateNodeData(contextMenu.nodeId, { collapsed: !s.nodes.find(n => n.id === contextMenu.nodeId)?.data?.collapsed }); setContextMenu(null) }}><span>折叠/展开</span></button>
-            <button className="menu-item" onClick={() => { const s = useCanvasStore.getState(); s.updateNodeData(contextMenu.nodeId, { muted: !s.nodes.find(n => n.id === contextMenu.nodeId)?.data?.muted }); setContextMenu(null) }}><span>静音/启用</span><span style={{fontSize:10,color:'#666'}}>Ctrl+M</span></button>
+            <button className="menu-item" onClick={() => { const s = useCanvasStore.getState(); s.updateNodeData(contextMenu.nodeId, { collapsed: !s.nodes.find(n => n.id === contextMenu.nodeId)?.data?.collapsed }); setContextMenu(null) }}><span>折叠</span></button>
+            <button className="menu-item" onClick={() => { const s = useCanvasStore.getState(); s.updateNodeData(contextMenu.nodeId, { muted: !s.nodes.find(n => n.id === contextMenu.nodeId)?.data?.muted }); setContextMenu(null) }}><span>静音</span><span style={{fontSize:10,color:'#666'}}>Ctrl+M</span></button>
             <div className="menu-divider" />
-            <button className="menu-item danger" onClick={() => { deleteNode(contextMenu.nodeId); setContextMenu(null) }}><span>删除</span><span style={{fontSize:10}}>Del</span></button>
+            <button className="menu-item danger" onClick={() => { deleteNode(contextMenu.nodeId); setContextMenu(null) }}><span>删除</span></button>
           </>)}
-          {contextMenu.type === 'pane' && (<>
-            <div className="menu-label">添加节点</div>
-            {QUICK_ADD_NODES.map((n) => (<button key={n.type} className="menu-item" onClick={() => { addNode(n.type, contextMenu.position); setContextMenu(null) }}>{n.label}</button>))}
-          </>)}
+          {contextMenu.type === 'pane' && NODE_CATEGORIES.map(cat => (
+            <div key={cat.name}>
+              <div className="menu-label">{cat.name}</div>
+              {cat.items.map(item => (
+                <button key={item.type} className="menu-item" onClick={() => { addNode(item.type, contextMenu.position); setContextMenu(null) }}>
+                  <span style={{color: item.color, marginRight: 6}}>{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          ))}
           {contextMenu.type === 'edge' && (<>
             <div className="menu-label">连线</div>
             <button className="menu-item danger" onClick={() => handleEdgeDelete(contextMenu.edgeId)}>删除连线</button>
@@ -281,6 +455,7 @@ function CanvasInner() {
         </div>
       )}
 
+      {/* Rename Modal */}
       {renameModal && (<>
         <div className="rename-overlay" onClick={() => setRenameModal(null)} />
         <div className="rename-modal" onClick={(e) => e.stopPropagation()}>
@@ -294,7 +469,7 @@ function CanvasInner() {
         </div>
       </>)}
 
-      <CanvasToolbar undo={undo} redo={redo} fitView={fitView} />
+      <CanvasToolbar undo={undo} redo={redo} fitView={fitView} onSmartLayout={handleSmartLayout} />
       <ProjectBiblePanel />
       <NodeConfigPanel />
       <CanvasInputBar />
