@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useCanvasStore } from './utils/canvasStore'
+import { WORKFLOW_TEMPLATES } from './utils/workflowTemplates'
+import { NODE_COLORS } from './utils/canvasTheme'
 
 const QUICK_STARTS = [
   {
@@ -154,7 +156,38 @@ export function CanvasWelcome() {
         <div style={{ marginTop: 14, fontSize: 10, color: 'var(--text-muted)' }}>
           💡 <kbd style={kbdStyle}>Ctrl+Z</kbd> 撤销 <kbd style={kbdStyle}>Del</kbd> 删除
           {' '}<kbd style={kbdStyle}>右键</kbd> 快速添加
-        </div>
+        {/* Workflow Template Gallery — libtv-style quick start */}
+  <div style={{marginTop:32,textAlign:'center'}}>
+    <h3 style={{fontSize:16,fontWeight:700,color:'var(--text)',marginBottom:8}}>一键搭建工作流</h3>
+    <p style={{fontSize:12,color:'var(--text-dim)',marginBottom:20}}>选择一个预设管线，自动创建节点和连线</p>
+    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:10,maxWidth:700,margin:'0 auto'}}>
+      {WORKFLOW_TEMPLATES.map(tpl => {
+        const border = NODE_COLORS[tpl.nodes[0]?.type]?.border || '#555'
+        return (
+          <div key={tpl.id}
+            onClick={() => {
+              const { nodes, edges } = buildTemplateWorkflow(tpl)
+              useCanvasStore.getState().setNodes(nodes)
+              useCanvasStore.getState().setEdges(edges)
+              setTimeout(() => useCanvasStore.getState().fitView?.(), 100)
+            }}
+            style={{
+              background:'var(--bg-card)',border:`1px solid ${border}33`,borderRadius:8,padding:14,
+              cursor:'pointer',transition:'all 0.15s',textAlign:'left',
+            }}
+            onMouseEnter={(e) => {e.currentTarget.style.borderColor=border;e.currentTarget.style.boxShadow='0 0 12px '+border+'22'}}
+            onMouseLeave={(e) => {e.currentTarget.style.borderColor=border+'33';e.currentTarget.style.boxShadow='none'}}
+          >
+            <div style={{fontSize:20,marginBottom:6}}>{tpl.icon}</div>
+            <div style={{fontSize:13,fontWeight:600,color:'var(--text)',marginBottom:4}}>{tpl.name}</div>
+            <div style={{fontSize:11,color:'var(--text-dim)',lineHeight:1.4}}>{tpl.desc}</div>
+            <div style={{fontSize:10,color:border,marginTop:8}}>{tpl.nodes.length}节点 · {tpl.edges.length}连线</div>
+          </div>
+        )
+      })}
+    </div>
+  </div>
+</div>
       </div>
     </div>
   )
