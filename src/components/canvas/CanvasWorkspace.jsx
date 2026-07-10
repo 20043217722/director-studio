@@ -115,6 +115,8 @@ function CanvasInner() {
   const [spaceHeld, setSpaceHeld] = useState(false)
   const [toastMsg, setToastMsg] = useState(null)
   const [connTooltip, setConnTooltip] = useState(null)
+  const [queueOpen, setQueueOpen] = useState(false)
+  const [runHistory, setRunHistory] = useState([])
   const { screenToFlowPosition, fitView, getViewport } = useReactFlow()
   const wrapperRef = useRef(null); const searchRef = useRef(null)
 
@@ -122,6 +124,13 @@ function CanvasInner() {
   const closeMenu = useCallback(() => setContextMenu(null), [])
 
   // === TOAST auto-dismiss ===
+
+  // === FETCH RUN HISTORY ===
+  useEffect(() => {
+    if (!wfRunning) {
+      fetch('http://localhost:3001/api/workflow/history').then(r => r.json()).then(data => setRunHistory(data || [])).catch(() => {})
+    }
+  }, [wfRunning])
   useEffect(() => { if (toastMsg) { const t = setTimeout(() => setToastMsg(null), 2000); return () => clearTimeout(t) } }, [toastMsg])
 
   // === SPACE DRAG + KEYBOARD ===
@@ -349,7 +358,42 @@ function CanvasInner() {
         <span className="stat-item">Space拖拽 | Ctrl+Enter运行链 | Ctrl+F搜索 | Ctrl+P面板</span>
       </div>
 
-      <CanvasToolbar undo={undo} redo={redo} fitView={fitView} onSmartLayout={handleSmartLayout} onSubmitWorkflow={handleSubmitWorkflow} wfRunning={wfRunning} />
+
+      {/* Execution Queue Toggle */}
+      <button className={'queue-toggle-btn' + (wfRunning ? ' has-active' : '')} onClick={() => setQueueOpen(v => !v)} title="执行队列" style={{ position: 'absolute', top: 12, right: 12, zIndex: 11 }}>
+        {queueOpen ? 'x' : (wfRunning ? '>' : 'Q')}
+      </button>
+
+      {/* Execution Queue Panel */}
+      {queueOpen && (
+        <div className="queue-panel" onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', top: 12, right: 12, zIndex: 12 }}>
+          <div className="queue-panel-header">
+            <span>执行队列</span>
+            <button onClick={() => setQueueOpen(false)} style={{background:'transparent',border:'none',color:'#888',cursor:'pointer',fontSize:14}}>x</button>
+          </div>
+          {runHistory.length === 0 ? (
+            <div style={{padding:20,textAlign:'center',fontSize:11,color:'#666'}}>暂无执行记录</div>
+          ) : (
+            runHistory.map(r => (
+              <div key={r.id} className="queue-run-item"
+                onClick={() => setToastMsg('运行ID: ' + r.id)}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                  <div>
+                    <span className={'queue-run-status ' + (r.status === 'done' ? 'done' : r.status === 'stopped' ? 'error' : 'running')} />
+                    <span className="queue-run-id">{r.id.slice(0, 20)}</span>
+                  </div>
+                  <span style={{fontSize:10,color:'#888'}}>{(r.duration / 1000).toFixed(1)}s</span>
+                </div>
+                <div className="queue-run-meta">
+                  {r.batch ? '参数扫描' : '工作流'} · {r.doneNodes || 0}/{r.totalNodes || 0} 成功 {r.errorNodes > 0 ? '· ' + r.errorNodes + ' 错误' : ''}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      
       <ProjectBiblePanel />
       <NodeConfigPanel />
       <CanvasInputBar />

@@ -52,7 +52,7 @@ function log(tag, msg) { console.log(`[${new Date().toISOString().slice(11,19)}]
 function j(res, s, d) { res.writeHead(s,{'Content-Type':'application/json','Access-Control-Allow-Origin':'*'}); res.end(JSON.stringify(d)) }
 
 // ===== Server =====
-const { executeWorkflow, sseClients, sseSend } = require('./workflow-engine.cjs')
+const { executeWorkflow, executeBatch, sseClients, sseSend, runs, getRunHistory } = require('./workflow-engine.cjs')
 
 const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin','*')
@@ -60,6 +60,36 @@ const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Headers','Content-Type,Authorization,x-api-key,x-goog-api-key,Accept')
 
   // ===== WORKFLOW ROUTES =====
+  // POST /api/workflow/batch — parameter scan
+  if (req.method === 'POST' && req.url === '/api/workflow/batch') {
+    let body = ''
+    req.on('data', c => body += c)
+    req.on('end', async () => {
+      try {
+        const { nodeId, paramGrid, apiKeys } = JSON.parse(body)
+        const runId = 'batch_' + Date.now()
+        log('batch', `参数扫描 ${runId} — ${paramGrid.length} 个变体`)
+        executeBatch(runId, nodeId, paramGrid, apiKeys || {}).then(() => {
+          log('batch', `扫描完成 ${runId}`)
+        })
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
+        res.end(JSON.stringify({ runId, status: 'started', totalVariants: paramGrid.length }))
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
+        res.end(JSON.stringify({ error: err.message }))
+      }
+    })
+    return
+  }
+
+  // GET /api/workflow/history — run history
+  if (req.method === 'GET' && req.url === '/api/workflow/history') {
+    const history = getRunHistory(20)
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
+    res.end(JSON.stringify(history))
+    return
+  }
+
   
   // POST /api/workflow/run — submit workflow for execution
   if (req.method === 'POST' && req.url === '/api/workflow/run') {
