@@ -128,9 +128,15 @@ export const MediaGenNode = memo(({ id, data }) => {
       <div className="handle-label handle-label-left" style={{top:'15%',marginTop:-8}}>提示词</div>
       <Handle type="target" position={Position.Left} id={HANDLE_IDS.target.image} style={{ background: '#4ade80', border: '2px solid #1e1e32', width: 12, height: 12, top: '35%' }} />
       <div className="handle-label handle-label-left" style={{top:'35%',marginTop:-8}}>参考图</div>
+      <Handle type="target" position={Position.Left} id="negative"
+        style={{ background: '#ef4444', border: '2px solid #1e1e32', width: 12, height: 12, top: '50%' }} />
+      <div className="handle-label handle-label-left" style={{top:'50%',marginTop:-8,color:'#ef4444'}}>负向</div>
       <Handle type="target" position={Position.Left} id="seed"
         style={{ background: '#f5c518', border: '2px solid #1e1e32', width: 9, height: 9, top: '55%', borderRadius: '1px', transform: 'rotate(45deg)' }} />
       <div className="handle-label handle-label-left" style={{top:'55%',marginTop:-8}}>种子</div>
+      <Handle type="target" position={Position.Left} id="steps"
+        style={{ background: '#22c55e', border: '2px solid #1e1e32', width: 9, height: 9, top: '68%', borderRadius: '1px', transform: 'rotate(45deg)' }} />
+      <div className="handle-label handle-label-left" style={{top:'68%',marginTop:-8,color:'#22c55e'}}>步数</div>
 
       <div className="node-header">
         <span className="node-icon">{isImage ? '图' : '视'}</span>

@@ -1,4 +1,78 @@
 
+// ===== HANDLE TYPE MAP (for connection validation) =====
+export const HANDLE_TYPES = {
+  textPrompt: {
+    inputs:  { prompt: 'TEXT' },
+    outputs: { output: 'TEXT', negative: 'TEXT' },
+  },
+  mediaGen: {
+    inputs:  { prompt: 'TEXT', image: 'IMAGE', negative: 'TEXT', seed: 'SEED', steps: 'INT' },
+    outputs: { output: 'IMAGE' },
+  },
+  imageGen: {
+    inputs:  { prompt: 'TEXT', image: 'IMAGE', seed: 'SEED' },
+    outputs: { output: 'IMAGE' },
+  },
+  videoGen: {
+    inputs:  { prompt: 'TEXT', image: 'IMAGE', seed: 'SEED' },
+    outputs: { output: 'VIDEO' },
+  },
+  agent: {
+    inputs:  { prompt: 'TEXT' },
+    outputs: { output: 'TEXT' },
+  },
+  reference: {
+    inputs:  {},
+    outputs: { output: 'IMAGE' },
+  },
+  preview: {
+    inputs:  { input: 'IMAGE' },
+    outputs: { output: 'IMAGE' },
+  },
+  reroute: {
+    inputs:  { input: 'TEXT' },
+    outputs: { output: 'TEXT' },
+  },
+  primitive: {
+    inputs:  {},
+    outputs: { output: 'TEXT' },
+  },
+  pixelleVideo: {
+    inputs:  { prompt: 'TEXT' },
+    outputs: { output: 'VIDEO' },
+  },
+}
+
+// Type compatibility: which types can connect to which
+export const TYPE_COMPAT = {
+  TEXT:  ['TEXT', 'PROMPT'],
+  IMAGE: ['IMAGE', 'VIDEO'],
+  VIDEO: ['VIDEO', 'IMAGE'],
+  PROMPT: ['TEXT', 'PROMPT'],
+  INT:   ['INT', 'FLOAT', 'SEED'],
+  FLOAT: ['FLOAT', 'INT'],
+  SEED:  ['SEED', 'INT'],
+  BOOL:  ['BOOL'],
+}
+
+// Validate connection by handle type
+export function validateHandleTypes(sourceNode, sourceHandle, targetNode, targetHandle) {
+  const srcType = HANDLE_TYPES[sourceNode.type]?.outputs?.[sourceHandle]
+  const tgtType = HANDLE_TYPES[targetNode.type]?.inputs?.[targetHandle]
+  if (!srcType || !tgtType) return { valid: true } // untyped = allow
+  if (TYPE_COMPAT[srcType]?.includes(tgtType)) return { valid: true }
+  return { valid: false, reason: `类型不匹配: ${DATA_TYPES[srcType]?.label || srcType} → ${DATA_TYPES[tgtType]?.label || tgtType}` }
+}
+
+// === PALETTE FAVORITES / RECENTLY USED ===
+const FAV_STORAGE_KEY = 'canvas_palette_favorites'
+const RECENT_STORAGE_KEY = 'canvas_palette_recents'
+
+export function getFavorites() { try { return JSON.parse(localStorage.getItem(FAV_STORAGE_KEY) || '[]') } catch { return [] } }
+export function toggleFavorite(type) { const favs = getFavorites(); const idx = favs.indexOf(type); if (idx >= 0) favs.splice(idx, 1); else favs.push(type); localStorage.setItem(FAV_STORAGE_KEY, JSON.stringify(favs)); return favs }
+export function getRecents() { try { return JSON.parse(localStorage.getItem(RECENT_STORAGE_KEY) || '[]') } catch { return [] } }
+export function addRecent(type) { const recents = getRecents().filter(t => t !== type); recents.unshift(type); localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(recents.slice(0, 8))); return recents }
+
 // ===== DATA TYPE SYSTEM =====
 export const DATA_TYPES = {
   TEXT:    { label: '文本',   color: '#6c63ff', icon: 'T', shape: 'circle' },

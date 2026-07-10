@@ -24,6 +24,7 @@ export const TextPromptNode = memo(({ id, data }) => {
   const updateNodeData = useCanvasStore((s) => s.updateNodeData)
   const autoBuild = useCanvasStore((s) => s.autoBuild)
   const text = data.prompt || ''
+  const negativeText = data.negativePrompt || ''
   const col = NODE_COLORS.textPrompt || NODE_COLORS.agent
   const isCollapsed = data.collapsed
   const isMuted = data.muted
@@ -36,23 +37,22 @@ export const TextPromptNode = memo(({ id, data }) => {
 
   const params = useMemo(() => text ? extractParams(text) : {}, [text])
   const handleChange = useCallback((e) => { updateNodeData(id, { prompt: e.target.value }) }, [id, updateNodeData])
+  const handleNegChange = useCallback((e) => { updateNodeData(id, { negativePrompt: e.target.value }) }, [id, updateNodeData])
 
   const handleAutoBuild = useCallback(() => {
     if (!detectedIntent) return
     const targetType = { image: 'mediaGen', video: 'mediaGen', agent: 'agent' }[detectedIntent.key] || 'mediaGen'
-    const genData = { prompt: text, mediaType: detectedIntent.key === 'video' ? 'video' : 'image' }
+    const genData = { prompt: text, negativePrompt: negativeText, mediaType: detectedIntent.key === 'video' ? 'video' : 'image' }
     if (params.aspectRatio) genData.aspectRatio = params.aspectRatio
     if (params.duration) genData.duration = params.duration
     if (params.modelProvider) genData.modelProvider = params.modelProvider
     autoBuild(id, targetType, genData, detectedIntent.key !== 'agent')
-  }, [detectedIntent, id, text, params, autoBuild])
+  }, [detectedIntent, id, text, negativeText, params, autoBuild])
 
   const stateClass = data.status === 'error' ? ' error-state' : data.status === 'generating' ? ' generating-state' : data.status === 'done' ? ' done-state' : ''
-  const collapseClass = isCollapsed ? ' collapsed' : ''
-  const muteClass = isMuted ? ' muted' : ''
 
   return (
-    <div className={'canvas-node' + stateClass + collapseClass + muteClass} style={{ borderColor: col.border + '66', boxShadow: '0 2px 16px rgba(0,0,0,0.3), 0 0 12px ' + col.glow }}>
+    <div className={'canvas-node' + stateClass + (isCollapsed ? ' collapsed' : '') + (isMuted ? ' muted' : '')} style={{ borderColor: col.border + '66', boxShadow: '0 2px 16px rgba(0,0,0,0.3), 0 0 12px ' + col.glow }}>
       <div className="node-header-accent textPrompt" />
       <div className="node-header">
         <span className="node-icon">T</span>
@@ -61,18 +61,26 @@ export const TextPromptNode = memo(({ id, data }) => {
         <span className="node-status idle">{text.length ? '已填' : '待输入'}</span>
       </div>
       {!isCollapsed && <div className="node-body">
-        <div className="node-section-label">提示词</div>
-        <textarea value={text} onChange={handleChange} placeholder={'描述你想要创作的内容...\n例如：一个电影级镜头，雨夜中孤独的人影，霓虹灯反射在湿路面'} className="node-textarea" rows={3} />
+        <div className="node-section-label">正向提示词</div>
+        <textarea value={text} onChange={handleChange}
+          placeholder={'描述你想要的画面...\n例如：一个电影级镜头，雨夜中孤独的人影，霓虹灯反射在湿路面'}
+          className="node-textarea" rows={3} />
+        <div className="node-section-label">负向提示词</div>
+        <textarea value={negativeText} onChange={handleNegChange}
+          placeholder={'你不想要的元素...\n例如：模糊, 低质量, 变形的手指, 文字水印, 多余人'}
+          className="node-textarea" rows={2} style={{minHeight:44, borderColor: '#ef444440'}} />
         {detectedIntent && (<div style={{fontSize:11, color:col.icon, padding:'4px 10px', background:'rgba(108,99,255,0.08)', borderRadius:6}}>检测到意图：{detectedIntent.label}</div>)}
         <div style={{display:'flex', gap:6, alignItems:'center'}}>
           <span style={{fontSize:10, color:'#666', flex:1}}>{text.length} 字</span>
           <button onClick={handleAutoBuild} disabled={!detectedIntent} className="node-btn node-btn-primary" style={{fontSize:11, padding:'5px 14px'}}>一键搭建</button>
         </div>
       </div>}
-      <Handle type="target" position={Position.Left} id="prompt" style={{ background: col.border, border: '2px solid #1e1e32', width: 12, height: 12, top: '25%' }} />
-      <div className="handle-label handle-label-left" style={{top:'25%',marginTop:-8}}>提示词</div>
-      <Handle type="source" position={Position.Right} id="output" style={{ background: col.border, border: '2px solid #1e1e32', width: 12, height: 12, top: '75%' }} />
-      <div className="handle-label handle-label-right" style={{top:'75%',marginTop:-8}}>输出</div>
+      <Handle type="target" position={Position.Left} id="prompt" style={{ background: col.border, border: '2px solid #1e1e32', width: 12, height: 12, top: '22%' }} />
+      <div className="handle-label handle-label-left" style={{top:'22%',marginTop:-8}}>提示词</div>
+      <Handle type="source" position={Position.Right} id="output" style={{ background: col.border, border: '2px solid #1e1e32', width: 12, height: 12, top: '35%' }} />
+      <div className="handle-label handle-label-right" style={{top:'35%',marginTop:-8}}>正向输出</div>
+      <Handle type="source" position={Position.Right} id="negative" style={{ background: '#ef4444', border: '2px solid #1e1e32', width: 12, height: 12, top: '70%' }} />
+      <div className="handle-label handle-label-right" style={{top:'70%',marginTop:-8, color:'#ef4444'}}>负向输出</div>
     </div>
   )
 })

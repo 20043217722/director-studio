@@ -2,6 +2,7 @@ import { useCallback, useState, useEffect, useRef, useMemo } from 'react'
 import { ReactFlow, ReactFlowProvider, Background, Controls, MiniMap, useReactFlow } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useCanvasStore, validateConnection } from './utils/canvasStore'
+import { validateHandleTypes, getFavorites, toggleFavorite, getRecents, addRecent, DATA_TYPES } from './utils/nodeDefaults'
 import { TextPromptNode } from './nodes/TextPromptNode'
 import { MediaGenNode } from './nodes/MediaGenNode'
 import { ReferenceNode } from './nodes/ReferenceNode'
@@ -305,7 +306,7 @@ function CanvasInner() {
         defaultEdgeOptions={{ type: 'default', animated: true, style: { stroke: '#6c63ff', strokeWidth: 2.5, strokeLinecap: 'round' } }}
         proOptions={{ hideAttribution: true }} style={{ background: '#1a1a2e' }}
         onViewportChange={(vp) => setZoom(Math.round(vp?.zoom * 100) / 100)}
-        isValidConnection={(connection) => { const s = useCanvasStore.getState(); const src = s.nodes.find((n) => n.id === connection.source); const tgt = s.nodes.find((n) => n.id === connection.target); if (!src || !tgt || src.id === tgt.id) return false; return validateConnection(src, tgt, connection.targetHandle) }}>
+        isValidConnection={(connection) => { const s = useCanvasStore.getState(); const src = s.nodes.find((n) => n.id === connection.source); const tgt = s.nodes.find((n) => n.id === connection.target); if (!src || !tgt || src.id === tgt.id) return false; const base = validateConnection(src, tgt, connection.targetHandle); if (!base) return false; const typeCheck = validateHandleTypes(src, connection.sourceHandle, tgt, connection.targetHandle); if (!typeCheck.valid) { setConnTooltip({ label: typeCheck.reason, error: true }); return false; } return true }}>
         <Background gap={24} size={2} color="#2a2a45" />
         <Background gap={96} size={2} color="#2a2a45" />
         <Controls />
@@ -320,7 +321,29 @@ function CanvasInner() {
 
       {/* Node Palette */}
       <button className="palette-toggle-btn" onClick={() => setPaletteOpen(v => !v)} title="节点面板 Ctrl+P" style={{ position: 'absolute', top: 12, left: 60, zIndex: 11 }}>{paletteOpen ? 'x' : '+'}</button>
-      {paletteOpen && (<div className="canvas-node-palette" onClick={(e) => e.stopPropagation()}><input value={paletteSearch} onChange={(e) => setPaletteSearch(e.target.value)} placeholder="搜索节点..." autoFocus />{filteredCategories.map(cat => (<div key={cat.name}><div className="palette-category">{cat.name}</div>{cat.items.map(item => (<button key={item.type} className="palette-item" onClick={() => handlePaletteAdd(item.type)} onDragStart={(e) => { e.dataTransfer.setData('application/reactflow-type', item.type); e.dataTransfer.effectAllowed = 'move'; setPaletteOpen(false) }} draggable><span className="palette-item-icon" style={{background: item.color + '22', color: item.color}}>{item.icon}</span><span>{item.label}</span><span className="palette-item-desc">{item.desc}</span></button>))}</div>))}{filteredCategories.length === 0 && <div style={{padding:20,textAlign:'center',fontSize:11,color:'#666'}}>无匹配节点</div>}</div>)}
+      {paletteOpen && (<div className="canvas-node-palette" onClick={(e) => e.stopPropagation()}><input value={paletteSearch} onChange={(e) => setPaletteSearch(e.target.value)} placeholder="搜索节点..." autoFocus />          {/* Favorites + Recents */}
+          {(favs.length > 0 || recents.length > 0) && (
+            <div>
+              {favs.length > 0 && (<div><div className='palette-category'>收藏</div>
+                {favs.map(type => { const item = NODE_CATEGORIES.flatMap(cat => cat.items).find(i => i.type === type); if (!item) return null;
+                  return (<button key={'fav_'+type} className='palette-item' onClick={() => handlePaletteAddTracked(item.type)}>
+                    <span className='palette-item-icon' style={{background: item.color + '22', color: item.color}}>{item.icon}</span>
+                    <span>{item.label}</span>
+                    <span onClick={(e) => { e.stopPropagation(); handleToggleFav(type) }} style={{fontSize:9,color:'#ef4444',marginLeft:'auto',cursor:'pointer'}}>x</span>
+                  </button>) })}</div>)}
+              {recents.length > 0 && (<div><div className='palette-category'>最近使用</div>
+                {recents.slice(0,4).map(type => { const item = NODE_CATEGORIES.flatMap(cat => cat.items).find(i => i.type === type); if (!item) return null;
+                  return (<button key={'rec_'+type} className='palette-item' onClick={() => handlePaletteAddTracked(item.type)}>
+                    <span className='palette-item-icon' style={{background: item.color + '22', color: item.color}}>{item.icon}</span>
+                    <span>{item.label}</span>
+                    <span onClick={(e) => { e.stopPropagation(); handleToggleFav(type) }} style={{fontSize:9,color: favs.includes(type) ? '#f5c518' : '#666', marginLeft:'auto', cursor:'pointer'}}>
+                      {favs.includes(type) ? '★' : '☆'}
+                    </span>
+                  </button>) })}</div>)}
+              <div className='menu-divider' />
+            </div>)}
+
+            {filteredCategories.map(cat => (<div key={cat.name}><div className="palette-category">{cat.name}</div>{cat.items.map(item => (<button key={item.type} className="palette-item" onClick={() => handlePaletteAddTracked(item.type)} onDragStart={(e) => { e.dataTransfer.setData('application/reactflow-type', item.type); e.dataTransfer.effectAllowed = 'move'; setPaletteOpen(false) }} draggable><span className="palette-item-icon" style={{background: item.color + '22', color: item.color}}>{item.icon}</span><span>{item.label}</span><span className="palette-item-desc">{item.desc}</span></button>))}</div>))}{filteredCategories.length === 0 && <div style={{padding:20,textAlign:'center',fontSize:11,color:'#666'}}>无匹配节点</div>}</div>)}
 
       {/* Search Bar */}
       {searchOpen && (<div className="canvas-search-bar" onClick={(e) => e.stopPropagation()} style={{zIndex:15}}><span style={{fontSize:12,color:'#888'}}>搜索</span><input ref={searchRef} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="输入节点名称..." autoFocus onKeyDown={(e) => { if (e.key === 'Escape') { setSearchOpen(false); setSearchQuery('') } if (e.key === 'Enter' && searchResults.length > 0) gotoNode(searchResults[0].id) }} /><span className="canvas-search-result">{searchResults.length} 个结果</span><button onClick={() => { setSearchOpen(false); setSearchQuery('') }} style={{background:'transparent',border:'none',color:'#888',cursor:'pointer',fontSize:14}}>x</button>{searchResults.length > 0 && (<div style={{position:'absolute',top:'100%',left:0,right:0,marginTop:4,background:'#1e1e32',border:'1px solid #2a2a45',borderRadius:8,maxHeight:200,overflowY:'auto',boxShadow:'0 8px 32px rgba(0,0,0,0.5)'}}>{searchResults.map(n => (<button key={n.id} onClick={() => gotoNode(n.id)} style={{width:'100%',padding:'8px 12px',fontSize:12,textAlign:'left',border:'none',background:'transparent',color:'#d0d0e0',cursor:'pointer',display:'flex',justifyContent:'space-between'}} onMouseEnter={(e) => e.target.style.background='#2a2a45'} onMouseLeave={(e) => e.target.style.background='transparent'}><span>{n.data?.label || n.type}</span><span style={{fontSize:10,color:'#666'}}>{n.type}</span></button>))}</div>)}</div>)}

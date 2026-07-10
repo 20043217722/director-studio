@@ -648,8 +648,8 @@ export const useCanvasStore = create(
       },
 
       updateNodeData: (nodeId, data, { syncDownstream = true } = {}) => {
-        // Push undo for label changes (renaming is a user action worth undoing)
-        if (data.label !== undefined) get()._pushUndo()
+        // Push undo for ALL parameter changes (prompt, label, model, etc.)
+        if (Object.keys(data).length > 0) get()._pushUndo()
         let updated = get().nodes.map((n) =>
           n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n)
         if (syncDownstream) {
