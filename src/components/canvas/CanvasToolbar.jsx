@@ -21,14 +21,14 @@ const btnBase = {
 const MAX_NODES = 100
 
 export function CanvasToolbar({ undo, redo, fitView }) {
-  const { addNode, clearCanvas, exportCanvas, importCanvas, autoLayout, nodes, fitView: storeFitView } = useCanvasStore()
+  const { addNode, clearCanvas, exportCanvas, importCanvas, autoLayout, nodes } = useCanvasStore()
   const [showAdd, setShowAdd] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const searchResults = searchQuery ? nodes.filter(n =>
     (n.data?.label || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     n.type.toLowerCase().includes(searchQuery.toLowerCase())
   ).slice(0, 5) : []
-  const { fitView } = useCanvasStore()
+  
   const focusNode = (nodeId) => {
     // Center view on the node
     const node = nodes.find(n => n.id === nodeId)

@@ -1,7 +1,7 @@
 {
-  "name": "导演工作室",
-  "short_name": "导演工作室",
-  "description": "AI电影导演创作工具",
+  "name": "造梦空间 AFS",
+  "short_name": "造梦空间 AFS",
+  "description": "造梦空间 AFS — AI电影创作平台",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#F0F7FF",
