@@ -147,81 +147,12 @@ e.g. "a cinematic shot of a lone figure standing in rain at night, neon reflecti
           style={genButtonStyle('textPrompt', !detectedIntent)}>
           ⚡ Auto Build
         </button>
-      </div> className="canvas-node" style={{ minWidth: 260, maxWidth: 340 }}>
-      <div className="node-header" style={{ borderLeftColor: 'var(--accent-tts)' }}>
-        <span>📝 {data.label}</span>
-        {detectedIntent && (
-          <span style={{ fontSize: 10, background: 'var(--accent-glow)', color: 'var(--accent)', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>
-            {detectedIntent.label}
-          </span>
-        )}
-      </div>
-
-      <div className="node-body" style={{ gap: 6 }}>
-        <textarea
-          value={text}
-          onChange={(e) => updateNodeData(id, { prompt: e.target.value })}
-          placeholder="输入创作指令... 赛博朋克海报16:9, 可灵5秒视频, 设计古装女侠"
-          rows={4}
-          className="node-textarea"
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => { e.stopPropagation(); useCanvasStore.getState().selectNode(id) }}
-        />
-
-        {/* Parameter pills */}
-        {paramCount > 0 && (
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
-            <button onClick={() => setShowParams(!showParams)}
-              style={{ fontSize: 10, color: 'var(--accent)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
-              {showParams ? '收起' : `📋 ${paramCount} 参数`}
-            </button>
-            {showParams && (
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                {params.aspectRatio && <ParamPill label={params.aspectRatio} color="var(--accent-tts)" />}
-                {params.duration && <ParamPill label={`${params.duration}s`} color="var(--accent-sfx)" />}
-                {params.resolution && <ParamPill label={params.resolution} color="var(--accent-tts)" />}
-                {params.modelProvider && <ParamPill label={params.modelProvider} color="var(--accent-music)" />}
-                {params.imageCount && <ParamPill label={`x${params.imageCount}`} color="var(--accent-tts)" />}
-                {params.styles?.map((s) => <ParamPill key={s} label={s} color="var(--brand)" />)}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Negative prompt row */}
-        {params.negativePrompt && (
-          <div style={{ fontSize: 10, color: '#ef4444', padding: '4px 6px', background: 'rgba(239,68,68,0.06)', borderRadius: 4 }}>
-            🚫 {params.negativePrompt.slice(0, 80)}
-          </div>
-        )}
-
-        {/* Actions */}
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-          {detectedIntent && (
-            <button className="node-btn" onClick={handleAutoBuild}
-              style={{ flex: 1, background: 'var(--accent)', color: '#000', fontSize: 11 }}>
-              ⚡ 一键搭建
-            </button>
-          )}
-          {!detectedIntent && text.trim() && (
-            <>
-              <button className="node-chip" onClick={() => handleConnectTo('imageGen')}
-                style={{ flex: 1, fontSize: 10, padding: '4px 8px', borderRadius: 5, border: '1px solid var(--accent-music)', background: 'transparent', color: 'var(--accent-music)', cursor: 'pointer', fontWeight: 600 }}>
-                +🎨 生图
-              </button>
-              <button className="node-chip" onClick={() => handleConnectTo('videoGen')}
-                style={{ flex: 1, fontSize: 10, padding: '4px 8px', borderRadius: 5, border: '1px solid var(--accent-sfx)', background: 'transparent', color: 'var(--accent-sfx)', cursor: 'pointer', fontWeight: 600 }}>
-                +🎬 生视频
-              </button>
-            </>
-          )}
-        </div>
       </div>
 
       <Handle type="target" position={Position.Left} id="prompt"
-        style={{ background: 'var(--accent-tts)', border: '2px solid var(--bg-surface)', width: 14, height: 14 }} />
+        style={{ background: "var(--accent-tts)", border: "2px solid var(--bg-surface)", width: 14, height: 14 }} />
       <Handle type="source" position={Position.Right} id="output"
-        style={{ background: 'var(--accent-tts)', border: '2px solid var(--bg-surface)', width: 14, height: 14 }} />
+        style={{ background: "var(--accent-tts)", border: "2px solid var(--bg-surface)", width: 14, height: 14 }} />
     </div>
   )
 })
