@@ -11,14 +11,14 @@ const GENERATION_TIMEOUT = 120000  // 2 minute timeout
 
 // Edge label by data type flowing through the connection
 const EDGE_LABELS = {
-  textPrompt: { imageGen: '📝 提示词', videoGen: '📝 提示词', agent: '📝 提示词', pixelleVideo: '📝 文本', mediaGen: '📝 提示词', textPrompt: '📝 链式提示' },
-  imageGen: { preview: '🖼️ 图片', videoGen: '🖼️ 图→视频', agent: '🖼️ 视觉参考', mediaGen: '🖼️ 图→媒体', textPrompt: '🖼️ 迭代提示' },
-  videoGen: { preview: '🎬 视频', mediaGen: '🎬 视频→媒体', textPrompt: '🎬 迭代提示' },
-  reference: { imageGen: '📎 参考图', videoGen: '📎 参考素材', mediaGen: '📎 参考素材', textPrompt: '📎 图转文', agent: '📎 AI分析' },
-  agent: { preview: '📄 分析结果', textPrompt: '📄 反哺提示', agent: '📄 链式协作', imageGen: '📄 思路→图', videoGen: '📄 思路→视频', mediaGen: '📄 思路→媒体' },
-  pixelleVideo: { preview: '🎞️ 成品视频' },
-  mediaGen: { preview: '🎨 媒体输出', videoGen: '🖼️ 图→视频', agent: '🖼️ 视觉参考', textPrompt: '🎨 迭代提示', mediaGen: '🎨 链式生成' },
-  preview: { agent: '👁️ 预览分析' },
+  textPrompt: { imageGen: '提示词', videoGen: '提示词', agent: '提示词', pixelleVideo: '文本', mediaGen: '提示词', textPrompt: '📝 链式提示' },
+  imageGen: { preview: '图片', videoGen: '图→视频', agent: '视觉参考', mediaGen: '🖼️ 图→媒体', textPrompt: '🖼️ 迭代提示' },
+  videoGen: { preview: '视频', mediaGen: '🎬 视频→媒体', textPrompt: '🎬 迭代提示' },
+  reference: { imageGen: '参考图', videoGen: '参考素材', mediaGen: '参考素材', textPrompt: '📎 图转文', agent: 'AI分析' },
+  agent: { preview: '分析结果', textPrompt: '反哺提示', agent: '链式协作', imageGen: '思路→图', videoGen: '思路→视频', mediaGen: '思路→媒体' },
+  pixelleVideo: { preview: '成品视频' },
+  mediaGen: { preview: '媒体输出', videoGen: '图→视频', agent: '视觉参考', textPrompt: '迭代提示', mediaGen: '链式生成' },
+  preview: { agent: '预览分析' },
 }
 
 function getEdgeLabel(sourceType, targetType) {
@@ -610,7 +610,7 @@ export const useCanvasStore = create(
         // Optional preview node
         if (addPreview) {
           const previewId = `n_${Date.now() + 1}_${Math.random().toString(36).slice(2, 7)}`
-          const previewEdgeLabel = targetType === 'videoGen' ? '🎬 视频' : '🖼️ 图片'
+          const previewEdgeLabel = targetType === 'videoGen' ? '视频' : '图片'
           newNodes.push({
             id: previewId, type: 'preview',
             position: { x: baseX + 340, y: baseY },

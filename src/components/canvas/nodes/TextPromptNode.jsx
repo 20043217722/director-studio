@@ -4,9 +4,9 @@ import { useCanvasStore } from '../utils/canvasStore'
 import { NODE_COLORS } from '../utils/canvasTheme'
 
 const INTENTS = [
-  { key: 'image', label: 'Image', patterns: [/生成图|画.*图|文生图|配图|插图|海报|生成一张|^\/image/i, /dall.e|midjourney|flux|seedream/i] },
-  { key: 'video', label: 'Video', patterns: [/生成视频|文生视频|图生视频|短视频|^\/video/i, /可灵|kling|seedance|runway|sora|wan/i] },
-  { key: 'agent', label: 'Agent', patterns: [/分析|设计角色|设计场景|解析|诊断|拆解|帮我写|写.*剧本|^\/agent/i] },
+  { key: 'image', label: '图片', patterns: [/生成图|画.*图|文生图|配图|插图|海报|生成一张|^\/image/i, /dall.e|midjourney|flux|seedream/i] },
+  { key: 'video', label: '视频', patterns: [/生成视频|文生视频|图生视频|短视频|^\/video/i, /可灵|kling|seedance|runway|sora|wan/i] },
+  { key: 'agent', label: '智能体', patterns: [/分析|设计角色|设计场景|解析|诊断|拆解|帮我写|写.*剧本|^\/agent/i] },
 ]
 
 function extractParams(text) {
@@ -46,7 +46,7 @@ export const TextPromptNode = memo(({ id, data }) => {
   const handleAutoBuild = useCallback(() => {
     if (!detectedIntent) return
     const targetType = { image: 'mediaGen', video: 'mediaGen', agent: 'agent' }[detectedIntent.key] || 'mediaGen'
-    const genData = { prompt: text, mediaType: detectedIntent.key === 'video' ? 'video' : 'image' }
+    const genData = { prompt: text, mediaType: detectedIntent.key === 'video' ? '视频' : '图片' }
     if (params.aspectRatio) genData.aspectRatio = params.aspectRatio
     if (params.duration) genData.duration = params.duration
     if (params.modelProvider) genData.modelProvider = params.modelProvider
@@ -56,25 +56,25 @@ export const TextPromptNode = memo(({ id, data }) => {
   return (
     <div className="canvas-node" style={{ borderColor: col.border + '66', boxShadow: '0 2px 16px rgba(0,0,0,0.3), 0 0 12px ' + col.glow }}>
       <div className="node-header">
-        <span className="node-icon">[TX]</span>
-        <span className="node-title">{data.label || 'Text Prompt'}</span>
-        <span className="node-status idle">{text.length ? text.length + 'ch' : 'idle'}</span>
+        <span className="node-icon">T</span>
+        <span className="node-title">{data.label || '文本提示词'}</span>
+        <span className="node-status idle">{text.length ? '已填' : '待输入'}</span>
       </div>
       <div className="node-body">
-        <div className="node-section-label">PROMPT</div>
+        <div className="node-section-label">提示词</div>
         <textarea value={text} onChange={handleChange}
-          placeholder={'Describe what you want to create...\ne.g. a cinematic shot of a lone figure standing in rain at night'}
+          placeholder={'描述你想要创作的内容...\n例如：一个电影级镜头，雨夜中孤独的人影，霓虹灯反射在湿路面，90年代犯罪片风格'}
           className="node-textarea" rows={3} />
         {detectedIntent && (
           <div style={{fontSize:11, color:col.icon, padding:'4px 10px', background:'rgba(108,99,255,0.08)', borderRadius:6}}>
-            Detected: {detectedIntent.label}
+            检测到意图：{detectedIntent.label}
           </div>
         )}
         <div style={{display:'flex', gap:6, alignItems:'center'}}>
-          <span style={{fontSize:10, color:'#666', flex:1}}>{text.length} chars</span>
+          <span style={{fontSize:10, color:'#666', flex:1}}>{text.length} 字</span>
           <button onClick={handleAutoBuild} disabled={!detectedIntent}
             className="node-btn node-btn-primary" style={{fontSize:11, padding:'5px 14px'}}>
-            Auto Build
+            一键搭建
           </button>
         </div>
       </div>

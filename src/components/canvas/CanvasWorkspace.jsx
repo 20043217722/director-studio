@@ -21,32 +21,21 @@ function getConnectedNodeIds(nodeId, edges) {
 }
 
 const nodeTypes = {
-  textPrompt: TextPromptNode,
-  mediaGen: MediaGenNode,
-  imageGen: MediaGenNode,
-  videoGen: MediaGenNode,
-  reference: ReferenceNode,
-  preview: PreviewNode,
-  agent: AgentNode,
-  pixelleVideo: PixelleVideoNode,
+  textPrompt: TextPromptNode, mediaGen: MediaGenNode,
+  imageGen: MediaGenNode, videoGen: MediaGenNode,
+  reference: ReferenceNode, preview: PreviewNode,
+  agent: AgentNode, pixelleVideo: PixelleVideoNode,
 }
 
 const QUICK_ADD_NODES = [
-  { type: 'textPrompt', label: 'Text Prompt' },
-  { type: 'mediaGen', label: 'Media Gen' },
-  { type: 'reference', label: 'Reference' },
-  { type: 'agent', label: 'AI Agent' },
-  { type: 'preview', label: 'Preview' },
+  { type: 'textPrompt', label: '文本提示词' },
+  { type: 'mediaGen', label: '媒体生成' },
+  { type: 'reference', label: '参考素材' },
+  { type: 'agent', label: 'AI 智能体' },
+  { type: 'preview', label: '预览输出' },
 ]
 
-const TYPE_LABELS = {
-  textPrompt: 'Text Prompt', mediaGen: 'Media Gen',
-  reference: 'Reference', preview: 'Preview', agent: 'AI Agent', pixelleVideo: 'Short Video',
-}
-
-export default function CanvasWorkspace() {
-  return <ReactFlowProvider><CanvasInner /></ReactFlowProvider>
-}
+export default function CanvasWorkspace() { return <ReactFlowProvider><CanvasInner /></ReactFlowProvider> }
 
 function CanvasInner() {
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, selectedNodeId, selectedEdgeId,
@@ -58,12 +47,9 @@ function CanvasInner() {
   const { screenToFlowPosition, fitView } = useReactFlow()
   const wrapperRef = useRef(null)
 
-  const connectedNodeIds = useMemo(() =>
-    selectedNodeId ? getConnectedNodeIds(selectedNodeId, edges) : new Set(), [selectedNodeId, edges])
-
+  const connectedNodeIds = useMemo(() => selectedNodeId ? getConnectedNodeIds(selectedNodeId, edges) : new Set(), [selectedNodeId, edges])
   const closeMenu = useCallback(() => setContextMenu(null), [])
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handle = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return
@@ -78,79 +64,31 @@ function CanvasInner() {
     return () => window.removeEventListener('keydown', handle)
   }, [])
 
-  const onDragOver = useCallback((e) => {
-    e.preventDefault()
-    const hasType = e.dataTransfer.types.includes('application/reactflow-type')
-    const hasImage = e.dataTransfer.types.includes('application/canvas-image')
-    e.dataTransfer.dropEffect = hasType ? 'move' : hasImage ? 'copy' : 'move'
-  }, [])
-
+  const onDragOver = useCallback((e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }, [])
   const onDrop = useCallback((e) => {
-    e.preventDefault()
-    const position = screenToFlowPosition({ x: e.clientX, y: e.clientY })
+    e.preventDefault(); const position = screenToFlowPosition({ x: e.clientX, y: e.clientY })
     const imageData = e.dataTransfer.getData('application/canvas-image')
     if (imageData) {
-      try {
-        const parsed = JSON.parse(imageData)
-        addNode('reference', position)
-        const s = useCanvasStore.getState()
-        const newNode = s.nodes[s.nodes.length - 1]
-        if (newNode) { s.updateNodeData(newNode.id, { label: parsed.name || 'Image', mediaType: 'image', mediaData: parsed.url, fileName: parsed.name || 'Generated' }) }
-        return
-      } catch {}
+      try { const parsed = JSON.parse(imageData); addNode('reference', position); const s = useCanvasStore.getState(); const newNode = s.nodes[s.nodes.length - 1]; if (newNode) { s.updateNodeData(newNode.id, { label: parsed.name || '图片素材', mediaType: 'image', mediaData: parsed.url, fileName: parsed.name || '生成图片' }) } return } catch {}
     }
-    const type = e.dataTransfer.getData('application/reactflow-type')
-    if (!type) return
-    addNode(type, position)
+    const type = e.dataTransfer.getData('application/reactflow-type'); if (!type) return; addNode(type, position)
   }, [screenToFlowPosition, addNode])
 
-  const onNodeDoubleClick = useCallback((_, node) => {
-    setRenameModal({ nodeId: node.id, name: node.data.label || node.type || '' })
-  }, [])
-
-  const handleRename = useCallback(() => {
-    if (!renameModal) return
-    useCanvasStore.getState().updateNodeData(renameModal.nodeId, { label: renameModal.name })
-    setRenameModal(null)
-  }, [renameModal])
-
-  const onNodeContextMenu = useCallback((e, node) => {
-    e.preventDefault()
-    selectNode(node.id)
-    setContextMenu({ type: 'node', x: e.clientX, y: e.clientY, nodeId: node.id })
-  }, [selectNode])
-
-  const onPaneContextMenu = useCallback((e) => {
-    e.preventDefault()
-    const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY })
-    setContextMenu({ type: 'pane', x: e.clientX, y: e.clientY, position: pos })
-  }, [screenToFlowPosition])
-
-  const onPaneClick = useCallback(() => {
-    deselectNode()
-    useCanvasStore.getState().deselectEdge()
-    setContextMenu(null)
-  }, [deselectNode])
-
-  const onEdgeClick = useCallback((e, edge) => {
-    useCanvasStore.getState().selectEdge(edge.id)
-  }, [])
-
-  const handleEdgeDelete = useCallback((edgeId) => {
-    deleteEdge(edgeId)
-    setContextMenu(null)
-  }, [deleteEdge])
+  const onNodeDoubleClick = useCallback((_, node) => { setRenameModal({ nodeId: node.id, name: node.data.label || node.type || '' }) }, [])
+  const handleRename = useCallback(() => { if (!renameModal) return; useCanvasStore.getState().updateNodeData(renameModal.nodeId, { label: renameModal.name }); setRenameModal(null) }, [renameModal])
+  const onNodeContextMenu = useCallback((e, node) => { e.preventDefault(); selectNode(node.id); setContextMenu({ type: 'node', x: e.clientX, y: e.clientY, nodeId: node.id }) }, [selectNode])
+  const onPaneContextMenu = useCallback((e) => { e.preventDefault(); const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY }); setContextMenu({ type: 'pane', x: e.clientX, y: e.clientY, position: pos }) }, [screenToFlowPosition])
+  const onPaneClick = useCallback(() => { deselectNode(); useCanvasStore.getState().deselectEdge(); setContextMenu(null) }, [deselectNode])
+  const onEdgeClick = useCallback((e, edge) => { useCanvasStore.getState().selectEdge(edge.id) }, [])
+  const handleEdgeDelete = useCallback((edgeId) => { deleteEdge(edgeId); setContextMenu(null) }, [deleteEdge])
 
   useEffect(() => {
     if (!selectedEdgeId) { setContextMenu(null); return }
     const edge = useCanvasStore.getState().edges.find((e) => e.id === selectedEdgeId)
-    if (!edge) { setContextMenu(null); return }
+    if (!edge) return
     const src = useCanvasStore.getState().nodes.find((n) => n.id === edge.source)
     const tgt = useCanvasStore.getState().nodes.find((n) => n.id === edge.target)
-    if (src && tgt) {
-      setContextMenu({ type: 'edge', edgeId: selectedEdgeId,
-        x: (src.position.x + tgt.position.x) / 2 + 80, y: (src.position.y + tgt.position.y) / 2 + 100 })
-    }
+    if (src && tgt) { setContextMenu({ type: 'edge', edgeId: selectedEdgeId, x: (src.position.x + tgt.position.x) / 2 + 80, y: (src.position.y + tgt.position.y) / 2 + 100 }) }
   }, [selectedEdgeId])
 
   const displayNodes = useMemo(() => {
@@ -160,99 +98,57 @@ function CanvasInner() {
 
   return (
     <div className="w-full h-full relative" ref={wrapperRef} onClick={closeMenu} style={{ outline: 'none' }}>
-      <ReactFlow
-        nodes={displayNodes} edges={edges}
+      <ReactFlow nodes={displayNodes} edges={edges}
         onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect}
         onPaneClick={onPaneClick} onPaneContextMenu={onPaneContextMenu}
         onEdgeClick={onEdgeClick}
         onNodeClick={(_, node) => useCanvasStore.getState().selectNode(node.id)}
         onNodeDoubleClick={onNodeDoubleClick} onNodeContextMenu={onNodeContextMenu}
-        onDragOver={onDragOver} onDrop={onDrop}
-        nodeTypes={nodeTypes}
-        fitView
-        deleteKeyCode={null}
-        multiSelectionKeyCode="Shift"
-        snapToGrid snapGrid={[16, 16]}
-        defaultEdgeOptions={{
-          type: 'default', animated: true,
-          style: { stroke: '#6c63ff', strokeWidth: 3, strokeLinecap: 'round' },
-        }}
-        proOptions={{ hideAttribution: true }}
-        style={{ background: '#1a1a2e' }}
+        onDragOver={onDragOver} onDrop={onDrop} nodeTypes={nodeTypes}
+        fitView deleteKeyCode={null} multiSelectionKeyCode="Shift" snapToGrid snapGrid={[16, 16]}
+        defaultEdgeOptions={{ type: 'default', animated: true, style: { stroke: '#6c63ff', strokeWidth: 3, strokeLinecap: 'round' } }}
+        proOptions={{ hideAttribution: true }} style={{ background: '#1a1a2e' }}
         onViewportChange={(vp) => setZoom(Math.round(vp?.zoom * 100) / 100)}
-        isValidConnection={(connection) => {
-          const s = useCanvasStore.getState()
-          const src = s.nodes.find((n) => n.id === connection.source)
-          const tgt = s.nodes.find((n) => n.id === connection.target)
-          if (!src || !tgt || src.id === tgt.id) return false
-          return validateConnection(src, tgt, connection.targetHandle)
-        }}
-      >
+        isValidConnection={(connection) => { const s = useCanvasStore.getState(); const src = s.nodes.find((n) => n.id === connection.source); const tgt = s.nodes.find((n) => n.id === connection.target); if (!src || !tgt || src.id === tgt.id) return false; return validateConnection(src, tgt, connection.targetHandle) }}>
         <Background gap={24} size={2} color="#2a2a45" />
         <Background gap={96} size={2} color="#2a2a45" />
         <Controls />
         <MiniMap nodeColor={(n) => ({ textPrompt: '#6c63ff', mediaGen: '#e94560', imageGen: '#e94560', videoGen: '#0f3460', reference: '#4ade80', preview: '#38bdf8', agent: '#f5c518', pixelleVideo: '#f472b6' }[n.type] || '#6c63ff')} maskColor="rgba(0,0,0,0.4)" pannable zoomable />
       </ReactFlow>
 
-      {/* Zoom indicator */}
       <div className="zoom-indicator">{Math.round(zoom * 100)}%</div>
 
-      {/* Context Menu */}
       {contextMenu && (
-        <div className="canvas-context-menu" style={{ position: 'fixed', left: contextMenu.x, top: contextMenu.y, zIndex: 50 }}
-          onClick={(e) => e.stopPropagation()}>
-          {contextMenu.type === 'node' && (
-            <>
-              <button className="menu-item" onClick={() => { setRenameModal({ nodeId: contextMenu.nodeId, name: useCanvasStore.getState().nodes.find((n) => n.id === contextMenu.nodeId)?.data?.label || '' }); setContextMenu(null) }}>
-                <span>Rename</span>
-              </button>
-              <button className="menu-item" onClick={() => { duplicateNode(contextMenu.nodeId); setContextMenu(null) }}>
-                <span>Duplicate</span><span style={{fontSize:10,color:'#666'}}>Ctrl+D</span>
-              </button>
-              <div className="menu-divider" />
-              <button className="menu-item danger" onClick={() => { deleteNode(contextMenu.nodeId); setContextMenu(null) }}>
-                <span>Delete</span><span style={{fontSize:10}}>Del</span>
-              </button>
-            </>
-          )}
-          {contextMenu.type === 'pane' && (
-            <>
-              <div className="menu-label">Add Node</div>
-              {QUICK_ADD_NODES.map((n) => (
-                <button key={n.type} className="menu-item" onClick={() => { addNode(n.type, contextMenu.position); setContextMenu(null) }}>
-                  {n.label}
-                </button>
-              ))}
-            </>
-          )}
-          {contextMenu.type === 'edge' && (
-            <>
-              <div className="menu-label">Edge</div>
-              <button className="menu-item danger" onClick={() => handleEdgeDelete(contextMenu.edgeId)}>
-                Delete Edge
-              </button>
-            </>
-          )}
+        <div className="canvas-context-menu" style={{ position: 'fixed', left: contextMenu.x, top: contextMenu.y, zIndex: 50 }} onClick={(e) => e.stopPropagation()}>
+          {contextMenu.type === 'node' && (<>
+            <button className="menu-item" onClick={() => { setRenameModal({ nodeId: contextMenu.nodeId, name: useCanvasStore.getState().nodes.find((n) => n.id === contextMenu.nodeId)?.data?.label || '' }); setContextMenu(null) }}><span>重命名</span></button>
+            <button className="menu-item" onClick={() => { duplicateNode(contextMenu.nodeId); setContextMenu(null) }}><span>复制</span><span style={{fontSize:10,color:'#666'}}>Ctrl+D</span></button>
+            <div className="menu-divider" />
+            <button className="menu-item danger" onClick={() => { deleteNode(contextMenu.nodeId); setContextMenu(null) }}><span>删除</span><span style={{fontSize:10}}>Del</span></button>
+          </>)}
+          {contextMenu.type === 'pane' && (<>
+            <div className="menu-label">添加节点</div>
+            {QUICK_ADD_NODES.map((n) => (<button key={n.type} className="menu-item" onClick={() => { addNode(n.type, contextMenu.position); setContextMenu(null) }}>{n.label}</button>))}
+          </>)}
+          {contextMenu.type === 'edge' && (<>
+            <div className="menu-label">连线</div>
+            <button className="menu-item danger" onClick={() => handleEdgeDelete(contextMenu.edgeId)}>删除连线</button>
+          </>)}
         </div>
       )}
 
-      {/* Rename Modal */}
-      {renameModal && (
-        <>
-          <div className="rename-overlay" onClick={() => setRenameModal(null)} />
-          <div className="rename-modal" onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#e0e0f0', marginBottom: 8 }}>Rename Node</div>
-            <input value={renameModal.name} onChange={(e) => setRenameModal({ ...renameModal, name: e.target.value })}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenameModal(null) }} autoFocus />
-            <div style={{ display: 'flex', gap: 6, marginTop: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setRenameModal(null)}
-                style={{ padding: '5px 12px', fontSize: 11, borderRadius: 5, border: '1px solid #2a2a45', background: 'transparent', color: '#888', cursor: 'pointer' }}>Cancel</button>
-              <button onClick={handleRename}
-                style={{ padding: '5px 12px', fontSize: 11, borderRadius: 5, border: 'none', background: '#6c63ff', color: '#fff', cursor: 'pointer' }}>OK</button>
-            </div>
+      {renameModal && (<>
+        <div className="rename-overlay" onClick={() => setRenameModal(null)} />
+        <div className="rename-modal" onClick={(e) => e.stopPropagation()}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#e0e0f0', marginBottom: 8 }}>重命名节点</div>
+          <input value={renameModal.name} onChange={(e) => setRenameModal({ ...renameModal, name: e.target.value })}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenameModal(null) }} autoFocus />
+          <div style={{ display: 'flex', gap: 6, marginTop: 8, justifyContent: 'flex-end' }}>
+            <button onClick={() => setRenameModal(null)} style={{ padding: '5px 12px', fontSize: 11, borderRadius: 5, border: '1px solid #2a2a45', background: 'transparent', color: '#888', cursor: 'pointer' }}>取消</button>
+            <button onClick={handleRename} style={{ padding: '5px 12px', fontSize: 11, borderRadius: 5, border: 'none', background: '#6c63ff', color: '#fff', cursor: 'pointer' }}>确定</button>
           </div>
-        </>
-      )}
+        </div>
+      </>)}
 
       <CanvasToolbar undo={undo} redo={redo} fitView={fitView} />
       <ProjectBiblePanel />
