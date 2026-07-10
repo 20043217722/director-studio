@@ -648,8 +648,11 @@ export const useCanvasStore = create(
       },
 
       updateNodeData: (nodeId, data, { syncDownstream = true } = {}) => {
-        // Push undo for ALL parameter changes (prompt, label, model, etc.)
-        if (Object.keys(data).length > 0) get()._pushUndo()
+        // Push undo for user-initiated changes only (not streaming status/progress updates)
+        const userFields = ['label', 'prompt', 'negativePrompt', 'modelProvider', 'aspectRatio',
+          'duration', 'imageCount', 'agentMode', 'mediaType', 'nScenes', 'template', 'tts', 'bgm',
+          'value', 'valueType', 'collapsed', 'muted', 'seed' ]
+        if (Object.keys(data).some(k => userFields.includes(k))) get()._pushUndo()
         let updated = get().nodes.map((n) =>
           n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n)
         if (syncDownstream) {
