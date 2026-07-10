@@ -133,6 +133,58 @@ function CanvasInner() {
     }
   }, [wfRunning])
   useEffect(() => { if (toastMsg) { const t = setTimeout(() => setToastMsg(null), 2000); return () => clearTimeout(t) } }, [toastMsg])
+  // === WORKFLOW EXECUTION (Backend Engine) ===
+  const [wfRunning, setWfRunning] = useState(false)
+  const [wfStatus, setWfStatus] = useState({})
+
+  const handleSubmitWorkflow = useCallback(async () => {
+    if (!nodes.length) return
+    setWfRunning(true); setToastMsg('提交工作流到后端引擎...')
+    const apiKeys = (() => { try { return JSON.parse(localStorage.getItem('api_keys') || '{}') } catch { return {} } })()
+    try {
+      const res = await fetch('http://localhost:3001/api/workflow/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nodes: nodes.map(n => ({ id: n.id, type: n.type, position: n.position, data: n.data })), edges, apiKeys, config: { stopOnError: false } }),
+      })
+      const { runId } = await res.json()
+      setWfStatus({ runId, status: 'started' })
+      setToastMsg('执行已启动: ' + runId)
+      const sse = new EventSource('http://localhost:3001/api/workflow/stream/' + runId)
+      sse.addEventListener('node:start', (e) => {
+        const { nodeId } = JSON.parse(e.data)
+        setWfStatus(prev => ({ ...prev, [nodeId]: 'running' }))
+        useCanvasStore.getState().updateNodeData(nodeId, { status: 'generating' })
+      })
+      sse.addEventListener('node:progress', (e) => {
+        const { nodeId, progress } = JSON.parse(e.data)
+        setWfStatus(prev => ({ ...prev, [nodeId]: 'progress:' + progress }))
+        useCanvasStore.getState().updateNodeData(nodeId, { progress, status: 'generating' })
+      })
+      sse.addEventListener('node:done', (e) => {
+        const { nodeId, output } = JSON.parse(e.data)
+        setWfStatus(prev => ({ ...prev, [nodeId]: 'done' }))
+        const s = useCanvasStore.getState()
+        if (output?.images?.length) { s.updateNodeData(nodeId, { generatedImages: output.images, status: 'done', progress: 100 }) }
+        else if (output?.text) { s.updateNodeData(nodeId, { response: output.text, status: 'done' }) }
+        else { s.updateNodeData(nodeId, { status: 'done', progress: 100 }) }
+      })
+      sse.addEventListener('node:error', (e) => {
+        const { nodeId, error } = JSON.parse(e.data)
+        setWfStatus(prev => ({ ...prev, [nodeId]: 'error' }))
+        useCanvasStore.getState().updateNodeData(nodeId, { status: 'error', errorMessage: error })
+      })
+      sse.addEventListener('workflow:done', (e) => {
+        const { duration } = JSON.parse(e.data)
+        setWfRunning(false); setToastMsg('工作流执行完成 (' + (duration / 1000).toFixed(1) + 's)')
+        sse.close()
+      })
+      sse.addEventListener('workflow:stopped', () => { setWfRunning(false); setToastMsg('工作流已停止'); sse.close() })
+      sse.onerror = () => { sse.close(); setWfRunning(false) }
+    } catch (err) { setWfRunning(false); setToastMsg('后端连接失败，请确保 npm run proxy 已启动') }
+  }, [nodes, edges])
+
+
 
   // === SPACE DRAG + KEYBOARD ===
   useEffect(() => {
@@ -225,6 +277,18 @@ function CanvasInner() {
     const newNodes = s.nodes.map(n => { const dn = distributeNodes(selNodes, direction).find(d => d.id === n.id); return dn || n })
     useCanvasStore.setState({ nodes: newNodes })
   }, [selectedNodeIds])
+
+  // === PALETTE FAVORITES & RECENTS ===
+  const [favs, setFavs] = useState(() => getFavorites())
+  const [recents, setRecents] = useState(() => getRecents())
+  const handlePaletteAddTracked = useCallback((type) => {
+    addRecent(type); setRecents(getRecents())
+    addNode(type); setPaletteOpen(false); setPaletteSearch('')
+  }, [addNode])
+  const handleToggleFav = useCallback((type) => {
+    const newFavs = toggleFavorite(type); setFavs(newFavs)
+    setToastMsg(getFavorites().includes(type) ? '已收藏' : '已取消收藏')
+  }, [])
 
   // === PALETTE ===
   const filteredCategories = useMemo(() => {
