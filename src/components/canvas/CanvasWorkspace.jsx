@@ -1,7 +1,7 @@
 import { useCallback, useState, useEffect, useRef, useMemo } from 'react'
 import {
   ReactFlow, ReactFlowProvider, Background, Controls, MiniMap,
-  useReactFlow,
+  useReactFlow, applyNodeChanges, applyEdgeChanges,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useCanvasStore } from './utils/canvasStore'
