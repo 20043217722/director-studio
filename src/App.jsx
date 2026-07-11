@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
 import { loadKeys, watchNetwork, callAgentStream, MODEL_PRESETS, sanitizePrompt } from "./lib/api";
 import { parseFile, fileToBase64, fileToBase64Resized, fileToObjectURL, isImage } from "./lib/fileParser";
 import { updatePreferences, getLikedMessages, getPreferenceInjection } from "./lib/preferences";
 import { trackPageView, recordVisit } from "./lib/analytics";
-import CanvasWorkspace from "./components/canvas/CanvasWorkspace";
+const CanvasWorkspace = lazy(() => import("./components/canvas/CanvasWorkspace"));
 import Sidebar from "./components/Sidebar";
 import AdminDashboard from "./components/AdminDashboard";
 import AdminGate from "./components/AdminGate";
@@ -508,7 +508,9 @@ export default function App() {
           <button onClick={() => setSettingsOpen(true)} style={{padding:'6px 12px',borderRadius:6,border:'1px solid var(--border-glow)',background:'var(--bg-card)',color:'var(--text)',cursor:'pointer',fontSize:13,fontWeight:600}} title="设置">⚙ 设置</button>
         </header>
         {mode === "canvas" ? (
-          <CanvasWorkspace />
+          <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",color:"var(--text-muted)",fontSize:14}}>加载画布中...</div>}>
+            <CanvasWorkspace />
+          </Suspense>
         ) : (
           <>
             {/* Agent tabs */}
@@ -592,3 +594,5 @@ export default function App() {
     </ErrorBoundary>
   );
 }
+
+
