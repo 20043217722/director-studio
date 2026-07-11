@@ -1,5 +1,5 @@
 // Service Worker v4 — SPA-aware caching for GitHub Pages
-const CACHE = "director-studio-v4";
+const CACHE = "director-studio-v5";
 const BASE = "/director-studio/";
 
 self.addEventListener("install", (e) => {
@@ -63,3 +63,4 @@ self.addEventListener("fetch", (e) => {
     })
   );
 });
+
