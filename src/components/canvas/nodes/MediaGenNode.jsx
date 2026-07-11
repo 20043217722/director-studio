@@ -4,47 +4,15 @@ import { useCanvasStore } from '../utils/canvasStore'
 import Lightbox from '../Lightbox'
 import { IMAGE_MODELS, VIDEO_MODELS, HANDLE_IDS } from '../utils/nodeDefaults'
 
-// --- Reactive API key detection ---
 function useModelKeys() {
-  const subscribe = useCallback((cb) => {
-    const handler = () => cb()
-    window.addEventListener('storage', handler)
-    window.addEventListener('apikeys-changed', handler)
-    return () => {
-      window.removeEventListener('storage', handler)
-      window.removeEventListener('apikeys-changed', handler)
-    }
-  }, [])
-  const getSnapshot = useCallback(() => {
-    try { return JSON.stringify(Object.keys(JSON.parse(localStorage.getItem('api_keys') || '{}')).sort()) }
-    catch { return '[]' }
-  }, [])
+  const subscribe = useCallback((cb) => { const handler = () => cb(); window.addEventListener('storage', handler); window.addEventListener('apikeys-changed', handler); return () => { window.removeEventListener('storage', handler); window.removeEventListener('apikeys-changed', handler) } }, [])
+  const getSnapshot = useCallback(() => { try { return JSON.stringify(Object.keys(JSON.parse(localStorage.getItem('api_keys') || '{}')).sort()) } catch { return '[]' } }, [])
   return new Set(JSON.parse(useSyncExternalStore(subscribe, getSnapshot)))
 }
 
-// --- Drag image to canvas as ReferenceNode ---
 function onImageDragStart(e, img) {
-  e.dataTransfer.setData('application/canvas-image', JSON.stringify({
-    url: img.url || img.base64, type: 'image',
-    name: img.revised_prompt ? img.revised_prompt.slice(0, 40) : 'Generated',
-  }))
+  e.dataTransfer.setData('application/canvas-image', JSON.stringify({ url: img.url || img.base64, type: 'image', name: img.revised_prompt ? img.revised_prompt.slice(0, 40) : '生成图片' }))
   e.dataTransfer.effectAllowed = 'copy'
-}
-
-// Auto-create a Preview node downstream if none exists
-function ensurePreviewDownstream(sourceId) {
-  const s = useCanvasStore.getState()
-  const hasPreview = s.edges.some((e) => {
-    if (e.source !== sourceId) return false
-    const tgt = s.nodes.find((n) => n.id === e.target)
-    return tgt && tgt.type === 'preview'
-  })
-  if (hasPreview) return
-  // Auto-build preview
-  const srcNode = s.nodes.find((n) => n.id === sourceId)
-  if (!srcNode) return
-  const pos = { x: srcNode.position.x + 360, y: srcNode.position.y }
-  s.autoBuild(sourceId, 'preview', {}, false)
 }
 
 export const MediaGenNode = memo(({ id, data }) => {
@@ -52,376 +20,267 @@ export const MediaGenNode = memo(({ id, data }) => {
   const registerAbort = useCanvasStore((s) => s.registerAbort)
   const unregisterAbort = useCanvasStore((s) => s.unregisterAbort)
   const [genLoading, setGenLoading] = useState(false)
+  const [batchLoading, setBatchLoading] = useState(false)
   const [lightboxIdx, setLightboxIdx] = useState(-1)
   const [videoLightbox, setVideoLightbox] = useState(false)
+  const [showParams, setShowParams] = useState(false)
+  const [compareMode, setCompareMode] = useState(false)
   const userKeys = useModelKeys()
 
   const mediaType = data.mediaType || 'image'
-  const isImage = mediaType === 'image'
-  const isVideo = mediaType === 'video'
+  const isImage = mediaType === 'image'; const isVideo = mediaType === 'video'
+  const isCollapsed = data.collapsed; const isMuted = data.muted
 
-  // --- Model lists per mode ---
+  const currentModels = isImage ? IMAGE_MODELS : VIDEO_MODELS
   const imageModel = IMAGE_MODELS.find((m) => m.id === data.modelProvider)
   const videoModel = VIDEO_MODELS.find((m) => m.id === data.modelProvider)
-  const currentModels = isImage ? IMAGE_MODELS : VIDEO_MODELS
   const [durMin, durMax] = isVideo ? (videoModel?.durationRange || [3, 15]) : [3, 15]
-
-  // --- Cancel ---
-  const handleCancel = useCallback(() => {
-    useCanvasStore.getState().abortGeneration(id)
-    setGenLoading(false)
-    updateNodeData(id, { status: 'idle', errorMessage: '' })
-  }, [id, updateNodeData])
-
-  // --- Version helpers ---
   const imageVersions = data.imageVersions || []
-  const videoVersions = data.videoVersions || []
   const [currentImgVer, setCurrentImgVer] = useState(imageVersions.length > 0 ? imageVersions.length - 1 : 0)
-  const [currentVidVer, setCurrentVidVer] = useState(videoVersions.length > 0 ? videoVersions.length - 1 : 0)
-
-  // Build display list: versions + current (if any)
+  const [compareLeft, setCompareLeft] = useState(0)
+  const [compareRight, setCompareRight] = useState(1)
   const allImageVersions = [...imageVersions]
-  if (data.generatedImages?.length > 0 && !imageVersions.includes(data.generatedImages)) {
-    allImageVersions.push(data.generatedImages)
-  }
-  const allVideoVersions = [...videoVersions]
-  if (data.generatedVideo?.url && !videoVersions.includes(data.generatedVideo)) {
-    allVideoVersions.push(data.generatedVideo)
-  }
+  if (data.generatedImages?.length > 0 && !imageVersions.includes(data.generatedImages)) allImageVersions.push(data.generatedImages)
+  const batchResults = data.batchResults || []
 
-  // --- Generate ---
+  const handleCancel = useCallback(() => { useCanvasStore.getState().abortGeneration(id); setGenLoading(false); setBatchLoading(false); updateNodeData(id, { status: 'idle', errorMessage: '' }) }, [id, updateNodeData])
+
+  // Single generate
   const handleGenerate = async () => {
-    // Video mode can use sourceImage (img2vid) without prompt; image mode requires prompt
     if (!data.prompt && (isImage || !data.sourceImage)) return
     setGenLoading(true)
-    // Save current to versions before generating new
     const versPatch = {}
-    if (isImage && data.generatedImages?.length > 0) {
-      versPatch.imageVersions = [...(data.imageVersions || []), data.generatedImages]
-    }
-    if (isVideo && data.generatedVideo?.url) {
-      versPatch.videoVersions = [...(data.videoVersions || []), data.generatedVideo]
-    }
+    if (isImage && data.generatedImages?.length > 0) versPatch.imageVersions = [...(data.imageVersions || []), data.generatedImages]
+    if (isVideo && data.generatedVideo?.url) versPatch.videoVersions = [...(data.videoVersions || []), data.generatedVideo]
     updateNodeData(id, { ...versPatch, status: 'generating', progress: 0, errorMessage: '' })
-    const ctrl = new AbortController()
-    registerAbort(id, ctrl)
-
+    const ctrl = new AbortController(); registerAbort(id, ctrl)
     try {
       if (isImage) {
+        const progressTimer = setInterval(() => { const s = useCanvasStore.getState(); const n = s.nodes.find(n => n.id === id); if (n && n.data.status === 'generating') { const p = Math.min((n.data.progress || 0) + 15, 90); updateNodeData(id, { progress: p }) } }, 800)
         const { generateImage } = await import('../../../lib/canvasApi')
-        const r = await generateImage(data.prompt, {
-          provider: data.modelProvider || 'gpt-image-1',
-          aspectRatio: data.aspectRatio || '1:1',
-          count: data.imageCount || 1,
-          signal: ctrl.signal,
-        })
+        const r = await generateImage(data.prompt, { provider: data.modelProvider || 'gpt-image-1', aspectRatio: data.aspectRatio || '1:1', count: data.imageCount || 1, signal: ctrl.signal })
+        clearInterval(progressTimer)
         if (ctrl.signal.aborted) return
-        updateNodeData(id, { generatedImages: r.images || [], status: 'done' })
-        // Auto-create Preview node if no downstream preview exists
-        ensurePreviewDownstream(id)
+        updateNodeData(id, { generatedImages: r.images || [], status: 'done', progress: 100 })
       } else {
         const { generateVideo, pollVideoGeneration } = await import('../../../lib/canvasApi')
-        const { jobId } = await generateVideo(data.prompt || data.sourceImage, {
-          provider: data.modelProvider || 'sora',
-          duration: data.duration || 5,
-          signal: ctrl.signal,
-        })
+        const { jobId } = await generateVideo(data.prompt || data.sourceImage, { provider: data.modelProvider || 'sora', duration: data.duration || 5, signal: ctrl.signal })
         if (ctrl.signal.aborted) return
         let lastP = -1
-        for await (const u of pollVideoGeneration(jobId, {
-          provider: data.modelProvider || 'sora',
-          signal: ctrl.signal,
-        })) {
-          if (ctrl.signal.aborted) return
-          const p = u.progress || 0
-          if (u.status !== 'done' && p - lastP < 5 && lastP >= 0) continue
-          lastP = p
-          // Single atomic update: merge progress + video data into one call
-          if (u.status === 'done') {
-            updateNodeData(id, { generatedVideo: u, status: 'done', progress: 100 })
-            ensurePreviewDownstream(id)
-            break
-          }
-          updateNodeData(id, { progress: p, status: 'generating', stage: u.stage })
-        }
+        for await (const u of pollVideoGeneration(jobId, { provider: data.modelProvider || 'sora', signal: ctrl.signal })) { if (ctrl.signal.aborted) return; const p = u.progress || 0; if (u.status !== 'done' && p - lastP < 5 && lastP >= 0) continue; lastP = p; if (u.status === 'done') { updateNodeData(id, { generatedVideo: u, status: 'done', progress: 100 }); break }; updateNodeData(id, { progress: p, status: 'generating', stage: u.stage }) }
       }
-    } catch (e) {
-      if (e.name === 'AbortError' || ctrl.signal.aborted) return
-      updateNodeData(id, { status: 'error', errorMessage: e.message })
-    } finally {
-      setGenLoading(false)
-      unregisterAbort(id)
-    }
+    } catch (e) { if (e.name === 'AbortError' || ctrl.signal.aborted) return; updateNodeData(id, { status: 'error', errorMessage: e.message }) }
+    finally { setGenLoading(false); unregisterAbort(id) }
   }
 
-  // Listen for retry event from Preview node
-  useEffect(() => {
-    const handler = (e) => {
-      const s = useCanvasStore.getState()
-      const isUpstream = s.edges.some(
-        edge => edge.source === id && edge.target === e.detail?.previewId
-      )
-      if (isUpstream && !genLoading && data.prompt) {
-        handleGenerate()
+  // BATCH GENERATE: 4 variants in parallel
+  const handleBatchGenerate = async () => {
+    if (!data.prompt || !isImage) return
+    setBatchLoading(true)
+    updateNodeData(id, { batchResults: [], status: 'generating' })
+    const ctrl = new AbortController(); registerAbort(id, ctrl)
+    const results = []
+    try {
+      const { generateImage } = await import('../../../lib/canvasApi')
+      for (let i = 0; i < 4; i++) {
+        if (ctrl.signal.aborted) return
+        results.push({ status: 'generating', index: i })
+        updateNodeData(id, { batchResults: [...results], progress: Math.round((i / 4) * 100) })
+        try {
+          const r = await generateImage(data.prompt, { provider: data.modelProvider || 'gpt-image-1', aspectRatio: data.aspectRatio || '1:1', count: 1, signal: ctrl.signal })
+          if (ctrl.signal.aborted) return
+          results[i] = { status: 'done', index: i, image: r.images?.[0] }
+        } catch (e) {
+          if (ctrl.signal.aborted) return
+          results[i] = { status: 'error', index: i, error: e.message }
+        }
+        updateNodeData(id, { batchResults: [...results], progress: Math.round(((i + 1) / 4) * 100) })
       }
-    }
-    window.addEventListener('preview-retry', handler)
-    return () => window.removeEventListener('preview-retry', handler)
-  }, [id, genLoading, data.prompt])
+      updateNodeData(id, { status: 'done', progress: 100 })
+      // Auto-save batch results to versions
+      const goodImages = results.filter(r => r.status === 'done' && r.image).map(r => r.image)
+      if (goodImages.length) {
+        const vers = [...(data.imageVersions || [])]
+        if (data.generatedImages?.length) vers.push(data.generatedImages)
+        vers.push(goodImages)
+        updateNodeData(id, { generatedImages: goodImages, imageVersions: vers })
+      }
+    } catch (e) { if (e.name === 'AbortError' || ctrl.signal.aborted) return; updateNodeData(id, { status: 'error', errorMessage: e.message }) }
+    finally { setBatchLoading(false); unregisterAbort(id) }
+  }
 
-  // --- Download ---
-  const handleDownload = useCallback((img, e) => {
-    e.stopPropagation()
-    const a = document.createElement('a')
-    a.href = img.url || img.base64
-    a.download = 'generated.png'; a.target = '_blank'; a.rel = 'noopener'
-    document.body.appendChild(a); a.click(); document.body.removeChild(a)
-  }, [])
+  useEffect(() => { const handler = (e) => { const s = useCanvasStore.getState(); const isUpstream = s.edges.some(edge => edge.source === id && edge.target === e.detail?.previewId); if (isUpstream && !genLoading && data.prompt) { handleGenerate() } }; window.addEventListener('preview-retry', handler); return () => window.removeEventListener('preview-retry', handler) }, [id, genLoading, data.prompt])
 
-  const handleDownloadVideo = useCallback(() => {
-    if (!data.generatedVideo?.url) return
-    const a = document.createElement('a')
-    a.href = data.generatedVideo.url; a.download = 'generated_video.mp4'
-    a.target = '_blank'; a.rel = 'noopener'
-    document.body.appendChild(a); a.click(); document.body.removeChild(a)
-  }, [data.generatedVideo])
+  const handleDownload = useCallback((img, e) => { e.stopPropagation(); const a = document.createElement('a'); a.href = img.url || img.base64; a.download = 'generated.png'; a.target = '_blank'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); document.body.removeChild(a) }, [])
+  const handleDownloadVideo = useCallback(() => { if (!data.generatedVideo?.url) return; const a = document.createElement('a'); a.href = data.generatedVideo.url; a.download = 'generated_video.mp4'; a.target = '_blank'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); document.body.removeChild(a) }, [data.generatedVideo])
+  const handlePaste = useCallback((e) => { const items = e.clipboardData?.items; if (!items) return; for (const item of items) { if (item.type.startsWith('image/')) { const file = item.getAsFile(); if (!file) continue; const reader = new FileReader(); reader.onload = () => updateNodeData(id, { sourceImage: reader.result }); reader.readAsDataURL(file); break } } }, [id, updateNodeData])
 
-  const imgItems = (data.generatedImages || []).map((img, i) => ({
-    url: img.url || img.base64, type: 'image', name: img.revised_prompt || `Generated ${i + 1}`,
-  }))
+  const imgItems = (data.generatedImages || []).map((img, i) => ({ url: img.url || img.base64, type: 'image', name: img.revised_prompt || '生成 ' + (i + 1) }))
+
+  const stateClass = data.status === 'error' ? ' error-state' : data.status === 'generating' ? ' generating-state' : data.status === 'done' ? ' done-state' : ''
+  const collapseClass = isCollapsed ? ' collapsed' : ''
+  const muteClass = isMuted ? ' muted' : ''
 
   return (
-    <div className="canvas-node media-gen-node" style={{ minWidth: 280, maxWidth: 400 }}>
-      {/* --- Handles --- */}
-      <Handle type="target" position={Position.Left} id={HANDLE_IDS.target.prompt}
-        style={{ ...handleStyle('var(--accent-music)'), top: '18%' }} />
-      <Handle type="target" position={Position.Left} id={HANDLE_IDS.target.image}
-        style={{ ...handleStyle('var(--accent-clone)'), top: '36%' }} />
+    <div className={'canvas-node' + stateClass + collapseClass + muteClass} style={{ borderColor: (isImage ? '#e94560' : '#0f3460') + '40' }}>
+      <div className={'node-header-accent ' + (isImage ? 'mediaGen' : 'videoGen')} />
+      <Handle type="target" position={Position.Left} id={HANDLE_IDS.target.prompt} style={{ background: isImage ? '#e94560' : '#0f3460', border: '2px solid #1e1e32', width: 12, height: 12, top: '15%' }} />
+      <div className="handle-label handle-label-left" style={{top:'15%',marginTop:-8}}>提示词</div>
+      <Handle type="target" position={Position.Left} id={HANDLE_IDS.target.image} style={{ background: '#4ade80', border: '2px solid #1e1e32', width: 12, height: 12, top: '35%' }} />
+      <div className="handle-label handle-label-left" style={{top:'35%',marginTop:-8}}>参考图</div>
+      <Handle type="target" position={Position.Left} id="negative"
+        style={{ background: '#ef4444', border: '2px solid #1e1e32', width: 12, height: 12, top: '50%' }} />
+      <div className="handle-label handle-label-left" style={{top:'50%',marginTop:-8,color:'#ef4444'}}>负向</div>
+      <Handle type="target" position={Position.Left} id="seed"
+        style={{ background: '#f5c518', border: '2px solid #1e1e32', width: 9, height: 9, top: '55%', borderRadius: '1px', transform: 'rotate(45deg)' }} />
+      <div className="handle-label handle-label-left" style={{top:'55%',marginTop:-8}}>种子</div>
+      <Handle type="target" position={Position.Left} id="steps"
+        style={{ background: '#22c55e', border: '2px solid #1e1e32', width: 9, height: 9, top: '68%', borderRadius: '1px', transform: 'rotate(45deg)' }} />
+      <div className="handle-label handle-label-left" style={{top:'68%',marginTop:-8,color:'#22c55e'}}>步数</div>
 
-      {/* === TOP: Media Preview Area === */}
-
-      {/* Media type toggle */}
-      <div className="media-tabs">
-        <button className={`media-tab ${isImage ? 'active' : ''}`}
-          onClick={() => updateNodeData(id, { mediaType: 'image' })}>
-          🎨 生图
-        </button>
-        <button className={`media-tab ${isVideo ? 'active' : ''}`}
-          onClick={() => updateNodeData(id, { mediaType: 'video' })}>
-          🎬 生视频
-        </button>
-        <span style={{ fontSize: 10, fontWeight: 600, marginLeft: 'auto', color:
-          data.status === 'done' ? 'var(--success)' :
-          data.status === 'error' ? '#ef4444' :
-          data.status === 'generating' ? 'var(--brand)' : 'var(--text-muted)' }}>
-          {data.status === 'generating' ? '⏳' : data.status === 'done' ? '✅' :
-           data.status === 'error' ? '❌' : ''}
+      <div className="node-header">
+        <span className="node-icon">{isImage ? '图' : '视'}</span>
+        <span className="node-title">{data.label || (isImage ? '图片生成' : '视频生成')}</span>
+        {isMuted && <span className="node-mute-badge">已静音</span>}
+        <span className={'node-status ' + (data.status === 'done' ? 'done' : data.status === 'generating' ? 'generating' : data.status === 'error' ? 'error' : 'idle')}>
+          {data.status === 'generating' ? (data.progress || 0) + '%' : data.status === 'done' ? '完成' : data.status === 'error' ? '错误' : '待机'}
         </span>
       </div>
 
-      {/* Version indicator (image mode) */}
-      {isImage && allImageVersions.length > 1 && (
-        <VersionNav current={currentImgVer} total={allImageVersions.length}
-          onChange={(v) => {
-            setCurrentImgVer(v)
-            updateNodeData(id, { generatedImages: allImageVersions[v] || data.generatedImages })
-          }} />
-      )}
-
-      {/* Image mode: gallery */}
-      {isImage && data.generatedImages?.length > 0 && (
-        <div className="img-gallery" style={{ marginBottom: 8 }}>
-          {data.generatedImages.map((img, i) => (
-            <div key={i} className="img-gallery-item"
-              draggable onDragStart={(e) => onImageDragStart(e, img)}>
-              <img src={img.url || img.base64} alt=""
-                className="img-gallery-thumb" style={{ maxHeight: 220 }}
-                onClick={() => setLightboxIdx(i)} />
-              <div className="img-gallery-actions">
-                <button className="img-action-btn" onClick={() => setLightboxIdx(i)}>🔍</button>
-                <button className="img-action-btn" draggable onDragStart={(e) => onImageDragStart(e, img)}
-                  style={{ cursor: 'grab' }}>⚡</button>
-                <button className="img-action-btn" onClick={(e) => handleDownload(img, e)}>⬇</button>
-              </div>
-            </div>
-          ))}
+      {!isCollapsed && <div className="node-body">
+        <div className="media-tabs">
+          <button className={'media-tab' + (isImage ? ' active' : '')} onClick={() => updateNodeData(id, { mediaType: 'image' })}>生成图片</button>
+          <button className={'media-tab' + (isVideo ? ' active' : '')} onClick={() => updateNodeData(id, { mediaType: 'video' })}>生成视频</button>
         </div>
-      )}
 
-      {/* Image mode: empty placeholder */}
-      {isImage && !data.generatedImages?.length && data.status !== 'generating' && (
-        <div className="media-placeholder" style={{ minHeight: 90, borderRadius: 10,
-          background: 'linear-gradient(135deg, var(--bg-root), var(--bg-elevated))',
-          border: '2px dashed var(--border)', gap: 8 }}>
-          <span style={{ fontSize: 32, opacity: 0.5 }}>🎨</span>
-          <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>输入提示词，点击生成</span>
-          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>支持从上游节点拖入参考图片</span>
-        </div>
-      )}
-
-      {/* Version indicator (video mode) */}
-      {isVideo && allVideoVersions.length > 1 && (
-        <VersionNav current={currentVidVer} total={allVideoVersions.length}
-          onChange={(v) => {
-            setCurrentVidVer(v)
-            updateNodeData(id, { generatedVideo: allVideoVersions[v] || data.generatedVideo })
-          }} />
-      )}
-
-      {/* Video mode: player or progress */}
-      {isVideo && (
-        <>
-          {data.generatedVideo?.url ? (
-            <div className="video-preview-wrap" style={{ marginBottom: 8 }}>
-              <video src={data.generatedVideo.url} controls
-                style={{ width: '100%', maxHeight: 200, borderRadius: 6, background: '#000' }} />
-              <div className="media-actions">
-                <button className="img-action-btn" onClick={() => setVideoLightbox(true)}>🔍</button>
-                <button className="img-action-btn" onClick={handleDownloadVideo}>⬇</button>
-              </div>
-            </div>
-          ) : data.status !== 'generating' ? (
-            <div className="media-placeholder" style={{ minHeight: 90, borderRadius: 10,
-              background: 'linear-gradient(135deg, var(--bg-root), var(--bg-elevated))',
-              border: '2px dashed var(--border)', gap: 8 }}>
-              <span style={{ fontSize: 32, opacity: 0.5 }}>🎬</span>
-              <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>输入提示词，点击生成</span>
-              <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>图生视频：从上游图片节点拖入</span>
-            </div>
-          ) : null}
-
-          {data.status === 'generating' && (
-            <div style={{ padding: '6px 0 10px' }}>
-              <div style={{ background: 'var(--border)', borderRadius: 6, height: 12, marginBottom: 6, overflow: 'hidden' }}>
-                <div style={{ width: `${data.progress || 0}%`, height: '100%',
-                  background: 'linear-gradient(90deg, var(--accent-sfx), #fb923c, #f97316)',
-                  borderRadius: 6, transition: 'width 0.8s ease',
-                  boxShadow: '0 0 12px rgba(249,115,22,0.3)' }} />
-              </div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'center' }}>
-                {data.progress >= 95 ? '✨ 即将完成...' : `⏳ 生成中 ${data.progress || 0}%`}
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* === MIDDLE: Model + Params === */}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-        <select value={data.modelProvider || (isImage ? 'gpt-image-1' : 'sora')}
-          onChange={(e) => updateNodeData(id, { modelProvider: e.target.value })}
-          className="node-select" style={{ flex: 1, minWidth: 100 }}>
-          {currentModels.map((m) => {
-            const hasKey = m.keyReuse ? userKeys.has(m.keyReuse) : false
-            return <option key={m.id} value={m.id}>{hasKey ? '✅' : '🔑'} {m.name}</option>
-          })}
-        </select>
-      </div>
-
-      {/* Aspect ratio (image) or Duration (video) */}
-      {isImage && (
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 6 }}>
-          {(imageModel?.sizes || ['1024x1024']).map((s) => (
-            <button key={s} className="node-pill"
-              style={{ background: data.aspectRatio === s ? 'var(--accent-music)' : 'var(--bg-root)',
-                color: data.aspectRatio === s ? '#fff' : 'var(--text-dim)' }}
-              onClick={() => updateNodeData(id, { aspectRatio: s })}>{s}</button>
-          ))}
-        </div>
-      )}
-
-      {isVideo && (
-        <div className="duration-control" style={{ marginBottom: 6 }}>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', minWidth: 24 }}>{data.duration || 5}s</span>
-          <input type="range" min={durMin} max={durMax} step={1}
-            value={data.duration || 5}
-            onChange={(e) => updateNodeData(id, { duration: parseInt(e.target.value) })}
-            style={{ flex: 1 }} />
-          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{durMin}-{durMax}s</span>
-        </div>
-      )}
-
-      {/* === BOTTOM: Prompt + Generate === */}
-      <textarea
-        value={data.prompt || ''}
-        onChange={(e) => updateNodeData(id, { prompt: e.target.value })}
-        placeholder={isImage ? '描述你想生成的画面...' : '描述视频场景... 支持图生视频：从上游拖入图片'}
-        rows={3} className="node-textarea"
-        style={{ marginBottom: 6 }}
-        onClick={(e) => e.stopPropagation()}
-      />
-
-      {/* Generate / Cancel */}
-      <div style={{ display: 'flex', gap: 6 }}>
-        <button className="node-btn node-btn-primary"
-          onClick={handleGenerate} disabled={genLoading || (!data.prompt && (isImage || !data.sourceImage))}
-          style={{ flex: 1,
-            background: isImage
-              ? 'linear-gradient(135deg, var(--accent-music), #7c3aed)'
-              : 'linear-gradient(135deg, var(--accent-sfx), #f97316)',
-            color: '#fff', fontWeight: 700, fontSize: 13, letterSpacing: '0.02em',
-            boxShadow: isImage
-              ? '0 2px 12px rgba(139,92,246,0.25)'
-              : '0 2px 12px rgba(249,115,22,0.25)',
-            opacity: (genLoading || !data.prompt) ? 0.5 : 1 }}>
-          {genLoading
-            ? (isImage ? '⏳ 生成中...' : `⏳ ${data.progress || 0}%`)
-            : (isImage ? '🎨 生成图片' : '🎬 生成视频')}
-        </button>
-        {genLoading && (
-          <button className="node-btn node-btn-danger" onClick={handleCancel}
-            style={{ background: '#ef4444', color: '#fff' }}>✕</button>
+        {/* --- BATCH MODE: 2x2 variation grid --- */}
+        {(batchLoading || batchResults.length > 0) && isImage && (
+          <div className="batch-grid">
+            {[0,1,2,3].map(idx => {
+              const result = batchResults[idx]
+              const isGen = batchLoading && (!result || result.status === 'generating')
+              const img = result?.status === 'done' ? result.image : null
+              const isErr = result?.status === 'error'
+              return (
+                <div key={idx} className={'batch-item' + (isGen ? ' generating' : '')}
+                  onClick={() => { if (img) setLightboxIdx(idx) }}
+                  title={isErr ? result.error : '变体 ' + (idx + 1)}>
+                  {img ? <img src={img.url || img.base64} alt="" /> :
+                   isGen ? <span>⏳</span> :
+                   isErr ? <span style={{color:'#ef4444',fontSize:10}}>❌</span> :
+                   <span style={{color:'#555',fontSize:10}}>-</span>}
+                  {result && <span className="batch-label">#{idx + 1}</span>}
+                </div>
+              )
+            })}
+          </div>
         )}
-      </div>
 
-      {/* Error + retry */}
-      {data.status === 'error' && (
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
-          <div className="node-error" style={{ flex: 1, margin: 0 }}>{data.errorMessage}</div>
-          <button onClick={handleGenerate}
-            style={{ padding: '4px 10px', fontSize: 11, borderRadius: 4, border: '1px solid var(--border)',
-              background: 'var(--bg-root)', color: 'var(--text)', cursor: 'pointer' }}>🔄 重试</button>
+        {/* --- MAIN GALLERY --- */}
+        {isImage && data.status === 'generating' && !batchResults.length && (<div className="node-progress-bar"><div className="node-progress-fill image" style={{ width: (data.progress || 0) + '%' }} /></div>)}
+        {isImage && data.generatedImages?.length > 0 && (
+          <div className="img-gallery">
+            {data.generatedImages.map((img, i) => (<div key={i} className="img-gallery-item" draggable onDragStart={(e) => onImageDragStart(e, img)}><img src={img.url || img.base64} alt="" className="img-gallery-thumb" onClick={() => setLightboxIdx(i)} /><div className="img-gallery-actions"><button className="img-action-btn" onClick={() => setLightboxIdx(i)}>放大</button><button className="img-action-btn" onClick={(e) => handleDownload(img, e)}>下载</button></div></div>))}
+          </div>
+        )}
+        {isImage && !data.generatedImages?.length && data.status !== 'generating' && !batchResults.length && (<div className="node-preview-placeholder"><span className="ph-icon">[ ]</span><span>输入提示词，点击生成</span></div>)}
+
+        {/* --- VERSION THUMBNAILS --- */}
+        {isImage && allImageVersions.length > 1 && (
+          <div>
+            <div className="node-section-label" style={{marginBottom:4}}>版本历史 ({allImageVersions.length})</div>
+            <div className="version-thumbs">
+              {allImageVersions.map((versionImgs, vi) => {
+                const thumb = versionImgs?.[0]
+                const isActive = vi === currentImgVer
+              
+  // === RUN CHAIN listener ===
+  useEffect(() => {
+    const h = (e) => { if (e.detail?.nodeId === id && !genLoading && !batchLoading && data.prompt) handleGenerate() }
+    window.addEventListener('run-chain', h)
+    return () => window.removeEventListener('run-chain', h)
+  }, [id, genLoading, batchLoading, data.prompt])
+
+  return (
+                  <div key={vi} className={'version-thumb' + (isActive ? ' active' : '')}
+                    onClick={() => { setCurrentImgVer(vi); updateNodeData(id, { generatedImages: versionImgs }) }}
+                    title={'版本 ' + (vi + 1)}>
+                    {thumb?.url || thumb?.base64 ? <img src={thumb.url || thumb.base64} alt="" /> : <span className="v-number">v{vi + 1}</span>}
+                  </div>
+                )
+              })}
+              {allImageVersions.length >= 2 && (
+                <button className="version-thumb" style={{borderColor:'#8b5cf6',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:600,color:'#8b5cf6',background:'transparent'}}
+                  onClick={() => { setCompareLeft(currentImgVer); setCompareRight(Math.min(allImageVersions.length - 1, currentImgVer + 1)); setCompareMode(true) }}>
+                  对比
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {isVideo && data.generatedVideo?.url && (<div className="video-preview-wrap"><video src={data.generatedVideo.url} controls className="video-preview" /><div className="media-actions"><button className="img-action-btn" onClick={() => setVideoLightbox(true)}>放大</button><button className="img-action-btn" onClick={handleDownloadVideo}>下载</button></div></div>)}
+        {isVideo && !data.generatedVideo?.url && data.status !== 'generating' && (<div className="node-preview-placeholder"><span className="ph-icon">[V]</span><span>输入提示词，点击生成视频</span></div>)}
+        {isVideo && data.status === 'generating' && (<div className="node-progress-bar"><div className="node-progress-fill video" style={{ width: (data.progress || 0) + '%' }} /></div>)}
+
+        <button onClick={() => setShowParams(!showParams)} style={{ background: 'transparent', border: 'none', color: '#888', fontSize: 10, cursor: 'pointer', textAlign: 'left', padding: 0 }}>{showParams ? '收起参数' : '展开参数...'}</button>
+
+        {showParams && (<>
+          <select value={data.modelProvider || (isImage ? 'gpt-image-1' : 'sora')} onChange={(e) => updateNodeData(id, { modelProvider: e.target.value })} className="node-select">{currentModels.map((m) => { const hasKey = m.keyReuse ? userKeys.has(m.keyReuse) : false; return <option key={m.id} value={m.id}>{hasKey ? '*' : '-'} {m.name}</option> })}</select>
+          {isImage && (<div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>{(imageModel?.sizes || ['1024x1024']).map((s) => (<button key={s} className={'node-pill' + (data.aspectRatio === s ? ' active' : '')} onClick={() => updateNodeData(id, { aspectRatio: s })}>{s}</button>))}</div>)}
+          {isVideo && (<div className="duration-control"><span style={{fontSize:11,color:'#888'}}>{data.duration || 5}秒</span><input type="range" min={durMin} max={durMax} step={1} value={data.duration || 5} onChange={(e) => updateNodeData(id, { duration: parseInt(e.target.value) })} style={{ flex: 1 }} /><span style={{fontSize:10,color:'#666'}}>{durMin}-{durMax}秒</span></div>)}
+        </>)}
+
+        <textarea value={data.prompt || ''} onChange={(e) => updateNodeData(id, { prompt: e.target.value })} placeholder={isImage ? '描述你想生成的画面...' : '描述视频场景或拖入参考图...'} className="node-textarea" rows={2} style={{minHeight:48}} onPasteCapture={handlePaste} />
+
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button className={'node-btn-generate ' + (isImage ? 'image' : 'video')} onClick={handleGenerate} disabled={genLoading || batchLoading || (!data.prompt && (isImage || !data.sourceImage))}>
+            {genLoading ? (isImage ? '生成中 ' + (data.progress || 0) + '%' : (data.progress || 0) + '%') : (isImage ? '生成图片' : '生成视频')}
+          </button>
+          {genLoading && <button className="node-btn-danger" onClick={handleCancel}>取消</button>}
+        </div>
+
+        {/* Batch generate button — image mode only */}
+        {isImage && (
+          <button onClick={handleBatchGenerate} disabled={genLoading || batchLoading || !data.prompt}
+            style={{width:'100%',padding:'7px 0',fontSize:11,fontWeight:700,borderRadius:6,
+              border:'1px dashed #e94560',background:batchLoading?'rgba(233,69,96,0.1)':'transparent',
+              color:batchLoading?'#e94560':'#888',cursor:batchLoading?'default':'pointer',
+              transition:'all 0.15s'}}>
+            {batchLoading ? '批量生成中 ' + (data.progress || 0) + '%' : '生成 4 个变体'}
+          </button>
+        )}
+
+        {data.status === 'error' && <div className="node-error">{data.errorMessage}</div>}
+      </div>}
+
+      {/* --- COMPARE MODE OVERLAY --- */}
+      {compareMode && allImageVersions.length >= 2 && (
+        <div className="compare-overlay" onClick={() => setCompareMode(false)}>
+          <button className="compare-close" onClick={() => setCompareMode(false)}>×</button>
+          <div className="compare-grid" onClick={(e) => e.stopPropagation()}>
+            <div className="compare-slot">
+              <div className="slot-label">版本 {compareLeft + 1}</div>
+              {allImageVersions[compareLeft]?.[0]?.url || allImageVersions[compareLeft]?.[0]?.base64 ? (
+                <img src={allImageVersions[compareLeft][0].url || allImageVersions[compareLeft][0].base64} alt="" />
+              ) : <div style={{color:'#666',padding:40}}>无数据</div>}
+            </div>
+            <div style={{fontSize:24,color:'#888'}}>vs</div>
+            <div className="compare-slot">
+              <div className="slot-label">版本 {compareRight + 1}</div>
+              {allImageVersions[compareRight]?.[0]?.url || allImageVersions[compareRight]?.[0]?.base64 ? (
+                <img src={allImageVersions[compareRight][0].url || allImageVersions[compareRight][0].base64} alt="" />
+              ) : <div style={{color:'#666',padding:40}}>无数据</div>}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* --- Lightbox --- */}
-      {lightboxIdx >= 0 && isImage && imgItems.length > 0 && (
-        <Lightbox items={imgItems} index={lightboxIdx} onClose={() => setLightboxIdx(-1)} />
-      )}
-      {videoLightbox && data.generatedVideo?.url && (
-        <Lightbox items={[{ url: data.generatedVideo.url, type: 'video' }]} index={0}
-          onClose={() => setVideoLightbox(false)} />
-      )}
+      {lightboxIdx >= 0 && isImage && imgItems.length > 0 && (<Lightbox items={imgItems} index={lightboxIdx} onClose={() => setLightboxIdx(-1)} />)}
+      {videoLightbox && data.generatedVideo?.url && (<Lightbox items={[{ url: data.generatedVideo.url, type: 'video' }]} index={0} onClose={() => setVideoLightbox(false)} />)}
 
-      <Handle type="source" position={Position.Right} id={HANDLE_IDS.source}
-        style={{ ...handleStyle(isImage ? 'var(--accent-music)' : 'var(--accent-sfx)'), top: '70%' }} />
+      <Handle type="source" position={Position.Right} id={HANDLE_IDS.source} style={{ background: isImage ? '#e94560' : '#0f3460', border: '2px solid #1e1e32', width: 12, height: 12, top: '75%' }} />
+      <div className="handle-label handle-label-right" style={{top:'75%',marginTop:-8}}>{isImage ? '图片输出' : '视频输出'}</div>
     </div>
   )
 })
-
-// === Version Navigation Component ===
-function VersionNav({ current, total, onChange }) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-      padding: '2px 6px', marginBottom: 4, borderRadius: 4,
-      background: 'var(--bg-root)', fontSize: 10,
-    }}>
-      <button onClick={() => onChange(Math.max(0, current - 1))} disabled={current <= 0}
-        style={navBtnStyle}>◀</button>
-      <span style={{ fontWeight: 600, color: 'var(--text)' }}>
-        v{current + 1}/{total}
-      </span>
-      <button onClick={() => onChange(Math.min(total - 1, current + 1))} disabled={current >= total - 1}
-        style={navBtnStyle}>▶</button>
-    </div>
-  )
-}
-
-const navBtnStyle = {
-  background: 'transparent', border: '1px solid var(--border)',
-  borderRadius: 3, padding: '0px 4px', cursor: 'pointer',
-  fontSize: 9, color: 'var(--text-muted)',
-}
-
-const handleStyle = (c) => ({ background: c, border: '2px solid var(--bg-surface)', width: 12, height: 12 })

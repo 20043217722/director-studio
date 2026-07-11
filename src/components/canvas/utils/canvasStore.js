@@ -6,17 +6,19 @@ import { nodeDefaults, validConnections, HANDLE_IDS, NODE_ALIASES } from './node
 const STORAGE_KEY = 'director_studio_canvas'
 const MAX_UNDO = 50
 const MAX_NODES = 100
+const MAX_RETRIES = 3  // Max generation retries per node
+const GENERATION_TIMEOUT = 120000  // 2 minute timeout
 
 // Edge label by data type flowing through the connection
 const EDGE_LABELS = {
-  textPrompt: { imageGen: '📝 提示词', videoGen: '📝 提示词', agent: '📝 提示词', pixelleVideo: '📝 文本', mediaGen: '📝 提示词', textPrompt: '📝 链式提示' },
-  imageGen: { preview: '🖼️ 图片', videoGen: '🖼️ 图→视频', agent: '🖼️ 视觉参考', mediaGen: '🖼️ 图→媒体', textPrompt: '🖼️ 迭代提示' },
-  videoGen: { preview: '🎬 视频', mediaGen: '🎬 视频→媒体', textPrompt: '🎬 迭代提示' },
-  reference: { imageGen: '📎 参考图', videoGen: '📎 参考素材', mediaGen: '📎 参考素材', textPrompt: '📎 图转文', agent: '📎 AI分析' },
-  agent: { preview: '📄 分析结果', textPrompt: '📄 反哺提示', agent: '📄 链式协作', imageGen: '📄 思路→图', videoGen: '📄 思路→视频', mediaGen: '📄 思路→媒体' },
-  pixelleVideo: { preview: '🎞️ 成品视频' },
-  mediaGen: { preview: '🎨 媒体输出', videoGen: '🖼️ 图→视频', agent: '🖼️ 视觉参考', textPrompt: '🎨 迭代提示', mediaGen: '🎨 链式生成' },
-  preview: { agent: '👁️ 预览分析' },
+  textPrompt: { imageGen: '提示词', videoGen: '提示词', agent: '提示词', pixelleVideo: '文本', mediaGen: '提示词', textPrompt: '📝 链式提示' },
+  imageGen: { preview: '图片', videoGen: '图→视频', agent: '视觉参考', mediaGen: '🖼️ 图→媒体', textPrompt: '🖼️ 迭代提示' },
+  videoGen: { preview: '视频', mediaGen: '🎬 视频→媒体', textPrompt: '🎬 迭代提示' },
+  reference: { imageGen: '参考图', videoGen: '参考素材', mediaGen: '参考素材', textPrompt: '📎 图转文', agent: 'AI分析' },
+  agent: { preview: '分析结果', textPrompt: '反哺提示', agent: '链式协作', imageGen: '思路→图', videoGen: '思路→视频', mediaGen: '思路→媒体' },
+  pixelleVideo: { preview: '成品视频' },
+  mediaGen: { preview: '媒体输出', videoGen: '图→视频', agent: '视觉参考', textPrompt: '迭代提示', mediaGen: '链式生成' },
+  preview: { agent: '预览分析' },
 }
 
 function getEdgeLabel(sourceType, targetType) {
@@ -515,7 +517,7 @@ export const useCanvasStore = create(
         const newEdges = [...get().edges, {
           ...connection,
           id: `e_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-          type: 'smoothstep', animated: true,
+          type: 'default', animated: true,
           label,
           labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
           labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
@@ -565,7 +567,7 @@ export const useCanvasStore = create(
             target: ids[e.target],
             sourceHandle: e.sourceHandle || 'output',
             targetHandle: e.targetHandle || 'prompt',
-            type: 'smoothstep', animated: true, label,
+            type: 'default', animated: true, label,
             labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
             labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
             labelBgPadding: [4, 3], labelBgBorderRadius: 3,
@@ -598,7 +600,7 @@ export const useCanvasStore = create(
         const newEdges = [...s.edges, {
           id: `e_${Date.now()}_a`, source: sourceId, sourceHandle: 'output',
           target: genId, targetHandle: 'prompt',
-          type: 'smoothstep', animated: true, label: edgeLabel,
+          type: 'default', animated: true, label: edgeLabel,
           labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
           labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
           labelBgPadding: [4, 3], labelBgBorderRadius: 3,
@@ -608,7 +610,7 @@ export const useCanvasStore = create(
         // Optional preview node
         if (addPreview) {
           const previewId = `n_${Date.now() + 1}_${Math.random().toString(36).slice(2, 7)}`
-          const previewEdgeLabel = targetType === 'videoGen' ? '🎬 视频' : '🖼️ 图片'
+          const previewEdgeLabel = targetType === 'videoGen' ? '视频' : '图片'
           newNodes.push({
             id: previewId, type: 'preview',
             position: { x: baseX + 340, y: baseY },
@@ -617,7 +619,7 @@ export const useCanvasStore = create(
           newEdges.push({
             id: `e_${Date.now()}_b`, source: genId, sourceHandle: 'output',
             target: previewId, targetHandle: 'input',
-            type: 'smoothstep', animated: true, label: previewEdgeLabel,
+            type: 'default', animated: true, label: previewEdgeLabel,
             labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
             labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
             labelBgPadding: [4, 3], labelBgBorderRadius: 3,
@@ -646,8 +648,11 @@ export const useCanvasStore = create(
       },
 
       updateNodeData: (nodeId, data, { syncDownstream = true } = {}) => {
-        // Push undo for label changes (renaming is a user action worth undoing)
-        if (data.label !== undefined) get()._pushUndo()
+        // Push undo for user-initiated changes only (not streaming status/progress updates)
+        const userFields = ['label', 'prompt', 'negativePrompt', 'modelProvider', 'aspectRatio',
+          'duration', 'imageCount', 'agentMode', 'mediaType', 'nScenes', 'template', 'tts', 'bgm',
+          'value', 'valueType', 'collapsed', 'muted', 'seed' ]
+        if (Object.keys(data).some(k => userFields.includes(k))) get()._pushUndo()
         let updated = get().nodes.map((n) =>
           n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n)
         if (syncDownstream) {
@@ -738,7 +743,7 @@ export const useCanvasStore = create(
             {
               id: `e_${Date.now()}_a`, source: srcNode.id, target: newId,
               sourceHandle: HANDLE_IDS.source, targetHandle: HANDLE_IDS.target.prompt,
-              type: 'smoothstep', animated: true, label: label1,
+              type: 'default', animated: true, label: label1,
               labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
               labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
               labelBgPadding: [4, 3], labelBgBorderRadius: 3,
@@ -747,7 +752,7 @@ export const useCanvasStore = create(
             {
               id: `e_${Date.now()}_b`, source: newId, target: tgtNode.id,
               sourceHandle: HANDLE_IDS.source, targetHandle: edge.targetHandle || HANDLE_IDS.target.input,
-              type: 'smoothstep', animated: true, label: label2,
+              type: 'default', animated: true, label: label2,
               labelStyle: { fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
               labelBgStyle: { fill: 'var(--bg-surface)', fillOpacity: 0.85 },
               labelBgPadding: [4, 3], labelBgBorderRadius: 3,
@@ -827,6 +832,13 @@ export const useCanvasStore = create(
     }),
     {
       name: STORAGE_KEY,
+    // Corrupted state recovery — if localStorage data is corrupted, start fresh
+    onRehydrateStorage: () => (state, error) => {
+      if (error) {
+        console.warn('[CanvasStore] Corrupted state detected, resetting to fresh canvas')
+        try { localStorage.removeItem(STORAGE_KEY) } catch (_) {}
+      }
+    },
       partialize: (state) => ({ nodes: state.nodes, edges: state.edges, groups: state.groups }),
       version: 1,
       // localStorage quota protection

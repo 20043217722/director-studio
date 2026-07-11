@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { loadKeys, watchNetwork, callAgentStream, MODEL_PRESETS } from "./lib/api";
+import { loadKeys, watchNetwork, callAgentStream, MODEL_PRESETS, sanitizePrompt } from "./lib/api";
 import { parseFile, fileToBase64, fileToBase64Resized, fileToObjectURL, isImage } from "./lib/fileParser";
 import { updatePreferences, getLikedMessages, getPreferenceInjection } from "./lib/preferences";
 import { trackPageView, recordVisit } from "./lib/analytics";
+import CanvasWorkspace from "./components/canvas/CanvasWorkspace";
 import Sidebar from "./components/Sidebar";
 import AdminDashboard from "./components/AdminDashboard";
 import AdminGate from "./components/AdminGate";
@@ -14,8 +15,9 @@ import ThemeSwitcher, { getEffectiveTheme } from "./components/ThemeSwitcher";
 import MobileTabBar from "./components/MobileTabBar";
 import { loadSessionHistory, saveSessionHistory } from "./lib/sessionStore";
 import AgentIcon from "./components/AgentIcon";
-import CanvasWorkspace from "./components/canvas/CanvasWorkspace";
+
 import ErrorBoundary from "./components/ErrorBoundary";
+import PassGate from "./components/PassGate";
 
 // Init theme on load
 document.documentElement.setAttribute("data-theme", getEffectiveTheme());
@@ -29,7 +31,6 @@ const AGENTS = [
   { group: '📷 拍摄方案', id: "cinematographer", name: "摄影指导", desc: "镜头语法 · 布光方案 · 7平台策略 · 运镜时序" },
   { group: '📷 拍摄方案', id: "seedance", name: "剧幕文戏分析", desc: "逐镜FACS拆解 · Seedance提示词 · 表演时序" },
   { group: '🎧 后期制作', id: "sound", name: "声音设计", desc: "音景 · 拟音 · AI音频提示词 · 配乐情绪曲线" },
-  { group: '🎧 后期制作', id: "colorist", name: "调色师", desc: "色彩方案 · LUT · 场景过渡 · 色彩连续性锁" },
   { group: '🎧 后期制作', id: "post", name: "后期总监", desc: "剪辑策略 · 转场设计 · AIGC后期方案 · VFX规划" },
   { group: '🔍 分析工具', id: "lens", name: "视觉解析师", desc: "视觉DNA提取 · 8平台提示词 · 微表情解码 · 反幻觉" },
   { group: '🤖 AI工程', id: "prompteng", name: "提示词工程师", desc: "为Claude Code/Cursor/Codex等AI Agent生成一步到位的精确提示词" },
@@ -51,13 +52,14 @@ export default function App() {
     }
   }, []);
   const [mode, setMode] = useState(() => localStorage.getItem("director_studio_last_mode") || "director");
-  const [messages, setMessages] = useState(() => loadSessionHistory(mode));
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const sessionsRef = useRef({});
   const [activeTabs, setActiveTabs] = useState(() => [localStorage.getItem("director_studio_last_mode") || "director"]);
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminAuthed, setAdminAuthed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [passed, setPassed] = useState(() => sessionStorage.getItem('ds_pass') === '1');
   useEffect(() => { trackPageView(); recordVisit(); }, []);
   const [provider, setProvider] = useState(() => localStorage.getItem("active_provider") || "deepseek");
   const [network, setNetwork] = useState(() => navigator.onLine ? "online" : "offline");
@@ -104,6 +106,7 @@ export default function App() {
 
   // Save last active mode
   useEffect(() => { localStorage.setItem("director_studio_last_mode", mode); }, [mode]);
+  useEffect(() => { try { setMessages(loadSessionHistory(mode)) } catch { setMessages([]) } }, [mode]);
 
   function switchMode(newMode) {
     const cur = sessionsRef.current[mode] || {};
@@ -359,7 +362,8 @@ export default function App() {
         }
       }
       if (!replyText) replyText = "(对方未返回内容，请重试)";
-      setMessages((prev) => prev.map((m) => m.id === aiMsg.id ? { ...m, text: replyText, streaming: false } : m));
+      const sanitized = sanitizePrompt(replyText);
+      setMessages((prev) => prev.map((m) => m.id === aiMsg.id ? { ...m, text: sanitized, streaming: false } : m));
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : String(e);
       const partial = aiMsg.text?.length > 0;
@@ -482,6 +486,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
+    {!passed ? <PassGate onUnlock={() => setPassed(true)} /> : (
     <div className="flex overflow-hidden" style={{ position: "fixed", inset: 0, background: "var(--bg-root)" }}>
       {sidebarOpen && <div className="fixed inset-0 bg-black/40 z-20 lg:hidden" onClick={() => setSidebarOpen(false)} />}
       <div className={`sidebar fixed lg:relative z-30 h-full transition-transform duration-250 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
@@ -583,6 +588,7 @@ export default function App() {
         </div>
       )}
     </div>
+    )}
     </ErrorBoundary>
   );
 }

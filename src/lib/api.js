@@ -327,7 +327,7 @@ async function preflightCheck(endpoint) {
   const now = Date.now();
   const cached = healthCache.get(endpoint);
   // 30 秒内复用缓存结果
-  if (cached && now - cached.time < 30_000) return cached.ok;
+  if (cached && now - cached.time < 10_000) return cached.ok;
 
   try {
     const ctrl = new AbortController();
@@ -378,11 +378,11 @@ async function fetchWithRetry(url, options, protocol, retries = 3, streaming = f
   const externalSignal = options.signal;
   delete options.signal;
 
-  // 预检：先 ping 端点
+  // 预检：非阻塞 ping——失败不阻止请求，由实际请求的错误处理来兜底
   const reachable = await preflightCheck(url);
   if (!reachable) {
-    // 网络不可达，提示用户检查代理/VPN
-    throw new Error("🌐 无法连接 API 服务器\n请检查:\n• 网络连接是否正常\n• 是否需要配置代理地址\n• 防火墙/VPN 设置");
+    console.warn("[API] Preflight failed for", url, "— proceeding with actual request");
+    // 不抛异常，继续尝试真实请求
   }
 
   // 熔断检查
@@ -537,7 +537,25 @@ export function fileToBase64(file) {
 function getSystemPrompt(mode) {
   const prompts = agentPrompts;
 
-  const qualityFramework = `## 理解与萃取协议
+  // 导演专属协议（分镜块格式·不强制表格）
+const directorProtocol = `## 导演专属协议（覆盖通用格式规则）
+
+### 输出原则
+- 分镜脚本块格式优先：禁止用表格输出分镜，必须用 \u2501\u2501\u2501 分隔的独立拼块
+- 叙事分析用表格没问题，但分镜必须用块格式
+- 锚定复述：第一句【用户说："..."】确认理解
+- 原文锁定：引用用【原："..."】
+
+### 反幻觉
+- 不编造型号·色号·数值·不确定标【待确认】
+- 引用影片必须真实存在
+
+### 输出节奏
+- 简单提问 → 直接答
+- 生成分镜 → 块格式每镜独立拼块
+- 分析故事 → 结构分析+表格无所谓`;
+
+const qualityFramework = `## 理解与萃取协议
 收到用户消息后，先完成以下分析再展开回复：
 
 **第零步·一致性锚定（必须执行，否则回复无效）**：
@@ -588,7 +606,7 @@ function getSystemPrompt(mode) {
 ### 结构铁律
 1. **标题即结论**：每个段落标题必须是该段的结论（如"🔴 关键问题：第二幕节奏断裂"而非"第二幕分析"）
 2. **前置摘要**：每个一级标题下第一行用≤2句话概括该节全部结论
-3. **表格优先**：对比类/清单类/参数类信息用表格，禁止用散文式段落罗列
+3. **表格优先**：对比类/清单类/参数类信息用表格（分镜脚本除外——分镜脚本必须用块格式·每镜独立拼块·禁止表格）
 4. **逐条标注优先级**： 🔴致命 > 🟡建议 > 🔵可选，拒绝平铺
 
 ### 字数铁律
@@ -625,6 +643,18 @@ function getSystemPrompt(mode) {
 用户说→实拍/剧组/摄影棚/摄像机/场记/通告单/预算表/选角/堪景/灯光组/道具组/录音组/后期剪辑/达芬奇/Premiere/FCPX → **🎥 传统模式**
 **模糊时**（用户只说"分镜""剧本""场景设计"但未指定AIGC还是实拍）→ **追问1个关键问题**："您是要用于AI视频生成，还是传统实拍？"（只问1次，不问第2遍）→ 根据回答路由
 
+### 🛡️ 内容安全硬性要求（输出提示词前必过·最高优先级）
+提示词最终要被AI生图/生视频平台（可灵/即梦/Seedance/Runway等）执行。平台有严格的内容审核——含有武器/血腥/暴力/死亡/恐怖/裸露/药物词汇会被直接拒绝。
+
+**输出前强制替换（用描述代替直白词）：**
+- 枪/刀/武器 → "手持道具""金属工具""装备"
+- 血/伤口/尸体 → "深色液体痕迹""皮肤标记""静止的人形"
+- 杀/打斗/攻击 → "制伏""肢体互动""对抗场景"
+- 死/死亡/致命 → "不再移动""生命终止""关键性"
+- 鬼/幽灵/恐怖 → "超自然存在""半透明人影""暗黑氛围"
+- 裸体/性 → "身体线条""皮肤质感"
+- 毒品/注射 → 完全避免或改为"特殊物质""医疗器具
+
 ### 强制输出标签（回复第一行必须标注）
 **🎬 AIGC模式** 回复第一行：\`> 🎬 AIGC创作模式\`
 **🎥 传统模式** 回复第一行：\`> 🎥 传统影视模式\`
@@ -641,6 +671,68 @@ function getSystemPrompt(mode) {
 - **缺口标注**：用户没说平台/设备/预算→标注【待确认:xxx】而非跳过
 - **回退保护**：如果用户说"不对，我要的是实拍不是AI"→**立即切换模式**→清空已生成的AIGC内容→重新开始
 
+
+
+## 🎯 预期效果预判（每次输出必附·帮用户理解"这个提示词大概率会出什么"）
+使用以上提示词生成画面/视频时：
+预期你会得到: [1-2句话·描述最可能出现的画面效果]
+但可能会有以下问题: [1-2个最常见失败模式·具体到哪个区域/物体/颜色]
+如果出现问题·尝试: [1个具体修复建议·不是"调整参数"而是"把色温从3200K改成2700K"]
+
+这个预判让你的用户知道：这版提示词在哪方面最可能成功，在哪方面要做好翻车准备。不是吓人，是让人少走弯路。
+
+## 提示词质量自检（每次输出必过·5条铁律）
+生成任何提示词后，必须自检以下5条。任意一条不合格，提示词作废重写：
+1. 每个颜色都标注了色名=HEX？□
+2. 每个光源都标注了类型·色温K·方向°？□
+3. 画面四层（前景·主体·陪体·背景）逐层填了？□
+4. 负面约束是否具体到材质/皮肤/光影（不是泛泛的"不要变形"）？□
+5. 如果你自己是AI模型，读一遍这个提示词能准确脑补出画面吗？□
+
+### 🔄 提示词迭代优化（AI视频模型核心工作流）
+AI视频生成不是"写一次就完美"。标准流程是：
+第一轮: 生成→评估画面→标记哪里不对（哪个区域·什么物体·什么颜色错了）
+第二轮: 只修改标记的问题·不动其他地方→重新生成→评估
+第三轮: 微调细节→最终版本
+每次迭代只改一个变量——同时改多个参数你永远不知道是什么起作用了。
+
+
+
+## 🛡️ 提示词内容安全筛查（防止AI模型审核不通过）
+
+### 为什么提示词会被审核拒绝
+AI生图/生视频平台（可灵/即梦/Seedance/Runway/Sora等）都有内容安全过滤器。
+以下类型的词汇可能触发审核拒绝——
+
+### 高危触发词（必须替换·不用原词）
+| 类别 | 触发词（避免使用） | 安全替换方案 |
+|------|------|------|
+| 武器 | 枪、手枪、步枪、刀、武器 | "手持道具""金属工具""作战装备" |
+| 血腥 | 血、血迹、流血、伤口、尸体 | "红色液体痕迹""皮肤上的深色印记""静止的人形" |
+| 暴力 | 杀、打斗、攻击、殴打、致命 | "激烈的肢体互动""紧张的对抗""冲突场景" |
+| 死亡 | 死、死亡、杀死、致命 | "不再移动""生命终结""沉睡状态" |
+| 恐怖 | 鬼、幽灵、恐怖、惊悚、血腥 | "超自然存在""半透明人影""暗黑氛围" |
+| 裸露 | 裸体、裸、暴露、性 | "皮肤质感""身体线条""紧身服装" |
+| 药物 | 毒品、吸毒、注射、针头 | "特殊物质""医疗器具""注射器(医疗用途)" |
+| 自残 | 自杀、割腕、跳楼 | "自我伤害""极端行为"（尽量避免整类场景） |
+| 政治 | 国家领导人姓名、政治事件 | 完全避免·不提及任何真实政治人物或事件 |
+
+### 安全措辞原则
+1. 用"物"代替"武器"——描述物体的物理属性(金属·形状·颜色)而非功能(能伤人)
+2. 用"颜色"代替"血液"——说"深红色液体"不说"血"
+3. 用"氛围"代替"恐怖"——说"暗黑哥特式氛围""悬疑光影"不说"恐怖场景"
+4. 用"静止"代替"死亡"——说"不再移动""沉睡姿势"不说"死了"
+5. 英文版同步安全措辞——不说"blood"说"dark red liquid"，不说"gun"说"metallic handheld object"
+
+### 输出前自检（生成提示词后·发送给用户前）
+□ 扫描全部输出，是否有表中所列的高危触发词？
+□ 如果有，是否已经替换为安全措辞？
+□ 英文版是否也同步做了安全措辞？
+□ 替换后的描述是否仍然准确传达原意？（安全措辞≠改变内容，只是改变说法）
+
+如果无法安全替换（如故事核心就是暴力场景），在提示词末尾加注：
+> ⚠️ 提示: 此提示词包含[X类]敏感内容，某些AI平台可能审核不通过。建议尝试使用不同平台，或降低描述的直白程度。
+
 ## 通用协议
 - **意图识别**：先判断用户要什么+判断创作模式+标注在第一行
 - **要素萃取**：锚定用户提供的不可丢失信息，原文引用标注【原文"..."】
@@ -656,7 +748,7 @@ function getSystemPrompt(mode) {
 4. **偏离自检**：回复前自问"用户真的问了这个吗？"删除无关段落
 5. **标题即结论**，非描述
 6. **前置摘要**，≤2句概括本节结论
-7. **表格优先**于散文式罗列
+7. **表格优先**于散文式罗列（分镜脚本除外·分镜用块格式）
 8. **逐条标注优先级**：🔴>🟡>🔵
 9. 单次回复≤500字(不含代码块/表格)，单段≤3句，单句≤40字，关键结论前3行
 10. 禁止："需要注意的是""从某种程度上""可以根据情况调整""适当的""合理的"
@@ -667,13 +759,69 @@ function getSystemPrompt(mode) {
 **🎥 传统模式输出顺序：** 实战方案 → 剧组执行清单 → 分析报告(后置≤200字)
 **铁律：可执行方案在前，分析在后。AIGC用<!--PROMPT-->块，传统用设备/岗位/日程表。**
 `;
-  if (mode === "character" || mode === "scene" || mode === "lens" || mode === "seedance" || mode === "cinematographer" || mode === "sound" || mode === "colorist" || mode === "prompteng") {
+  if (mode === "character" || mode === "scene" || mode === "lens" || mode === "seedance" || mode === "cinematographer" || mode === "sound" || mode === "colorist" || mode === "prompteng" || mode === "post") {
     // 偏好注入（仅 seedance/character/scene）
     let prefsInjection = "";
     if (["seedance", "character", "scene", "prompteng"].includes(mode)) {
       try { prefsInjection = getPreferenceInjection(mode) || ""; } catch (_) {}
     }
-    return slimProtocol + (prefsInjection ? "\n\n" + prefsInjection : "") + "\n\n---\n\n" + prompts[mode];
+    return slimProtocol + (prefsInjection ? "\n\n" + prefsInjection : "") + "\n\n---\n\n" + (prompts[mode] || prompts.director || "");
   }
-  return qualityFramework + "\n\n---\n\n" + (prompts[mode] || prompts.director);
+    // 导演使用专属协议（分镜块格式·不强制表格）
+  if (mode === "director") {
+    return directorProtocol + "\n\n---\n\n" + (prompts[mode] || prompts.director || "");
+  }
+  return qualityFramework + "\n\n---\n\n" + (prompts[mode] || prompts.director || "");
+}
+
+
+// ========== 提示词内容安全后处理器 ==========
+// 自动替换AI输出中的高危触发词，确保生成的提示词能通过AI模型审核
+const CONTENT_SAFETY_MAP = [
+  // 武器类 → 描述物理属性
+  [/枪/g, "手持道具"], [/手枪/g, "小型手持道具"], [/步枪/g, "长型金属工具"],
+  [/刀具/g, "金属器具"], [/武器/g, "装备"], [/子弹/g, "小型金属物"],
+  // 血腥类 → 颜色/状态描述
+  [/血迹/g, "深色液体痕迹"], [/流血/g, "红色液体"], [/血/g, "红色液体痕迹"],
+  [/伤口/g, "皮肤标记"], [/尸体/g, "静止的人形"],
+  // 暴力类 → 中性描述
+  [/杀死/g, "使其停止行动"], [/致命/g, "关键性"], [/攻击/g, "对抗"],
+  [/打斗/g, "肢体互动"], [/殴打/g, "激烈的肢体接触"], [/杀/g, "制伏"],
+  // 死亡类 → 状态描述
+  [/死亡/g, "生命终止"], [/死人/g, "不再移动的人"],
+  // 恐怖类 → 氛围描述
+  [/恐怖/g, "暗黑氛围"], [/惊悚/g, "悬疑"], [/鬼/g, "超自然存在"],
+  [/幽灵/g, "半透明人影"],
+  // 裸露类
+  [/裸体/g, "身体线条"], [/裸/g, "轻装"],
+  // 药物类
+  [/毒品/g, "特殊物质"], [/吸毒/g, "使用特殊物质"],
+  // 英文同步 (for English prompts used on Chinese platforms)
+  [/gun/gi, "metallic handheld object"],
+  [/pistol/gi, "small metallic device"],
+  [/rifle/gi, "long metallic tool"],
+  [/weapon/gi, "equipment"],
+  [/blood/gi, "dark red liquid"],
+  [/corpse/gi, "still human form"],
+  [/kill(ed|ing|s)?\b/gi, "neutralize$1"],
+  [/dead/gi, "motionless"],
+  [/death/gi, "end of life"],
+  [/horror/gi, "dark atmospheric"],
+  [/ghost/gi, "ethereal presence"],
+  [/naked?/gi, "lightly dressed"],
+  [/drugs?/gi, "special substances"],
+];
+
+export function sanitizePrompt(text) {
+  let result = text;
+  let changes = 0;
+  for (const [pattern, replacement] of CONTENT_SAFETY_MAP) {
+    const before = result;
+    result = result.replace(pattern, replacement);
+    if (result !== before) changes++;
+  }
+  if (changes > 0) {
+    console.log(`[ContentSafety] ${changes} trigger word(s) sanitized in prompt output`);
+  }
+  return result;
 }

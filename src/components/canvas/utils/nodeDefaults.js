@@ -6,35 +6,45 @@ export const HANDLE_IDS = {
 
 export const nodeDefaults = {
   textPrompt: {
+    reroute: ['input'],
     label: '文本提示词', prompt: '',
   },
   imageGen: {
+    reroute: ['input'],
     label: '图片生成', prompt: '', negativePrompt: '',
     modelProvider: 'openai', aspectRatio: '1:1', imageCount: 1,
     generatedImages: [], status: 'idle', errorMessage: '',
   },
   videoGen: {
+    reroute: ['input'],
     label: '视频生成', prompt: '', sourceImage: null,
     modelProvider: 'seedance', duration: 5,
     progress: 0, generatedVideo: null, status: 'idle', errorMessage: '',
   },
   reference: {
+    reroute: ['input'],
     label: '参考素材', mediaType: 'image', mediaData: null, fileName: '',
   },
   preview: {
+    reroute: ['input'],
     label: '预览输出', outputType: 'image', outputContent: null,
     status: 'idle', errorMessage: '',
   },
   agent: {
+    reroute: ['input'],
     label: 'AI 智能体', agentMode: 'director', prompt: '',
     response: '', status: 'idle', errorMessage: '',
   },
   pixelleVideo: {
+    reroute: ['input'],
     label: 'AI 短视频', prompt: '', nScenes: 5,
     template: '1080x1920/image_default.html', tts: 'edge', bgm: 'uplift',
     progress: 0, generatedVideo: null, status: 'idle', errorMessage: '',
   },
+  reroute: { label: '中继节点' },
+  primitive: { label: '基础值', valueType: 'string', value: '' },
   mediaGen: {
+    reroute: ['input'], imageGen: ['prompt','image'], videoGen: ['prompt','image'],
     label: '媒体生成', prompt: '', mediaType: 'image',
     modelProvider: 'gpt-image-1', aspectRatio: '1:1', imageCount: 1,
     duration: 5, sourceImage: null,
@@ -53,32 +63,38 @@ export const NODE_ALIASES = {
 export const validConnections = {
   // 📝 文本提示词 → 万物之始
   textPrompt: {
+    reroute: ['input'],
     imageGen: ['prompt'], videoGen: ['prompt'], agent: ['prompt'],
     pixelleVideo: ['prompt'], mediaGen: ['prompt'],
     textPrompt: ['prompt'],   // 链式提示
   },
   // 🎨 图片生成 → 下游
   imageGen: {
+    reroute: ['input'],
     preview: ['input'], videoGen: ['image'], agent: ['prompt'],
     mediaGen: ['prompt', 'image'],
     textPrompt: ['prompt'],   // 图片结果→提示词迭代
   },
   // 🎬 视频生成 → 下游
   videoGen: {
+    reroute: ['input'],
     preview: ['input'], mediaGen: ['prompt', 'image'],
     textPrompt: ['prompt'],
   },
   // 🖼️ 参考素材 → 下游
   reference: {
+    reroute: ['input'],
     imageGen: ['prompt'], videoGen: ['image'], mediaGen: ['prompt', 'image'],
     textPrompt: ['prompt'], agent: ['prompt'],  // 图转文：参考图→提示词/智能体分析
   },
   // 👁️ 预览 → AI分析
   preview: {
+    reroute: ['input'],
     agent: ['prompt'],         // 预览结果→AI分析
   },
   // 🧠 AI智能体 → 万物互联
   agent: {
+    reroute: ['input'],
     preview: ['input'],
     textPrompt: ['prompt'],    // Agent响应→新提示词
     agent: ['prompt'],         // Agent链式协作
@@ -87,9 +103,24 @@ export const validConnections = {
     mediaGen: ['prompt'],      // Agent设计→媒体生成
   },
   // 🎞️ 短视频 → 预览
-  pixelleVideo: { preview: ['input'] },
+  pixelleVideo: {
+    reroute: ['input'], preview: ['input'] },
+  // 🔢 基础值节点 → 输出原始值
+  primitive: {
+    textPrompt: ['prompt'], agent: ['prompt'],
+    mediaGen: ['prompt'], imageGen: ['prompt'], videoGen: ['prompt'],
+  },
+  // 🔄 中继节点 → 万物通过
+  reroute: {
+    textPrompt: ['prompt'], imageGen: ['prompt'], videoGen: ['prompt'],
+    mediaGen: ['prompt', 'image'], reference: ['prompt'], preview: ['input'],
+    agent: ['prompt'], pixelleVideo: ['prompt'], reroute: ['input'],
+  },
   // 🎨 媒体生成 → 多向下游
+  reroute: { label: '中继节点' },
+  primitive: { label: '基础值', valueType: 'string', value: '' },
   mediaGen: {
+    reroute: ['input'], imageGen: ['prompt','image'], videoGen: ['prompt','image'],
     preview: ['input'], videoGen: ['image'], agent: ['prompt'],
     textPrompt: ['prompt'],    // 生成结果→提示词迭代
     mediaGen: ['prompt', 'image'],  // 链式生成(图→视频等)
@@ -142,3 +173,33 @@ export const AGENT_MODES = [
   { id: 'colorist', name: '🎨 调色师', desc: '色彩管线 · LUT · 场景过渡' },
   { id: 'prompteng', name: '🤖 提示词工程师', desc: 'AI Agent 提示词生成' },
 ]
+
+
+// ===== libtv-level visual style exports =====
+export const getNodeColor = (type) => NODE_COLORS[type] || NODE_COLORS.agent
+export const getNodeBorderColor = (type) => NODE_COLORS[type]?.border || '#555'
+export const getNodeGlow = (type) => NODE_COLORS[type]?.glow || 'transparent'
+export const getNodeIconColor = (type) => NODE_COLORS[type]?.icon || '#fff'
+export const getStatusColor = (status) => STATUS_COLORS[status] || STATUS_COLORS.idle
+
+// Connection validation with error message (libtv-level feedback)
+export function getConnectionError(sourceType, targetType) {
+  const valid = validConnections[sourceType]
+  if (!valid) return `Unknown source type: ${sourceType}`
+  if (!valid[targetType]) {
+    const allowed = Object.keys(valid).map(t => t).join(', ')
+    return `${sourceType} cannot connect to ${targetType}. Allowed targets: ${allowed}`
+  }
+  return null // Valid connection
+}
+
+// === Extended validConnections ===
+validConnections.reroute = {
+  textPrompt: ['prompt'], imageGen: ['prompt'], videoGen: ['prompt'],
+  mediaGen: ['prompt', 'image'], reference: ['prompt'], preview: ['input'],
+  agent: ['prompt'], pixelleVideo: ['prompt'], reroute: ['input'],
+}
+validConnections.primitive = {
+  textPrompt: ['prompt'], agent: ['prompt'],
+  mediaGen: ['prompt'], imageGen: ['prompt'], videoGen: ['prompt'],
+}

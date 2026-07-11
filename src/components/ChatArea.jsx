@@ -64,6 +64,7 @@ function escapeHtml(text) {
 }
 
 function renderMarkdown(text) {
+  if (!text || typeof text !== 'string') return '<p></p>';
   let html = escapeHtml(text);
 
   // Code blocks first — protected from later regex
