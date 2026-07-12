@@ -3,7 +3,6 @@ import { loadKeys, watchNetwork, callAgentStream, MODEL_PRESETS, sanitizePrompt 
 import { parseFile, fileToBase64, fileToBase64Resized, fileToObjectURL, isImage } from "./lib/fileParser";
 import { updatePreferences, getLikedMessages, getPreferenceInjection } from "./lib/preferences";
 import { trackPageView, recordVisit } from "./lib/analytics";
-import CanvasWorkspace from "./components/canvas/CanvasWorkspace";
 import Sidebar from "./components/Sidebar";
 import AdminDashboard from "./components/AdminDashboard";
 import AdminGate from "./components/AdminGate";
@@ -34,7 +33,6 @@ const AGENTS = [
   { group: '🎧 后期制作', id: "post", name: "后期总监", desc: "剪辑策略 · 转场设计 · AIGC后期方案 · VFX规划" },
   { group: '🔍 分析工具', id: "lens", name: "视觉解析师", desc: "视觉DNA提取 · 8平台提示词 · 微表情解码 · 反幻觉" },
   { group: '🤖 AI工程', id: "prompteng", name: "提示词工程师", desc: "为Claude Code/Cursor/Codex等AI Agent生成一步到位的精确提示词" },
-  { id: "canvas", name: "无限画布", desc: "节点式AI工作流 · 文生图 · 图生视频 · 多模型聚合" },
 ];
 
 
@@ -507,10 +505,7 @@ export default function App() {
           <button onClick={clearHistory} className="p-1.5 rounded-lg opacity-45 hover:opacity-80 transition-opacity text-sm" title="清空记录">🗑</button>
           <button onClick={() => setSettingsOpen(true)} style={{padding:'6px 12px',borderRadius:6,border:'1px solid var(--border-glow)',background:'var(--bg-card)',color:'var(--text)',cursor:'pointer',fontSize:13,fontWeight:600}} title="设置">⚙ 设置</button>
         </header>
-        {mode === "canvas" ? (
-          <CanvasWorkspace />
-        ) : (
-          <>
+        {<>
             {/* Agent tabs */}
             <div style={{display:"flex",gap:2,padding:"2px 6px",overflowX:"auto",background:"var(--bg-root)",borderBottom:"1px solid var(--border)",minHeight:30,alignItems:"flex-end"}}>
               {activeTabs.map(t => {
@@ -550,8 +545,7 @@ export default function App() {
             <div className="motif-line mx-4" />
             <InputBar onSend={handleSend} onStop={() => abortRef.current?.abort()} loading={loading} network={network} />
           </>
-        )}
-      </div>
+        </div>
       {settingsOpen && <SettingsModal activeProvider={provider} onSave={handleSettingsSave} onClose={() => setSettingsOpen(false)} />}
       {showAdmin && !adminAuthed && <AdminGate onUnlock={() => setAdminAuthed(true)} />}
       {showAdmin && adminAuthed && <AdminDashboard onClose={() => { setShowAdmin(false); setAdminAuthed(false) }} />}

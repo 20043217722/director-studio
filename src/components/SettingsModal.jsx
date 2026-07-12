@@ -86,7 +86,7 @@ export default function SettingsModal({ activeProvider, onSave, onClose }) {
     // Also save active provider pref
     localStorage.setItem("active_provider", provider);
     try { localStorage.setItem("api_proxy_url", proxyUrl); } catch (_) {}
-    // Notify canvas nodes that API keys changed
+    // Notify that API keys changed
     window.dispatchEvent(new CustomEvent('apikeys-changed'))
     onSave({ provider, keys, customEp, customModel, proxyUrl });
   }
