@@ -504,8 +504,7 @@ export default function App() {
           <button onClick={clearHistory} className="p-1.5 rounded-lg opacity-45 hover:opacity-80 transition-opacity text-sm" title="清空记录">🗑</button>
           <button onClick={() => setSettingsOpen(true)} style={{padding:'6px 12px',borderRadius:6,border:'1px solid var(--border-glow)',background:'var(--bg-card)',color:'var(--text)',cursor:'pointer',fontSize:13,fontWeight:600}} title="设置">⚙ 设置</button>
         </header>
-        {mode === "canvas" ? null : (
-          <>
+                  <>
             {/* Agent tabs */}
             <div style={{display:"flex",gap:2,padding:"2px 6px",overflowX:"auto",background:"var(--bg-root)",borderBottom:"1px solid var(--border)",minHeight:30,alignItems:"flex-end"}}>
               {activeTabs.map(t => {
