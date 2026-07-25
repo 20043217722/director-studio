@@ -110,7 +110,7 @@ export default function App() {
   function switchMode(newMode) {
     const cur = sessionsRef.current[mode] || {};
     sessionsRef.current[mode] = { ...cur, messages, loading, sendingRef: sendingRef.current };
-    saveSessionHistory(mode, messages);
+    saveSessionHistory(mode, messagesRef.current);
     if (newMode === mode) return;
     const saved = sessionsRef.current[newMode];
     setMessages(saved?.messages || loadSessionHistory(newMode));
@@ -126,7 +126,7 @@ export default function App() {
     if (tabMode === mode) {
       const nextMode = tabs[0];
       const saved = sessionsRef.current[nextMode];
-      saveSessionHistory(mode, messages);
+      saveSessionHistory(mode, messagesRef.current);
       setMessages(saved?.messages || loadSessionHistory(nextMode));
       setMode(nextMode);
       setLoading(saved?.loading || false);

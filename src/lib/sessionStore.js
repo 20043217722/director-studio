@@ -11,8 +11,8 @@
  */
 
 const HISTORY_PREFIX = "director_studio_history_";
-const MAX_HISTORY = 100;
-const MAX_HISTORY_SIZE = 2 * 1024 * 1024;
+const MAX_HISTORY = 200;
+const MAX_HISTORY_SIZE = 4 * 1024 * 1024;
 
 function getHistoryKey(mode) { return HISTORY_PREFIX + mode; }
 
