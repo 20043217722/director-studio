@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+﻿import { useState, useRef, useEffect, useCallback } from "react";
 import { loadKeys, watchNetwork, callAgentStream, MODEL_PRESETS, sanitizePrompt } from "./lib/api";
 import { parseFile, fileToBase64, fileToBase64Resized, fileToObjectURL, isImage } from "./lib/fileParser";
 import { updatePreferences, getLikedMessages, getPreferenceInjection } from "./lib/preferences";
@@ -101,7 +101,7 @@ export default function App() {
   useEffect(() => { if (toast) { const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); } }, [toast]);
 
   // Auto-save history per-mode
-  useEffect(() => { saveSessionHistory(mode, messages); }, [messages, mode]);
+  useEffect(() => { if (messages.length > 0) saveSessionHistory(mode, messages); }, [messages, mode]);
 
   // Save last active mode
   useEffect(() => { localStorage.setItem("director_studio_last_mode", mode); }, [mode]);
@@ -137,6 +137,7 @@ export default function App() {
 
   function clearHistory() {
     if (window.confirm("确认清除「当前智能体」的对话记录？")) {
+      localStorage.removeItem("director_studio_history_" + mode);
       setMessages([]);
     }
   }
