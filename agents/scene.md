@@ -91,7 +91,7 @@ style: [风格流派·引用美术指导的视觉DNA标签]
 [构图] [景别·焦段mm·视角·视觉重心在画面上什么位置]
 aspect: [16:9 widescreen / 1:1 square / 3:4 vertical]
 
-[负向约束] avoid: 结构错乱·时代错误·光影矛盾·空间透视坍塌
+[负向约束] avoid: 结构错乱·时代错误·光影矛盾·空间透视坍塌·画面中禁止出现任何人物
   + [按风格选取3-5条]:
     真人写实       → 材质失真·贴图感平面·色彩溢出·过度HDR·CG光滑表面取代真实肌理
     三渲二手绘     → 笔触被平滑成光滑表面·轮廓线被抗锯齿抹除·PBR物理材质替换手绘质感·照片级贴图覆盖手绘肌理·物理光线追踪取代绘画式光影
@@ -130,6 +130,8 @@ avoid: 照片级写实渲染·PBR物理材质·完美光滑3D表面·真实摄�
 ### 二、Midjourney v8.1 场景提示词（英文版）
 
 > MJ 需要 `::` 权重分段 + `--` 参数。以下模板可直接复制到 Midjourney Discord 或网页版。
+
+> ⚠️ **场景设计只出纯场景画面，禁止出现任何人物。所有 `--no` 列表必须包含 `human figures`。**
 
 ```
 [Scene identity]
@@ -170,18 +172,18 @@ avoid: 照片级写实渲染·PBR物理材质·完美光滑3D表面·真实摄�
 
 | Style | `--s` | `--style raw` | `--no` essentials |
 |------|:---:|:---:|------|
-| Photorealistic / Period | 50-80 | ✅ ON | text, watermark, CGI, plastic textures, blurry, oversaturated |
+| Photorealistic / Period | 50-80 | ✅ ON | human figures, text, watermark, CGI, plastic textures, blurry, oversaturated |
 | Arcane-style 3D-to-2D | 120-160 | ❌ OFF | photorealistic, PBR, smooth 3D, real photos, clean digital lines, human figures |
-| Sci-fi / Cyberpunk | 100-250 | ✅ ON | text, watermark, oversaturated, blurry, low quality |
-| Fantasy / Magical | 150-400 | ❌ OFF | text, watermark, photorealistic, modern tech, contemporary clothing |
-| Vintage Film / Period | 40-70 | ✅ ON | digital smooth, CGI, modern materials, oversaturated, noise reduction, AI restoration |
-| Spider-Verse style | 80-200 | ❌ OFF | photorealistic, smooth gradients, continuous tone, 3D depth of field, anti-aliased lines |
-| Horror / Oppressive | 40-70 | ✅ ON | cheerful colors, bright lighting, clean surfaces, CGI, oversaturated, plastic |
-| Cozy / Warm | 70-120 | ❌ OFF | cold tones, harsh shadows, sterile, oversaturated, plastic |
+| Sci-fi / Cyberpunk | 100-250 | ✅ ON | human figures, text, watermark, oversaturated, blurry, low quality |
+| Fantasy / Magical | 150-400 | ❌ OFF | human figures, text, watermark, photorealistic, modern tech, contemporary clothing |
+| Vintage Film / Period | 40-70 | ✅ ON | human figures, digital smooth, CGI, modern materials, oversaturated, noise reduction, AI restoration |
+| Spider-Verse style | 80-200 | ❌ OFF | human figures, photorealistic, smooth gradients, continuous tone, 3D depth of field, anti-aliased lines |
+| Horror / Oppressive | 40-70 | ✅ ON | human figures, cheerful colors, bright lighting, clean surfaces, CGI, oversaturated, plastic |
+| Cozy / Warm | 70-120 | ❌ OFF | human figures, cold tones, harsh shadows, sterile, oversaturated, plastic |
 
 > **MJ v8.1 铁律:**
 > - `::3 ::2 ::1.5 ::1.5 ::1` 权重阶梯不可省略——MJ 按此分配注意力
-> - `--no` 必须风格化，不要同一条 --no 列表跨风格通用
+> - --no 必须风格化，且所有风格统一包含 human figures（场景设计只出纯场景·禁止人物）
 > - `--c` (chaos) 在部分 v8.1 版本中已改名为 `--w` (weirdness)。`--c` 无效就试 `--w`
 > - `--style raw`: 写实风格必开(压制MJ默认美化)；手绘/奇幻风格建议关(保留MJ的艺术化笔触感)
 > - 首场景出片后用 `--sref [URL] --sw 80` 锁定全片场景风格
@@ -241,7 +243,7 @@ hand-painted non-photorealistic rendering with visible oil brush texture through
 #### 中文版
 
 **通用 (所有风格必加):**
-avoid: 结构错乱·时代错误·光影矛盾·空间透视坍塌
+[负向约束] avoid: 结构错乱·时代错误·光影矛盾·空间透视坍塌·画面中禁止出现任何人物
 
 **真人写实 / 历史剧:**
 avoid: 材质失真(保留真实老化·磨损·锈蚀·水渍)·贴图感平面材质·色彩溢出·过度HDR提亮·CG光滑表面取代真实肌理
@@ -263,7 +265,7 @@ avoid: 材质老化痕迹被AI修复·胶片色偏被矫正为中性·颗粒感�
 #### English Version
 
 **Universal (all styles required):**
-Avoid: structural errors·era anachronism·lighting inconsistency·spatial perspective collapse
+Avoid: structural errors·era anachronism·lighting inconsistency·spatial perspective collapse·no human figures or characters
 
 **Photorealistic / Period Drama:**
 Avoid: material distortion(keep authentic aging·wear·rust·water stains)·flat-mapped textures·color bleed·excessive HDR brightening·CG-smooth surfaces replacing real texture
