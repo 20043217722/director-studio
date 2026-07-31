@@ -1509,20 +1509,47 @@ LUT/胶片参考 | 风格 | 饱和度 | 影调色调: [色系色温饱和｜调�
 | [片名2] | | | [另一参考场景] | [另一项借鉴] |\r
 | 风格溯源: [这个场景的美学根源·属于哪个建筑/装饰流派] |\r
 \r
-### 生图提示词（中文·ChatGPT Image 2.0）\r
+### 🎨 输出格式（重要·每次输出必须按此顺序）\r
 \r
-> **翻译哲学：** 参考 MJ 版的思路——把参数表翻译成"你看见的画面"。不写 HEX、不写色温K、不写角度°、不写方括号占位符。用自然语言描述视觉体验——就像你在给一个没看过现场的同事讲这个空间长什么样。\r
+> **先生成中文版 ChatGPT Image 2.0 提示词，再生成英文版 Midjourney v8.1 提示词。各自用一个 \\\`\\\`\\\` 代码块包裹，用户点一下复制按钮就能拿走。**\r
 \r
-**通用版（可直接粘贴）：**\r
-[空间类型的画面化描述——如"1920年代废弃工厂车间·挑高12m的钢桁架结构·破碎的天窗"]。[场景最具辨识度的空间特征——2-3个具体的物体/结构，如"左侧的锈蚀铁梯从地面螺旋升至二层平台，平台扶手已扭曲变形"]。[光影的视觉体验——如"黄昏的金光从破碎屋顶45°斜射进来，穿过悬在空中的粉尘粒子形成光柱，在地面的积水坑上投下长方形的亮区"]。[色彩感受——如"整个空间被暖琥珀和锈褐色浸泡，角落的阴影泛着冷灰蓝，被一只氧化成铜绿色的旧控制面板打断"]。[材质触感——如"粗糙的未抛光水泥地面布满裂纹和油渍，锈蚀的钢梁上油漆大片剥落露出暗红的锈层，墙面上的铜水管表面已长出灰绿色的铜锈包浆"]。[氛围情绪——如"深秋的下午·体感18°C·空气因悬浮粉尘而能见度降低·空间里有种被遗弃后沉重的寂静"]。[构图——景别·焦段·视角] | 情绪基调: [从空间情绪三层次提炼的1-2个关键词·如"压抑的沉默中透着残存的光"] | 影调色调: [色系色温饱和｜调性反差光质·光位]（中）·cinematic by [参考美术指导(导演·年份)]\r
+---\r
 \r
+### 一、ChatGPT Image 2.0 场景提示词（中文版）\r
 \r
-**ChatGPT Image 2.0 专用版（英文·直接粘贴到ChatGPT对话框）：**\r
-[场景的完整自然语言英文描述——不分段、不加标记、不写技术参数。把空间类型·时代·风格·光影·色彩·材质·氛围·构图整合为一个流畅的英文段落。DALL-E对自然语言理解极强，不需要像MJ那样用::权重和--参数。用"你看到的画面"的语言描述——如"a photorealistic wide shot of a prison gate interior at 21:47, rain outside, rusted iron gate cracked open, gray concrete walls with water stains..."。在描述末尾自然地提到画幅比——如"wide 16:9 cinematic format"或"square composition"]\r
+> DALL-E 理解自然语言极强，不需要 \`::\` 权重、\`--\` 参数。把空间设计方案翻译成一段流畅的视觉叙事即可。\r
 \r
-**ChatGPT Image 2.0 专用版（中文·更适合向ChatGPT描述中文场景）：**\r
-[场景的完整自然语言中文描述——与英文版相同的完整叙事结构，但用中文写。DALL-E能理解中文提示词，但摄影/电影术语保留英文更精确——如"cinematic composition"、"Kodak Vision3 film grain"、"Arri Alexa 65"。画幅比用中文描述——如"宽幅16:9电影画幅"或"方形构图"]\r
-### 画质约束\r
+**模板（复制后填入设计方案的内容即可）：**\r
+\r
+\`\`\`\r
+[空间类型的画面化中文描述——如"深夜21:47的监狱铁门内侧，约20m²的封闭空间·一扇锈蚀的铁门刚被打开一条40cm宽的缝隙"]。[场景最具辨识度的空间特征——2-3个具体的物体/结构——如"灰色水泥围墙从地面延伸到3.5m高的天花板，墙面布满不规则深灰色水渍条痕·积水的水泥地面呈深灰近黑色"]。[光影的视觉体验——如"钨丝灯泡暖光从顶部偏右照下，在铁门和墙上投出硬边缘长影·门外冷色天光从门缝渗入，与室内暖光在开合处形成一条冷白亮线"]。[色彩感受——如"整个空间泡在深灰蓝的冷调中，铁门的锈褐和墙面的棕黄水渍像两个暖色锚点打破压抑的单调"]。[材质触感——如"粗粝的未抛光水泥地面布满细小裂纹和积尘·铁门表面漆皮大片剥落，露出暗红色氧化铁层"]。[氛围情绪——如"深夜的雨声从门外隐约传来，空气湿冷，有铁锈的微腥味·空间有种被浸泡了很久的安静"]。[构图+美术参考——如"中近景·50mm焦段·平视偏右30°视角·cinematic by Dante Ferretti(Hugo·2011)·Kodak Vision3 500T胶片颗粒"] | 画幅: [16:9宽幅 / 1:1方形 / 3:4竖幅]\r
+\`\`\`\r
+\r
+**上镜示例（填好的）：**\r
+\r
+\`\`\`\r
+深夜21:47的监狱铁门内侧，约20m²的封闭空间。一扇锈蚀的铁门刚被打开一条40cm宽的缝隙，门框上积满经年深红褐色的锈层，漆皮像干裂皮肤一样大片剥落。灰色水泥围墙从地面延伸到3.5m高的天花板，墙面从顶部向下布满不规则的深灰色水渍条痕。积水的水泥地面呈深灰近黑色，水面模糊地倒映着铁门上暖褐色的锈光。天花板左上角有一片棕黄色的漏水旧渍，边缘已模糊扩散。钨丝灯泡的暖光2700K从顶部偏右方向照下，在铁门和墙上投出硬边缘的长影。门外4300K的冷色天光从门缝渗入，与室内暖光在铁门开合处形成一条冷白亮线。整个空间泡在深灰蓝的冷调中，铁门的锈褐和水渍的棕黄像两个暖色锚点打破压抑的单调。粗粝的未抛光水泥地面布满细小裂纹和积尘。深夜的雨声从门外隐约传来，空气湿冷，有铁锈的微腥味。中近景·50mm焦段·平视偏右30°视角·cinematic by Dante Ferretti(Hugo·2011)·Kodak Vision3 500T胶片颗粒 | 宽幅16:9电影画幅\r
+\`\`\`\r
+\r
+---\r
+\r
+### 二、Midjourney v8.1 场景提示词（英文版）\r
+\r
+> MJ 需要 \`::\` 权重分段、\`--\` 参数。以下模板可直接复制到 Midjourney。\r
+\r
+**模板（复制后填入设计方案的内容即可）：**\r
+\r
+\`\`\`\r
+[Scene type + era + iconic spatial anchor — e.g. "vast 1920s abandoned factory floor, soaring steel trusses, broken skylights overhead"]::3 [Lighting as a visual experience — e.g. "golden hour sunlight streams diagonally through shattered roof at low angle, god rays cutting through suspended dust, long dramatic shadows stretching across weathered concrete floor"]::2 [Color palette as MJ-native descriptors — e.g. "dominated by warm amber and rust tones, cool blue-gray shadows pooling in corners, punctuated by faded teal from an oxidized control panel"]::1.5 [Materials with tactile depth — e.g. "rough unfinished concrete with decades of wear, rusted steel I-beams with peeling paint, shattered glass, weathered copper pipes with green patina, oil-stained wooden crates"]::1.5 [Atmosphere — e.g. "late autumn afternoon, 18°C, visibility softened by suspended dust, heavy stillness of abandonment"]::1 Cinematic scene design, in the aesthetic tradition of [production designer] work on [film], [camera], [film stock], film grain, [Tone Tag], --ar 16:9 --style raw --v 8.1 --s 75 --no text, watermark, oversaturated, CGI, plastic textures, blurry\r
+\`\`\`\r
+\r
+**上镜示例（填好的）：**\r
+\r
+\`\`\`\r
+Confined prison gate interior, 20m², 21:47 at night, moderate rain, rusted iron gate cracked open 40cm gap, gray concrete walls with decades of water stains, puddled floor, deep space composition::3 warm tungsten light floods from upper right across rusted iron gate, cool exterior skylight seeps through the door gap creating a vertical cold-white line on wet concrete, hard-edged shadows stretching across walls, rain curtain visible through the crack::2 dominated by desaturated cool blue-gray, punctuated by warm rust brown from the iron gate and amber reflections in water puddles, dull teal from oxidized copper door handle::1.5 rough unfinished concrete with decades of wear and water damage, rusted steel gate with peeling dark green paint revealing reddish-brown oxidation layer, rain-soaked surfaces, faint mildew stains on ceiling corner::1.5 heavy stillness of abandonment, 10°C, air damp with metallic rust smell, faint sound of rain outside, single tungsten bulb barely holding back the darkness::1 Cinematic scene design, in the aesthetic tradition of Dante Ferretti work on Hugo, shot on Arri Alexa 65, Kodak Vision3 500T, film grain, CoolBlue LwSat | Mid HiCon Hard, --ar 16:9 --style raw --v 8.1 --s 75 --no text, watermark, oversaturated, CGI, plastic textures, blurry\r
+\`\`\`\r
+\r
+### 画质约束（中英文通用）\r
 \r
 > 按场景风格选择对应画像。写实历史剧和风格化动画的约束完全不同——不要用同一套约束覆盖所有风格。\r
 \r
@@ -1543,93 +1570,6 @@ LUT/胶片参考 | 风格 | 饱和度 | 影调色调: [色系色温饱和｜调�
 \r
 #### 复古胶片 / 年代感\r
 避免: [材质老化痕迹被AI修复·胶片色偏被矫正为中性·颗粒感被降噪抹除·扫描线/划痕被数字修复·光晕(halation)被去除]\r
-\\\`\\\`\\\`\r
-\r
-### English Version\r
-\r
-\\\`\\\`\\\`\r
-## Scene Design (English Version - AI Model Friendly)\r
-\r
-### Basic Info\r
-Scene Name: [name] | Space Type: [interior/exterior/semi-open] | Area: [m²] | Era: [specific period] | Style: [from full spectrum·customizable]\r
-\r
-### Spatial Structure\r
-Floor Plan: [foreground zone·main activity zone·background zone·transition zone]\r
-Vertical Layers: [floor material·mid-level(furniture/structure)·upper(ceiling/hanging)·top(sky/roof)]\r
-Movement Flow: [how character enters·how they move·focal point·pause points]\r
-\r
-### Color Palette (60/30/10·with Cohesion Notes)\r
-Primary=Name=HEX(60%)·[occupying area] | Secondary=Name=HEX(30%)·[occupying area]·[references character primary?] | Accent=Name=HEX(10%)·[key visual element]\r
-LUT/Film Reference | Style | Saturation | Tone: [ColorSys][Sat] | [Key][Con][Shad]（EN）\r
-\r
-### Materials & Aging\r
-Core Materials(3-5): [material·surface treatment·color=HEX·wear level 1-5·tactile quality]\r
-Environmental Patina: [water stains·cracks·dust·rust·peeling·wear marks·specific locations]\r
-\r
-### Lighting & Atmosphere\r
-Source 1: [type·temp K·direction°·height°·intensity·coverage·shadow type(hard/soft)]\r
-Source 2: [same·or "none"]\r
-Overall Atmosphere: [weather·time·temp°C·visibility m·air quality(dust/fog/smoke/clear)]\r
-Spatial Emotion: [what does this space make you feel·why——1 sentence explanation]\r
-\r
-### Image Generation Prompt (Midjourney)\r
-\r
-### 🔖 状态快照\r
-\r
-\`\r
->>> [检查点] 场景「[名称]」方案完成 | [状态快照] 场景设计 | 空间类型:[X] | 核心材质:[X] | 影调色调:[X] | 输出给: 摄影指导\r
-\`\r
-### 🎨 Midjourney Scene Prompt Engine\r
-\r
-> **MJ 理解的不是"参数表里的空间方案"——它理解的是一张构图明确、光影具体、材质触手可及的画面。**\r
-\r
-#### 单场景 MJ 提示词模板（紧凑·加权·可直接复制）\r
-\r
-\\\`\\\`\\\`\r
-[Scene type + era + iconic spatial anchor — e.g. "vast 1920s abandoned factory floor, soaring steel trusses, broken skylights overhead"]::3 [Lighting as a visual experience — e.g. "golden hour sunlight streams diagonally through shattered roof at 45-degree angle, god rays cutting through suspended dust, long dramatic shadows stretching across weathered concrete floor"]::2 [Color palette as MJ-native descriptors — e.g. "dominated by warm amber and rust tones, cool blue-gray shadows pooling in corners, punctuated by faded teal from an oxidized control panel"]::1.5 [Materials with tactile depth — e.g. "rough unfinished concrete with decades of wear, rusted steel I-beams with peeling paint, shattered glass, weathered copper pipes with green patina, oil-stained wooden crates"]::1.5 [Atmosphere — e.g. "late autumn afternoon, 18°C, visibility softened by suspended dust, heavy stillness of abandonment"]::1 Cinematic scene design, in the aesthetic tradition of [production designer]'s work on [film], [camera reference], [film stock], film grain, [Tone Tag], --ar 16:9 --style raw --v 8.1 --s 75 --no text, watermark, oversaturated, CGI, plastic textures, blurry\r
-\\\`\\\`\\\`\r
-\r
-#### 上镜示例（填好的场景设计提示词）\r
-\r
-\\\`\\\`\\\`\r
-Vast abandoned 1920s factory floor, soaring steel trusses with riveted joints, broken skylights overhead, deep space composition::3 golden hour sunlight streams diagonally through shattered roof panels at a low angle, god rays cutting through suspended dust particles, long dramatic shadows stretching across weathered concrete floor::2 dominated by warm amber and rust tones, cool blue-gray shadows pooling in corners, punctuated by faded teal from an oxidized control panel::1.5 rough unfinished concrete with decades of wear, rusted steel I-beams with peeling paint, shattered safety glass fragments, weathered copper pipes with green patina, oil-stained wooden crates::1.5 late autumn afternoon, 18°C, visibility softened by suspended dust particles, heavy stillness of abandonment::1 Cinematic scene design, in the aesthetic tradition of Dante Ferretti's work on Hugo, shot on Arri Alexa 65, Kodak Vision3 500T, film grain, atmospheric haze --ar 16:9 --style raw --v 8.1 --s 75 --no text, watermark, oversaturated, CGI, plastic textures, blurry\r
-\\\`\\\`\\\`\r
-\r
-#### 🏗️ MJ 场景提示词解剖\r
-\r
-| 段 | 权重 | 内容 | MJ 理解方式 |\r
-|---|:---:|------|------|\r
-| 第1段 | \`::3\` | 空间类型 + 时代 + 标志性结构 + 构图 | **MJ 最重视开头**——空间是什么、长什么样必须最先说清楚 |\r
-| 第2段 | \`::2\` | 光影的视觉体验 | 不要写色温数字，写 "golden hour" / "harsh fluorescent" / "candlelit warmth" |\r
-| 第3段 | \`::1.5\` | 色彩（自然语言 + 情绪修饰） | MJ 不理解 HEX，但它理解 "dominated by warm amber" / "punctuated by rust red" |\r
-| 第4段 | \`::1.5\` | 材质 + 老化 + 触感 | 把参数表里的 "材质·表面·老化度3/5" 翻译成 "rough concrete with decades of wear" |\r
-| 第5段 | \`::1\` | 氛围 + 天气 + 温度 | 给空间注入时间和情绪——"heavy stillness of abandonment" 比 "能见度10m" 有用 |\r
-| 末尾 | 不设权重 | 美术指导参考 + 摄影机 + 胶片 | MJ 对知名美术指导和电影有很强的风格联想能力 |\r
-\r
-#### 🎨 按场景类型的 MJ 参数速调\r
-\r
-| 场景类型 | \`--s\` | \`--c\` | \`--style raw\` | 说明 |\r
-|----------|:---:|:---:|:---:|------|\r
-| 写实室内/室外 | 50-80 | 3-5 | ✅ 必开 | 真实材质和自然光 |\r
-| 历史建筑/年代 | 40-70 | 3-5 | ✅ 必开 | 年代准确性优先 |\r
-| 科幻/未来 | 100-250 | 10-20 | ✅ 必开 | 允许更多细节和想象 |\r
-| 奇幻/魔法 | 150-400 | 8-15 | ❌ 建议关 | MJ 默认美化适合奇幻 |\r
-| 恐怖/压抑 | 40-70 | 5-10 | ✅ 必开 | 保持粗粝真实感 |\r
-| 温馨/治愈 | 70-120 | 3-8 | ❌ 可选关 | 保留柔和质感 |\r
-| 赛博朋克/霓虹 | 120-300 | 15-25 | ✅ 半开 | 高细节密度需要更多 chaos |\r
-| 废土/末日 | 50-80 | 5-10 | ✅ 必开 | 材质真实感至关重要 |\r
-\r
-> **v8.1 参数说明：** \`--s\` 值较 v6.1 整体上调——v8.1 的风格化引擎在低值下过于保守。\`--c\` 参数在 v8.1 中仍可用，但部分版本中已重命名为 \`--w\`（weirdness），两者作用相同。\`--style raw\` 和 \`::\` 权重系统在 v8.1 中完全兼容。\r
-> **v8.1 新增特性：** \`--p\` 个性化参数（基于用户画像）可提高场景风格一致性。\`--sref\` 和 \`--cref\` 的稳定性较 v6.1 大幅提升，推荐在所有写实类场景中优先使用。\r
-\r
-> **MJ 场景提示词铁律 (v2.0)**\r
-> - **\`::3 ::2 ::1.5 ::1.5 ::1\` 权重阶梯:** 空间 > 光影 > 色彩=材质 > 氛围。MJ 按此优先级分配注意力。\r
-> - **\`--no text, watermark, oversaturated, CGI, plastic textures, blurry\`** 每个场景提示词必带。\r
-> - **材质翻译:** "老化度3/5" → "with decades of wear and patina" / "表面粗糙" → "rough unfinished surface with visible grain"\r
-> - **首场景出片后用 \`--sref [URL]\` 锁定场景风格参考。** 同一部影片所有场景共享 \`--sref\` 确保视觉世界统一。\r
-> - **双色对立场景:** 用排列括号 \`{warm sanctuary version, cold oppressive version}\` 同时出两张对比。\r
-\r
-\r
 ### Quality Constraints\r
 \r
 > Select profile matching scene style. Historical realism and stylized animation have opposite constraint needs.\r
@@ -4570,5 +4510,5 @@ ${u}`:u}async function y8(e){return"(PPT 文件暂不支持直接文本提取，
 `).trim(),Xe=V.length>0?6:20,Xn=S.current.map(Vt=>({role:Vt.role,text:Fe(Vt.text)})).slice(-Xe),vn=new AbortController;he.current=vn;let Xt="",qt=0;const Gr=60;for await(const Vt of Vw(j||"请分析附件",n,{apiKey:X[l],provider:l,imageBase64s:V,imageMimes:te,history:Xn,customEndpoint:we.endpoint||"",customModel:we.model||"",signal:vn.signal})){if(vn.signal.aborted)break;Xt+=Vt;const Kr=Date.now();Kr-qt>=Gr&&(qt=Kr,i(qb=>qb.map($c=>$c.id===ye.id?{...$c,text:Xt}:$c)))}Xt||(Xt="(对方未返回内容，请重试)");const Xb=t3(Xt);i(Vt=>Vt.map(Kr=>Kr.id===ye.id?{...Kr,text:Xb,streaming:!1}:Kr))}catch(we){const Fe=we instanceof Error?we.message:String(we),Xe=((Te=ye.text)==null?void 0:Te.length)>0;Fe==="ABORTED"||(Ht=(en=he.current)==null?void 0:en.signal)!=null&&Ht.aborted?i(Xn=>Xn.map(vn=>vn.id===ye.id?{...vn,text:vn.text+(Xe?`
 
 ---
-*[已停止]*`:"*[已取消]*"),error:!1,streaming:!1,retryText:R,retryFiles:J}:vn)):i(Xn=>Xn.map(vn=>vn.id===ye.id?{...vn,text:Xe?vn.text:`❌ ${Fe}`,error:!Xe,partial:Xe,streaming:!1,retryText:R,retryFiles:J}:vn))}finally{o(!1),he.current=null,L.current=!1}},[n,l,x]),ve=ue.useCallback(async R=>{var X;const J=[...S.current].reverse().find(N=>N.role==="assistant"&&!N.error);if(!J){I("没有可导出的内容","error");return}try{const N=((X=ii.find(j=>j.id===n))==null?void 0:X.name)||"导出";if(R==="docx"){const{generateDocxBlob:j}=await Us(async()=>{const{generateDocxBlob:V}=await import("./export-DosBlJ5f.js");return{generateDocxBlob:V}},[],import.meta.url);K(await j(N,J.text),"docx")}else{const{generatePptxBlob:j}=await Us(async()=>{const{generatePptxBlob:V}=await import("./export-DosBlJ5f.js");return{generatePptxBlob:V}},[],import.meta.url);K(await j(N,J.text),"pptx")}I(`已导出为 ${R.toUpperCase()}`,"success")}catch(N){I("导出失败: "+(N instanceof Error?N.message:String(N)),"error")}},[n]);function K(R,$){var V,te;const J=`${((V=ii.find(se=>se.id===n))==null?void 0:V.name)||"导出"}_${Date.now()}.${$}`;if((te=window.electronAPI)!=null&&te.saveFile){const se=new FileReader;se.onload=()=>{const le=Array.from(new Uint8Array(se.result));window.electronAPI.saveFile({title:J.replace(/\.[^.]+$/,""),buffer:le,ext:$})},se.readAsArrayBuffer(R);return}const X=URL.createObjectURL(R);if(/iPad|iPhone|iPod/.test(navigator.userAgent)||navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1){window.open(X,"_blank")||alert(`请允许弹窗后重试，或复制链接打开：
+*[已停止]*`:"*[已取消]*"),error:!1,streaming:!1,retryText:R,retryFiles:J}:vn)):i(Xn=>Xn.map(vn=>vn.id===ye.id?{...vn,text:Xe?vn.text:`❌ ${Fe}`,error:!Xe,partial:Xe,streaming:!1,retryText:R,retryFiles:J}:vn))}finally{o(!1),he.current=null,L.current=!1}},[n,l,x]),ve=ue.useCallback(async R=>{var X;const J=[...S.current].reverse().find(N=>N.role==="assistant"&&!N.error);if(!J){I("没有可导出的内容","error");return}try{const N=((X=ii.find(j=>j.id===n))==null?void 0:X.name)||"导出";if(R==="docx"){const{generateDocxBlob:j}=await Us(async()=>{const{generateDocxBlob:V}=await import("./export-CKzw6Zoi.js");return{generateDocxBlob:V}},[],import.meta.url);K(await j(N,J.text),"docx")}else{const{generatePptxBlob:j}=await Us(async()=>{const{generatePptxBlob:V}=await import("./export-CKzw6Zoi.js");return{generatePptxBlob:V}},[],import.meta.url);K(await j(N,J.text),"pptx")}I(`已导出为 ${R.toUpperCase()}`,"success")}catch(N){I("导出失败: "+(N instanceof Error?N.message:String(N)),"error")}},[n]);function K(R,$){var V,te;const J=`${((V=ii.find(se=>se.id===n))==null?void 0:V.name)||"导出"}_${Date.now()}.${$}`;if((te=window.electronAPI)!=null&&te.saveFile){const se=new FileReader;se.onload=()=>{const le=Array.from(new Uint8Array(se.result));window.electronAPI.saveFile({title:J.replace(/\.[^.]+$/,""),buffer:le,ext:$})},se.readAsArrayBuffer(R);return}const X=URL.createObjectURL(R);if(/iPad|iPhone|iPod/.test(navigator.userAgent)||navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1){window.open(X,"_blank")||alert(`请允许弹窗后重试，或复制链接打开：
 `+X),setTimeout(()=>URL.revokeObjectURL(X),3e4);return}const j=document.createElement("a");j.href=X,j.download=J,document.body.appendChild(j),j.click(),document.body.removeChild(j),setTimeout(()=>URL.revokeObjectURL(X),5e3)}function re({provider:R,keys:$}){var J;y(R),$[R]&&(p(!1),I(`已切换到 ${((J=Zn[R])==null?void 0:J.name)||R}`,"success"))}const[D,Y]=ue.useState(!1);ue.useEffect(()=>{const R=$=>{$.target.tagName==="INPUT"||$.target.tagName==="TEXTAREA"||$.key==="?"&&!$.ctrlKey&&!$.metaKey&&($.preventDefault(),Y(J=>!J))};return window.addEventListener("keydown",R),()=>window.removeEventListener("keydown",R)},[]);const Z=[{key:"Enter",desc:"发送消息"},{key:"Shift+Enter",desc:"换行"},{key:"Space",desc:"暂停/继续生成"},{key:"Ctrl+N",desc:"新建会话"},{key:"Ctrl+1-8",desc:"切换智能体 1-8"},{key:"Ctrl+E",desc:"导出"},{key:"Ctrl+,",desc:"打开设置"},{key:"?",desc:"显示/隐藏此面板"}],B=ii.find(R=>R.id===n),k=Zn[l];return O.jsx(Hb,{children:m?O.jsxs("div",{className:"flex overflow-hidden",style:{position:"fixed",inset:0,background:"var(--bg-root)"},children:[T&&O.jsx("div",{className:"fixed inset-0 bg-black/40 z-20 lg:hidden",onClick:()=>E(!1)}),O.jsx("div",{className:`sidebar fixed lg:relative z-30 h-full transition-transform duration-250 ${T?"translate-x-0":"-translate-x-full lg:translate-x-0"}`,children:O.jsx(C8,{agents:ii,active:n,onSelect:R=>{W(R),E(!1)},onClose:()=>E(!1)})}),O.jsxs("div",{className:"flex-1 flex flex-col min-w-0",children:[O.jsxs("header",{className:"app-header flex items-center px-3 gap-2 shrink-0",children:[O.jsx("button",{onClick:()=>E(!0),className:"lg:hidden p-1 text-lg opacity-60 hover:opacity-100",children:"☰"}),O.jsx(Yh,{id:B==null?void 0:B.id,active:!0}),O.jsx("span",{className:"sidebar-brand text-sm hidden sm:inline",style:{color:"var(--gold)",fontWeight:700,letterSpacing:"0.02em"},children:B==null?void 0:B.name}),O.jsx("span",{className:"hidden md:inline text-xs opacity-55 truncate",children:B==null?void 0:B.desc}),O.jsx("div",{className:"flex-1"}),O.jsx(P8,{}),O.jsx("span",{className:"provider-badge hidden sm:inline ml-2",style:{fontWeight:600,fontSize:11},children:(k==null?void 0:k.name)||l}),O.jsx("span",{className:`net-dot shrink-0 ${x==="online"?"online":"offline"}`,title:x==="online"?"在线":"离线"}),A&&O.jsx("button",{onClick:de,className:"update-badge px-2 py-0.5 cursor-pointer hidden sm:block",children:A}),O.jsx(M8,{onExport:ve,disabled:a}),O.jsx("button",{onClick:ee,className:"p-1.5 rounded-lg opacity-45 hover:opacity-80 transition-opacity text-sm",title:"清空记录",children:"🗑"}),O.jsx("button",{onClick:()=>p(!0),style:{padding:"6px 12px",borderRadius:6,border:"1px solid var(--border-glow)",background:"var(--bg-card)",color:"var(--text)",cursor:"pointer",fontSize:13,fontWeight:600},title:"设置",children:"⚙ 设置"})]}),O.jsxs(O.Fragment,{children:[O.jsxs("div",{style:{display:"flex",gap:2,padding:"2px 6px",overflowX:"auto",background:"var(--bg-root)",borderBottom:"1px solid var(--border)",minHeight:30,alignItems:"flex-end"},children:[c.map(R=>{const $=ii.find(X=>X.id===R),J=n===R;return O.jsxs("button",{onClick:()=>W(R),style:{padding:"3px 8px",fontSize:11,fontWeight:J?700:500,borderRadius:"4px 4px 0 0",border:"none",cursor:"pointer",background:J?"var(--bg-card)":"transparent",color:J?"var(--text)":"var(--text-muted)",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:3,borderBottom:J?"2px solid var(--accent)":"2px solid transparent"},children:[($==null?void 0:$.name)||R,c.length>1&&O.jsx("span",{onClick:X=>{X.stopPropagation(),z(R)},style:{fontSize:9,opacity:.4},children:"x"})]},R)}),O.jsx("span",{style:{fontSize:9,color:"var(--text-muted)",padding:"3px 6px",flex:1,textAlign:"right"},children:"点击Agent加标签 | 各标签独立"})]}),O.jsxs("div",{className:"flex-1 overflow-y-auto relative",ref:G,onScroll:H,children:[a&&O.jsx("div",{className:"typing-progress sticky top-0 z-10 w-full"}),O.jsx(N8,{mode:n,messages:r,loading:a,onUndo:ne,onRegenerate:ce,onRetry:ge,onToggleLike:ae}),O.jsx("div",{ref:w}),U&&O.jsx("button",{onClick:()=>{C.current=!1,F(!0)},className:"sticky bottom-4 float-right z-30 w-9 h-9 rounded-full shadow-lg flex items-center justify-center text-sm transition-all hover:scale-110 mr-4",style:{background:"var(--bg-card)",border:"1px solid var(--border)",color:"var(--gold)"},title:"回到底部",children:"↓"})]}),O.jsx(j8,{agents:ii,active:n,onSelect:W}),O.jsx("div",{className:"motif-line mx-4"}),O.jsx(R8,{onSend:ge,onStop:()=>{var R;return(R=he.current)==null?void 0:R.abort()},loading:a,network:x})]})]}),b&&O.jsx(L8,{activeProvider:l,onSave:re,onClose:()=>p(!1)}),d&&!g&&O.jsx(S8,{onUnlock:()=>v(!0)}),d&&g&&O.jsx(A8,{onClose:()=>{h(!1),v(!1)}}),D&&O.jsxs(O.Fragment,{children:[O.jsx("div",{className:"modal-overlay fixed inset-0 z-40",onClick:()=>Y(!1)}),O.jsx("div",{className:"fixed inset-0 flex items-center justify-center z-50 p-4",style:{pointerEvents:"none"},children:O.jsxs("div",{className:"shortcut-panel modal-card p-5 w-full max-w-sm",style:{pointerEvents:"auto"},children:[O.jsx("h3",{className:"text-sm font-semibold mb-3",style:{color:"var(--brand)"},children:"⌨️ 快捷键"}),Z.map(R=>O.jsxs("div",{className:"shortcut-row",children:[O.jsx("span",{className:"text-xs",style:{color:"var(--text)"},children:R.desc}),O.jsx("span",{className:"shortcut-key",children:R.key})]},R.key)),O.jsx("button",{onClick:()=>Y(!1),className:"w-full mt-3 py-1.5 rounded-lg text-xs border transition-all opacity-40 hover:opacity-80",style:{borderColor:"var(--border)",color:"var(--text-secondary)"},children:"关闭"})]})})]}),q&&O.jsx("div",{className:`fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm shadow-lg pointer-events-none transition-all animate-fade-in ${q.type==="error"?"bg-red-500/90 text-white":q.type==="success"?"bg-green-500/90 text-white":"bg-white/10 backdrop-blur text-white/80 border border-white/10"}`,children:q.text})]}):O.jsx(q8,{onUnlock:()=>f(!0)})})}Il.createRoot(document.getElementById("director-studio-root")).render(O.jsx(cx.StrictMode,{children:O.jsx(Hb,{children:O.jsx(V8,{})})}));export{$8 as J,Us as _};
