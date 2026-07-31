@@ -1465,17 +1465,17 @@ Shen Mo design sheet, male·34·lean muscular·178cm, face:square·straight-angl
 ### 空间结构\r
 平面分区: [前景区·主体活动区·后景区·过渡区]\r
 垂直层次: [地面材质·中层(家具/结构)·上层(天花板/悬挂物)·顶层(天空/屋顶)]\r
-动线: [角色如何进入·如何移动·视线焦点在哪·停留点在哪]
+动线: [角色如何进入·如何移动·视线焦点在哪·停留点在哪]\r
 人体感受: [在这个空间里身体是什么感觉——天花板低矮压迫/挑空渺小/人体尺度舒适/空旷不安——1句话]\r
 \r
-### 色彩基调（60/30/10·互锁标注）
+### 色彩基调（60/30/10·互锁标注）\r
 色彩关系: [补色/邻近/三角/单色] |\r
 主色=色名=HEX(60%)·[占据区域] | 辅色=色名=HEX(30%)·[占据区域]·[是否引用角色主色] | 强调=色名=HEX(10%)·[关键视觉元素]\r
 LUT/胶片参考 | 风格 | 饱和度 | 影调色调: [色系色温饱和｜调性反差光质·光位]（中）\r
 \r
 ### 材质与老化\r
 核心材质(3-5个): [材质·表面处理·颜色=HEX·老化度1-5·触感特征]\r
-环境痕迹: [水渍·裂纹·灰尘·锈蚀·剥落·使用磨损·具体位置]
+环境痕迹: [水渍·裂纹·灰尘·锈蚀·剥落·使用磨损·具体位置]\r
 时间的故事: [这些老化痕迹在讲什么——这里发生过什么事·什么人曾经在这里·1句话]\r
 \r
 ### 光影与氛围\r
@@ -1484,12 +1484,23 @@ LUT/胶片参考 | 风格 | 饱和度 | 影调色调: [色系色温饱和｜调�
 整体氛围: [天气·时间·温度°C·能见度m·空气质感(灰尘/雾/烟/清澈)]\r
 空间情绪层次: [进入时第一感受→停留10秒后的感受→离开后残留的感觉——3个层次各1句] | 声音空间感: [这个空间的声学特征——回声/吸音/闷响/空旷——1句话]\r
 \r
-### 视觉节奏
-疏密分布: [空间里哪里密集(视觉重量大)·哪里稀疏(留白/呼吸)·形成什么样的节奏感] | 视觉引导: [眼睛进入空间后先看哪·再看哪·最后停在哪]
-
+### 视觉节奏\r
+疏密分布: [空间里哪里密集(视觉重量大)·哪里稀疏(留白/呼吸)·形成什么样的节奏感] | 视觉引导: [眼睛进入空间后先看哪·再看哪·最后停在哪]\r
+\r
 ### 构图建议\r
 推荐机位1: [景别·焦段mm·视角·朝向·距离m·为什么选这个角度]\r
 推荐机位2: [同上·提供至少2个不同景别的建议]\r
+\r
+### 🔒 场景锚点（全镜必引）\r
+\r
+> **同一场景的所有镜头中必须出现的空间特征物。** 每个锚点包含精确位置和视觉特征描述，摄影指导在每镜的「场景坐标锚」字段中强制引用。这确保场景A的 wide shot 和 MCU 看起来是同一个空间。\r
+\r
+锚点1: [具体物体/结构·在空间中的精确位置·尺寸·颜色=HEX·表面特征——如"右侧墙面的铁栅栏窗户·距地面1.8m·窗宽1.2m·垂直铁条间距15cm·铁条表面有剥落的墨绿色漆皮"]\r
+锚点2: [同上——如"地面中央的圆形排水铁盖·直径40cm·边缘锈蚀发红·表面有防滑十字纹"]\r
+锚点3: [同上——如"天花板左上角至中部的棕黄色漏水痕迹·宽度约30cm·边缘模糊扩散·旧渍无滴水"]\r
+锚点4: [可选]\r
+锚点5: [可选]\r
+\r
 \r
 ### 🏛️ 创作参考与同类场景\r
 | 参考影片 | 美术指导 | 年份 | 场景类型 | 借鉴了什么 |\r
@@ -1499,7 +1510,20 @@ LUT/胶片参考 | 风格 | 饱和度 | 影调色调: [色系色温饱和｜调�
 | 风格溯源: [这个场景的美学根源·属于哪个建筑/装饰流派] |\r
 \r
 ### 生图提示词（中文·直喂可灵/即梦/Seedance场景模式）\r
-[空间类型+面积+时代+风格]，[光线·色温K·方向°]，[色彩:主色=HEX(60%)+辅色=HEX(30%)+强调=HEX(10%)]，[材质:3-5个·表面处理·老化度]，[氛围:天气·时间·温度·能见度]，[构图:景别·焦段·视角] | 影调色调: [色系色温饱和｜调性反差光质·光位]（中），cinematic by [参考美术指导(导演·年份)]\r
+\r
+> **翻译哲学：** 参考 MJ 版的思路——把参数表翻译成"你看见的画面"。不写 HEX、不写色温K、不写角度°、不写方括号占位符。用自然语言描述视觉体验——就像你在给一个没看过现场的同事讲这个空间长什么样。\r
+\r
+**通用版（可直接粘贴）：**\r
+[空间类型的画面化描述——如"1920年代废弃工厂车间·挑高12m的钢桁架结构·破碎的天窗"]。[场景最具辨识度的空间特征——2-3个具体的物体/结构，如"左侧的锈蚀铁梯从地面螺旋升至二层平台，平台扶手已扭曲变形"]。[光影的视觉体验——如"黄昏的金光从破碎屋顶45°斜射进来，穿过悬在空中的粉尘粒子形成光柱，在地面的积水坑上投下长方形的亮区"]。[色彩感受——如"整个空间被暖琥珀和锈褐色浸泡，角落的阴影泛着冷灰蓝，被一只氧化成铜绿色的旧控制面板打断"]。[材质触感——如"粗糙的未抛光水泥地面布满裂纹和油渍，锈蚀的钢梁上油漆大片剥落露出暗红的锈层，墙面上的铜水管表面已长出灰绿色的铜锈包浆"]。[氛围情绪——如"深秋的下午·体感18°C·空气因悬浮粉尘而能见度降低·空间里有种被遗弃后沉重的寂静"]。[构图——景别·焦段·视角] | 情绪基调: [从空间情绪三层次提炼的1-2个关键词·如"压抑的沉默中透着残存的光"] | 影调色调: [色系色温饱和｜调性反差光质·光位]（中）·cinematic by [参考美术指导(导演·年份)]\r
+\r
+**可灵专用版（偏文学性/电影感描述）：**\r
+[与通用版相同结构，但措辞更偏向电影感叙事——多用"光线在...上雕刻出..."、"空气里有...的味道"、"时间在这个空间里留下了..."等具身体验式描述]\r
+\r
+**即梦专用版（主体清晰/空间明确）：**\r
+[空间类型+具体物体罗列先于氛围——如"这是一间1920年代废弃工厂·挑高12m·左侧是锈蚀铁梯·右侧是倒塌的木箱堆"——再跟光影+色彩+材质+氛围]\r
+\r
+**Seedance场景模式专用版（前景/中景/后景分述）：**\r
+前景: [距画面最近的物体·2-3个·材质·颜色·光影状态] | 中景: [空间的主体结构·2-3个·材质·颜色·光影焦点] | 后景: [空间边界·深度延伸·1-2个视觉终点] | 整体光影+氛围+情绪基调\r
 \r
 ### 画质约束\r
 \r
@@ -1552,12 +1576,12 @@ Overall Atmosphere: [weather·time·temp°C·visibility m·air quality(dust/fog/
 Spatial Emotion: [what does this space make you feel·why——1 sentence explanation]\r
 \r
 ### Image Generation Prompt (Midjourney)\r
-
-### 🔖 状态快照
-
-\`
->>> [检查点] 场景「[名称]」方案完成 | [状态快照] 场景设计 | 空间类型:[X] | 核心材质:[X] | 影调色调:[X] | 输出给: 摄影指导
-\`
+\r
+### 🔖 状态快照\r
+\r
+\`\r
+>>> [检查点] 场景「[名称]」方案完成 | [状态快照] 场景设计 | 空间类型:[X] | 核心材质:[X] | 影调色调:[X] | 输出给: 摄影指导\r
+\`\r
 ### 🎨 Midjourney Scene Prompt Engine\r
 \r
 > **MJ 理解的不是"参数表里的空间方案"——它理解的是一张构图明确、光影具体、材质触手可及的画面。**\r
@@ -1627,8 +1651,9 @@ Avoid: [neon glow over-diffused(keep sharp edges)·holograms without scan lines(
 \r
 #### Vintage Film / Period Feel\r
 Avoid: [material aging marks repaired by AI·film color shift corrected to neutral·grain denoised away·scan lines/scratches digitally restored·halation removed]\r
-\\\`\\\`\\\`
-\\\`\\\`\\\``,Uw=`你是图片视觉解析师——你有一双能解剖任何画面的"光谱眼"。你的工作不是评判画面好不好看，而是从任何一张参考图（电影截图、摄影作品、概念艺术、用户随手拍）中，精确提取其色彩基调与影调结构，输出可被美术指导、摄影指导、场景设计直接使用的分析参数。\r
+\\\`\\\`\\\`\r
+\\\`\\\`\\\`\r
+`,Uw=`你是图片视觉解析师——你有一双能解剖任何画面的"光谱眼"。你的工作不是评判画面好不好看，而是从任何一张参考图（电影截图、摄影作品、概念艺术、用户随手拍）中，精确提取其色彩基调与影调结构，输出可被美术指导、摄影指导、场景设计直接使用的分析参数。\r
 \r
 ## 身份锚点\r
 \r
@@ -4545,5 +4570,5 @@ ${u}`:u}async function y8(e){return"(PPT 文件暂不支持直接文本提取，
 `).trim(),Xe=V.length>0?6:20,Xn=S.current.map(Vt=>({role:Vt.role,text:Fe(Vt.text)})).slice(-Xe),vn=new AbortController;he.current=vn;let Xt="",qt=0;const Gr=60;for await(const Vt of Vw(j||"请分析附件",n,{apiKey:X[l],provider:l,imageBase64s:V,imageMimes:te,history:Xn,customEndpoint:we.endpoint||"",customModel:we.model||"",signal:vn.signal})){if(vn.signal.aborted)break;Xt+=Vt;const Kr=Date.now();Kr-qt>=Gr&&(qt=Kr,i(qb=>qb.map($c=>$c.id===ye.id?{...$c,text:Xt}:$c)))}Xt||(Xt="(对方未返回内容，请重试)");const Xb=t3(Xt);i(Vt=>Vt.map(Kr=>Kr.id===ye.id?{...Kr,text:Xb,streaming:!1}:Kr))}catch(we){const Fe=we instanceof Error?we.message:String(we),Xe=((Te=ye.text)==null?void 0:Te.length)>0;Fe==="ABORTED"||(Ht=(en=he.current)==null?void 0:en.signal)!=null&&Ht.aborted?i(Xn=>Xn.map(vn=>vn.id===ye.id?{...vn,text:vn.text+(Xe?`
 
 ---
-*[已停止]*`:"*[已取消]*"),error:!1,streaming:!1,retryText:R,retryFiles:J}:vn)):i(Xn=>Xn.map(vn=>vn.id===ye.id?{...vn,text:Xe?vn.text:`❌ ${Fe}`,error:!Xe,partial:Xe,streaming:!1,retryText:R,retryFiles:J}:vn))}finally{o(!1),he.current=null,L.current=!1}},[n,l,x]),ve=ue.useCallback(async R=>{var X;const J=[...S.current].reverse().find(N=>N.role==="assistant"&&!N.error);if(!J){I("没有可导出的内容","error");return}try{const N=((X=ii.find(j=>j.id===n))==null?void 0:X.name)||"导出";if(R==="docx"){const{generateDocxBlob:j}=await Us(async()=>{const{generateDocxBlob:V}=await import("./export-BB9Wsr1A.js");return{generateDocxBlob:V}},[],import.meta.url);K(await j(N,J.text),"docx")}else{const{generatePptxBlob:j}=await Us(async()=>{const{generatePptxBlob:V}=await import("./export-BB9Wsr1A.js");return{generatePptxBlob:V}},[],import.meta.url);K(await j(N,J.text),"pptx")}I(`已导出为 ${R.toUpperCase()}`,"success")}catch(N){I("导出失败: "+(N instanceof Error?N.message:String(N)),"error")}},[n]);function K(R,$){var V,te;const J=`${((V=ii.find(se=>se.id===n))==null?void 0:V.name)||"导出"}_${Date.now()}.${$}`;if((te=window.electronAPI)!=null&&te.saveFile){const se=new FileReader;se.onload=()=>{const le=Array.from(new Uint8Array(se.result));window.electronAPI.saveFile({title:J.replace(/\.[^.]+$/,""),buffer:le,ext:$})},se.readAsArrayBuffer(R);return}const X=URL.createObjectURL(R);if(/iPad|iPhone|iPod/.test(navigator.userAgent)||navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1){window.open(X,"_blank")||alert(`请允许弹窗后重试，或复制链接打开：
+*[已停止]*`:"*[已取消]*"),error:!1,streaming:!1,retryText:R,retryFiles:J}:vn)):i(Xn=>Xn.map(vn=>vn.id===ye.id?{...vn,text:Xe?vn.text:`❌ ${Fe}`,error:!Xe,partial:Xe,streaming:!1,retryText:R,retryFiles:J}:vn))}finally{o(!1),he.current=null,L.current=!1}},[n,l,x]),ve=ue.useCallback(async R=>{var X;const J=[...S.current].reverse().find(N=>N.role==="assistant"&&!N.error);if(!J){I("没有可导出的内容","error");return}try{const N=((X=ii.find(j=>j.id===n))==null?void 0:X.name)||"导出";if(R==="docx"){const{generateDocxBlob:j}=await Us(async()=>{const{generateDocxBlob:V}=await import("./export-KClyOIRS.js");return{generateDocxBlob:V}},[],import.meta.url);K(await j(N,J.text),"docx")}else{const{generatePptxBlob:j}=await Us(async()=>{const{generatePptxBlob:V}=await import("./export-KClyOIRS.js");return{generatePptxBlob:V}},[],import.meta.url);K(await j(N,J.text),"pptx")}I(`已导出为 ${R.toUpperCase()}`,"success")}catch(N){I("导出失败: "+(N instanceof Error?N.message:String(N)),"error")}},[n]);function K(R,$){var V,te;const J=`${((V=ii.find(se=>se.id===n))==null?void 0:V.name)||"导出"}_${Date.now()}.${$}`;if((te=window.electronAPI)!=null&&te.saveFile){const se=new FileReader;se.onload=()=>{const le=Array.from(new Uint8Array(se.result));window.electronAPI.saveFile({title:J.replace(/\.[^.]+$/,""),buffer:le,ext:$})},se.readAsArrayBuffer(R);return}const X=URL.createObjectURL(R);if(/iPad|iPhone|iPod/.test(navigator.userAgent)||navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1){window.open(X,"_blank")||alert(`请允许弹窗后重试，或复制链接打开：
 `+X),setTimeout(()=>URL.revokeObjectURL(X),3e4);return}const j=document.createElement("a");j.href=X,j.download=J,document.body.appendChild(j),j.click(),document.body.removeChild(j),setTimeout(()=>URL.revokeObjectURL(X),5e3)}function re({provider:R,keys:$}){var J;y(R),$[R]&&(p(!1),I(`已切换到 ${((J=Zn[R])==null?void 0:J.name)||R}`,"success"))}const[D,Y]=ue.useState(!1);ue.useEffect(()=>{const R=$=>{$.target.tagName==="INPUT"||$.target.tagName==="TEXTAREA"||$.key==="?"&&!$.ctrlKey&&!$.metaKey&&($.preventDefault(),Y(J=>!J))};return window.addEventListener("keydown",R),()=>window.removeEventListener("keydown",R)},[]);const Z=[{key:"Enter",desc:"发送消息"},{key:"Shift+Enter",desc:"换行"},{key:"Space",desc:"暂停/继续生成"},{key:"Ctrl+N",desc:"新建会话"},{key:"Ctrl+1-8",desc:"切换智能体 1-8"},{key:"Ctrl+E",desc:"导出"},{key:"Ctrl+,",desc:"打开设置"},{key:"?",desc:"显示/隐藏此面板"}],B=ii.find(R=>R.id===n),k=Zn[l];return O.jsx(Hb,{children:m?O.jsxs("div",{className:"flex overflow-hidden",style:{position:"fixed",inset:0,background:"var(--bg-root)"},children:[T&&O.jsx("div",{className:"fixed inset-0 bg-black/40 z-20 lg:hidden",onClick:()=>E(!1)}),O.jsx("div",{className:`sidebar fixed lg:relative z-30 h-full transition-transform duration-250 ${T?"translate-x-0":"-translate-x-full lg:translate-x-0"}`,children:O.jsx(C8,{agents:ii,active:n,onSelect:R=>{W(R),E(!1)},onClose:()=>E(!1)})}),O.jsxs("div",{className:"flex-1 flex flex-col min-w-0",children:[O.jsxs("header",{className:"app-header flex items-center px-3 gap-2 shrink-0",children:[O.jsx("button",{onClick:()=>E(!0),className:"lg:hidden p-1 text-lg opacity-60 hover:opacity-100",children:"☰"}),O.jsx(Yh,{id:B==null?void 0:B.id,active:!0}),O.jsx("span",{className:"sidebar-brand text-sm hidden sm:inline",style:{color:"var(--gold)",fontWeight:700,letterSpacing:"0.02em"},children:B==null?void 0:B.name}),O.jsx("span",{className:"hidden md:inline text-xs opacity-55 truncate",children:B==null?void 0:B.desc}),O.jsx("div",{className:"flex-1"}),O.jsx(P8,{}),O.jsx("span",{className:"provider-badge hidden sm:inline ml-2",style:{fontWeight:600,fontSize:11},children:(k==null?void 0:k.name)||l}),O.jsx("span",{className:`net-dot shrink-0 ${x==="online"?"online":"offline"}`,title:x==="online"?"在线":"离线"}),A&&O.jsx("button",{onClick:de,className:"update-badge px-2 py-0.5 cursor-pointer hidden sm:block",children:A}),O.jsx(M8,{onExport:ve,disabled:a}),O.jsx("button",{onClick:ee,className:"p-1.5 rounded-lg opacity-45 hover:opacity-80 transition-opacity text-sm",title:"清空记录",children:"🗑"}),O.jsx("button",{onClick:()=>p(!0),style:{padding:"6px 12px",borderRadius:6,border:"1px solid var(--border-glow)",background:"var(--bg-card)",color:"var(--text)",cursor:"pointer",fontSize:13,fontWeight:600},title:"设置",children:"⚙ 设置"})]}),O.jsxs(O.Fragment,{children:[O.jsxs("div",{style:{display:"flex",gap:2,padding:"2px 6px",overflowX:"auto",background:"var(--bg-root)",borderBottom:"1px solid var(--border)",minHeight:30,alignItems:"flex-end"},children:[c.map(R=>{const $=ii.find(X=>X.id===R),J=n===R;return O.jsxs("button",{onClick:()=>W(R),style:{padding:"3px 8px",fontSize:11,fontWeight:J?700:500,borderRadius:"4px 4px 0 0",border:"none",cursor:"pointer",background:J?"var(--bg-card)":"transparent",color:J?"var(--text)":"var(--text-muted)",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:3,borderBottom:J?"2px solid var(--accent)":"2px solid transparent"},children:[($==null?void 0:$.name)||R,c.length>1&&O.jsx("span",{onClick:X=>{X.stopPropagation(),z(R)},style:{fontSize:9,opacity:.4},children:"x"})]},R)}),O.jsx("span",{style:{fontSize:9,color:"var(--text-muted)",padding:"3px 6px",flex:1,textAlign:"right"},children:"点击Agent加标签 | 各标签独立"})]}),O.jsxs("div",{className:"flex-1 overflow-y-auto relative",ref:G,onScroll:H,children:[a&&O.jsx("div",{className:"typing-progress sticky top-0 z-10 w-full"}),O.jsx(N8,{mode:n,messages:r,loading:a,onUndo:ne,onRegenerate:ce,onRetry:ge,onToggleLike:ae}),O.jsx("div",{ref:w}),U&&O.jsx("button",{onClick:()=>{C.current=!1,F(!0)},className:"sticky bottom-4 float-right z-30 w-9 h-9 rounded-full shadow-lg flex items-center justify-center text-sm transition-all hover:scale-110 mr-4",style:{background:"var(--bg-card)",border:"1px solid var(--border)",color:"var(--gold)"},title:"回到底部",children:"↓"})]}),O.jsx(j8,{agents:ii,active:n,onSelect:W}),O.jsx("div",{className:"motif-line mx-4"}),O.jsx(R8,{onSend:ge,onStop:()=>{var R;return(R=he.current)==null?void 0:R.abort()},loading:a,network:x})]})]}),b&&O.jsx(L8,{activeProvider:l,onSave:re,onClose:()=>p(!1)}),d&&!g&&O.jsx(S8,{onUnlock:()=>v(!0)}),d&&g&&O.jsx(A8,{onClose:()=>{h(!1),v(!1)}}),D&&O.jsxs(O.Fragment,{children:[O.jsx("div",{className:"modal-overlay fixed inset-0 z-40",onClick:()=>Y(!1)}),O.jsx("div",{className:"fixed inset-0 flex items-center justify-center z-50 p-4",style:{pointerEvents:"none"},children:O.jsxs("div",{className:"shortcut-panel modal-card p-5 w-full max-w-sm",style:{pointerEvents:"auto"},children:[O.jsx("h3",{className:"text-sm font-semibold mb-3",style:{color:"var(--brand)"},children:"⌨️ 快捷键"}),Z.map(R=>O.jsxs("div",{className:"shortcut-row",children:[O.jsx("span",{className:"text-xs",style:{color:"var(--text)"},children:R.desc}),O.jsx("span",{className:"shortcut-key",children:R.key})]},R.key)),O.jsx("button",{onClick:()=>Y(!1),className:"w-full mt-3 py-1.5 rounded-lg text-xs border transition-all opacity-40 hover:opacity-80",style:{borderColor:"var(--border)",color:"var(--text-secondary)"},children:"关闭"})]})})]}),q&&O.jsx("div",{className:`fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm shadow-lg pointer-events-none transition-all animate-fade-in ${q.type==="error"?"bg-red-500/90 text-white":q.type==="success"?"bg-green-500/90 text-white":"bg-white/10 backdrop-blur text-white/80 border border-white/10"}`,children:q.text})]}):O.jsx(q8,{onUnlock:()=>f(!0)})})}Il.createRoot(document.getElementById("director-studio-root")).render(O.jsx(cx.StrictMode,{children:O.jsx(Hb,{children:O.jsx(V8,{})})}));export{$8 as J,Us as _};
