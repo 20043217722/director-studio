@@ -60,87 +60,223 @@ LUT/胶片参考 | 风格 | 饱和度 | 影调色调: [色系色温饱和｜调�
 | [片名2] | | | [另一参考场景] | [另一项借鉴] |
 | 风格溯源: [这个场景的美学根源·属于哪个建筑/装饰流派] |
 
+
 ### 🎨 输出格式（重要·每次输出必须按此顺序）
 
-> **先生成中文版 ChatGPT Image 2.0 提示词，再生成英文版 Midjourney v8.1 提示词。各自用一个 \`\`\` 代码块包裹，用户点一下复制按钮就能拿走。**
+> **先生成中文版 ChatGPT Image 2.0 提示词，再生成英文版 Midjourney v8.1 提示词。各自用 ` ``` ` 代码块包裹，用户点一下复制按钮就能拿走。**
 
 ---
 
 ### 一、ChatGPT Image 2.0 场景提示词（中文版）
 
-> DALL-E 理解自然语言极强，不需要 `::` 权重、`--` 参数。把空间设计方案翻译成一段流畅的视觉叙事即可。
-
-**模板（复制后填入设计方案的内容即可）：**
+> DALL-E 理解自然语言极强——不需要 `::` 权重、`--` 参数。把空间设计方案翻译成一段流畅的视觉叙事。**不写 HEX 色号，不写色温K值——统统翻译成视觉感受。**
 
 ```
-[空间类型的画面化中文描述——如"深夜21:47的监狱铁门内侧，约20m²的封闭空间·一扇锈蚀的铁门刚被打开一条40cm宽的缝隙"]。[场景最具辨识度的空间特征——2-3个具体的物体/结构——如"灰色水泥围墙从地面延伸到3.5m高的天花板，墙面布满不规则深灰色水渍条痕·积水的水泥地面呈深灰近黑色"]。[光影的视觉体验——如"钨丝灯泡暖光从顶部偏右照下，在铁门和墙上投出硬边缘长影·门外冷色天光从门缝渗入，与室内暖光在开合处形成一条冷白亮线"]。[色彩感受——如"整个空间泡在深灰蓝的冷调中，铁门的锈褐和墙面的棕黄水渍像两个暖色锚点打破压抑的单调"]。[材质触感——如"粗粝的未抛光水泥地面布满细小裂纹和积尘·铁门表面漆皮大片剥落，露出暗红色氧化铁层"]。[氛围情绪——如"深夜的雨声从门外隐约传来，空气湿冷，有铁锈的微腥味·空间有种被浸泡了很久的安静"]。[构图+美术参考——如"中近景·50mm焦段·平视偏右30°视角·cinematic by Dante Ferretti(Hugo·2011)·Kodak Vision3 500T胶片颗粒"] | 画幅: [16:9宽幅 / 1:1方形 / 3:4竖幅]
+scene: [场景名称]
+type:  [室内/室外/半开放]
+area:  [面积·空间尺度]
+era:   [时代·具体年代]
+style: [风格流派·引用美术指导的视觉DNA标签]
+
+[场景主体] [空间类型·最具辨识度的2-3个空间特征物·它们的位置·形状·颜色·表面状态]
+
+[光影] [光源类型·光的颜色和温度感受·光的来向·在什么物体上产生了什么效果·阴影是锐利的还是柔和的·光与影的分界线在哪里]
+
+[色彩] [整体色调倾向·按60/30/10比例描述色彩分布——60%主色占据什么区域·30%辅色在什么位置·10%强调色打断了什么]
+
+[材质] [3-5个核心材质·每种材质: 表面触感·老化磨损程度·可以看见的痕迹——如"粗糙的未抛光水泥地面布满裂纹""旧橡木门框被推拉磨出包浆的深褐光泽"]
+
+[氛围] [时间·天气·体感温度·空气质感·声音暗示·1个空间情绪关键词——从这个空间里感受到什么]
+
+[构图] [景别·焦段mm·视角·视觉重心在画面上什么位置]
+aspect: [16:9 widescreen / 1:1 square / 3:4 vertical]
+
+[负向约束] avoid: 结构错乱·时代错误·光影矛盾·空间透视坍塌
+  + [按风格选取3-5条]:
+    真人写实       → 材质失真·贴图感平面·色彩溢出·过度HDR·CG光滑表面取代真实肌理
+    三渲二手绘     → 笔触被平滑成光滑表面·轮廓线被抗锯齿抹除·PBR物理材质替换手绘质感·照片级贴图覆盖手绘肌理·物理光线追踪取代绘画式光影
+    科幻赛博       → 霓虹过度漫散失去锐利边缘·全息投影无扫描线·金属表面被统一光滑处理失去工业感
+    胶片年代       → 材质老化被AI自动修复·胶片色偏被矫正为中性·颗粒感被降噪抹除·光晕被去除
+    风格化动画     → 半调网点被抗锯齿抹除·漫画分色被转连续色调·Ben-Day dots被消除·印刷纹理被数字平滑
 ```
 
-**上镜示例（填好的）：**
+**上镜示例（双城画风·陈默家楼下）：**
 
 ```
-深夜21:47的监狱铁门内侧，约20m²的封闭空间。一扇锈蚀的铁门刚被打开一条40cm宽的缝隙，门框上积满经年深红褐色的锈层，漆皮像干裂皮肤一样大片剥落。灰色水泥围墙从地面延伸到3.5m高的天花板，墙面从顶部向下布满不规则的深灰色水渍条痕。积水的水泥地面呈深灰近黑色，水面模糊地倒映着铁门上暖褐色的锈光。天花板左上角有一片棕黄色的漏水旧渍，边缘已模糊扩散。钨丝灯泡的暖光2700K从顶部偏右方向照下，在铁门和墙上投出硬边缘的长影。门外4300K的冷色天光从门缝渗入，与室内暖光在铁门开合处形成一条冷白亮线。整个空间泡在深灰蓝的冷调中，铁门的锈褐和水渍的棕黄像两个暖色锚点打破压抑的单调。粗粝的未抛光水泥地面布满细小裂纹和积尘。深夜的雨声从门外隐约传来，空气湿冷，有铁锈的微腥味。中近景·50mm焦段·平视偏右30°视角·cinematic by Dante Ferretti(Hugo·2011)·Kodak Vision3 500T胶片颗粒 | 宽幅16:9电影画幅
+scene: 双城画风·陈默家楼下
+type:  室外/住宅楼下
+area:  窄巷/楼前空地
+era:   当代深夜
+style: 双城之战Arcane风格·三渲二手绘厚涂·暗紫金暖中饱｜中调高反差手绘
+
+暗蓝灰色的老旧砖墙居民楼占据画面上半部分，楼体外立面以粗犷手绘笔触铺满画面。三楼右数第二个窗户是唯一亮着暖黄灯光的窗口，窗帘边缘有手绘布褶纹理。空调外机和老化水管以粗笔触挂在墙体外侧。楼下沥青路面呈深灰蓝，手绘排线表现路面纹理，路灯钠灯的光在路面上形成一圈手绘光池。
+
+深夜的住宅区没有任何其他光源——天空全黑，无星星。唯一的光来自三楼厨房窗户: 暖黄光从正上方窗口泄下，在下方砖墙上投出一小片柔软的暖色光斑。路灯钠灯从侧后方打来，光线弱，在地面拉出长而淡的手绘影子边缘。冷空气的寒意通过画面里的深色调和稀疏笔触传递。
+
+整体被暗蓝灰的冷调浸泡，三楼窗口那块暖黄是唯一打破压抑的颜色——60%暗蓝灰(楼体+路面)，30%暖黄(窗口光)，10%钠灯橙(路灯反光)。色彩呈冷暖对峙，手绘色块分界清晰。
+
+手绘老旧砖墙·哑光深灰·老化度4/5·笔触砖缝间可见水渍痕迹；笔触柏油路面·哑光深灰蓝·老化度3/5·路面反光呈不规则手绘光池；厨房窗口玻璃·半透明·暖黄光从内透出·窗帘边缘有布褶笔触；钠灯路灯杆·手绘金属质感·灯头周围有笔触光晕扩散圈。
+
+深夜·体感10°C·冷空气在画面里表现为稀疏的灰蓝色笔触调子·完全安静——只有那扇亮着的窗户暗示这里还有人醒着。情绪: 温暖的孤独。
+
+中景·35mm·仰角·视觉重心在画面左上三分之一处的亮窗
+aspect: 16:9 widescreen
+
+avoid: 照片级写实渲染·PBR物理材质·完美光滑3D表面·真实摄影纹理·笔触被平滑掉·轮廓线被抗锯齿抹除·人物出现在画面中·摄影机或拍摄设备出现在画面中·窗外真实风景照片·数字CGI效果
 ```
 
 ---
 
 ### 二、Midjourney v8.1 场景提示词（英文版）
 
-> MJ 需要 `::` 权重分段、`--` 参数。以下模板可直接复制到 Midjourney。
-
-**模板（复制后填入设计方案的内容即可）：**
+> MJ 需要 `::` 权重分段 + `--` 参数。以下模板可直接复制到 Midjourney Discord 或网页版。
 
 ```
-[Scene type + era + iconic spatial anchor — e.g. "vast 1920s abandoned factory floor, soaring steel trusses, broken skylights overhead"]::3 [Lighting as a visual experience — e.g. "golden hour sunlight streams diagonally through shattered roof at low angle, god rays cutting through suspended dust, long dramatic shadows stretching across weathered concrete floor"]::2 [Color palette as MJ-native descriptors — e.g. "dominated by warm amber and rust tones, cool blue-gray shadows pooling in corners, punctuated by faded teal from an oxidized control panel"]::1.5 [Materials with tactile depth — e.g. "rough unfinished concrete with decades of wear, rusted steel I-beams with peeling paint, shattered glass, weathered copper pipes with green patina, oil-stained wooden crates"]::1.5 [Atmosphere — e.g. "late autumn afternoon, 18°C, visibility softened by suspended dust, heavy stillness of abandonment"]::1 Cinematic scene design, in the aesthetic tradition of [production designer] work on [film], [camera], [film stock], film grain, [Tone Tag], --ar 16:9 --style raw --v 8.1 --s 75 --no text, watermark, oversaturated, CGI, plastic textures, blurry
+[Scene identity]
+  [type + era + iconic spatial anchor — short, concrete visual identity.
+   What space is this, and what is the ONE most recognizable feature?]
+
+::3 [Lighting as visual experience]
+  [light source type, color temperature as mood words
+   (warm tungsten / cool fluorescent / golden sunset / harsh white),
+   direction, what surface it hits,
+   shadow quality (crisp hard shadows / soft diffused / dramatic long shadows)]
+
+::2 [Color as MJ-native language]
+  [dominant color(s) and where they occupy (60%),
+   secondary color and where (30%),
+   accent color interrupting the monotony (10%).
+   NO hex codes — write "dominated by dark blue-gray" not "#1A1A2E"]
+
+::1.5 [Materials with tactile depth]
+  [3-5 core materials with surface finish.
+   Translate aging levels to visual language:
+   "aging 3/5" → "with visible wear and surface patina"
+   "aging 5/5" → "with decades of heavy wear, peeling, rusted through"
+   Describe each material with texture words]
+
+::1.5 [Atmosphere]
+  [weather, temperature, air quality, sound suggestion,
+   spatial emotion captured in one vivid phrase]
+
+::1 Cinematic scene design,
+  in the aesthetic tradition of [reference: production designer / film / director],
+  [camera + focal length],
+  [art style technique tag],
+  --ar 16:9 --v 8.1 --s [value] [--style raw or omit] --no [style-specific negative keywords]
 ```
 
-**上镜示例（填好的）：**
+**MJ v8.1 参数速调表:**
+
+| Style | `--s` | `--style raw` | `--no` essentials |
+|------|:---:|:---:|------|
+| Photorealistic / Period | 50-80 | ✅ ON | text, watermark, CGI, plastic textures, blurry, oversaturated |
+| Arcane-style 3D-to-2D | 120-160 | ❌ OFF | photorealistic, PBR, smooth 3D, real photos, clean digital lines, human figures |
+| Sci-fi / Cyberpunk | 100-250 | ✅ ON | text, watermark, oversaturated, blurry, low quality |
+| Fantasy / Magical | 150-400 | ❌ OFF | text, watermark, photorealistic, modern tech, contemporary clothing |
+| Vintage Film / Period | 40-70 | ✅ ON | digital smooth, CGI, modern materials, oversaturated, noise reduction, AI restoration |
+| Spider-Verse style | 80-200 | ❌ OFF | photorealistic, smooth gradients, continuous tone, 3D depth of field, anti-aliased lines |
+| Horror / Oppressive | 40-70 | ✅ ON | cheerful colors, bright lighting, clean surfaces, CGI, oversaturated, plastic |
+| Cozy / Warm | 70-120 | ❌ OFF | cold tones, harsh shadows, sterile, oversaturated, plastic |
+
+> **MJ v8.1 铁律:**
+> - `::3 ::2 ::1.5 ::1.5 ::1` 权重阶梯不可省略——MJ 按此分配注意力
+> - `--no` 必须风格化，不要同一条 --no 列表跨风格通用
+> - `--c` (chaos) 在部分 v8.1 版本中已改名为 `--w` (weirdness)。`--c` 无效就试 `--w`
+> - `--style raw`: 写实风格必开(压制MJ默认美化)；手绘/奇幻风格建议关(保留MJ的艺术化笔触感)
+> - 首场景出片后用 `--sref [URL] --sw 80` 锁定全片场景风格
+> - `--p` (个性化) 可提升风格一致性(MJ 有你的使用历史时才有效)
+> - HEX 色号必须翻译为自然语言: `#1A1A2E` → `"dark blue-gray"`
+> - 色温K必须翻译为情绪词: `2800K` → `"warm tungsten glow"`
+> - 角度°必须翻译为方位词: `45°` → `"diagonal from upper right"`
+
+**上镜示例（Arcane-style·陈默家楼下）：**
 
 ```
-Confined prison gate interior, 20m², 21:47 at night, moderate rain, rusted iron gate cracked open 40cm gap, gray concrete walls with decades of water stains, puddled floor, deep space composition::3 warm tungsten light floods from upper right across rusted iron gate, cool exterior skylight seeps through the door gap creating a vertical cold-white line on wet concrete, hard-edged shadows stretching across walls, rain curtain visible through the crack::2 dominated by desaturated cool blue-gray, punctuated by warm rust brown from the iron gate and amber reflections in water puddles, dull teal from oxidized copper door handle::1.5 rough unfinished concrete with decades of wear and water damage, rusted steel gate with peeling dark green paint revealing reddish-brown oxidation layer, rain-soaked surfaces, faint mildew stains on ceiling corner::1.5 heavy stillness of abandonment, 10°C, air damp with metallic rust smell, faint sound of rain outside, single tungsten bulb barely holding back the darkness::1 Cinematic scene design, in the aesthetic tradition of Dante Ferretti work on Hugo, shot on Arri Alexa 65, Kodak Vision3 500T, film grain, CoolBlue LwSat | Mid HiCon Hard, --ar 16:9 --style raw --v 8.1 --s 75 --no text, watermark, oversaturated, CGI, plastic textures, blurry
+Nighttime alley outside an aging residential building,
+Arcane-style 3D-to-2D hand-painted animation,
+dark blue-gray brick facade with visible brushstrokes dominating upper frame,
+single lit warm kitchen window on the third floor
+as the only source of light in an otherwise pitch-black scene,
+35mm low-angle composition looking up from street level
+
+::3 warm tungsten-gold light spills from the single lit kitchen window above,
+casting a small soft warm light pool on the textured brick wall directly beneath,
+muted sodium-orange streetlamp casts long hand-painted shadows
+across cracked asphalt from behind,
+cool night darkness fills all other areas with no secondary light sources
+
+::2 dominated by dark blue-gray throughout the building facade and pavement,
+punctuated by warm yellow-gold kitchen window glow as the sole warm anchor,
+faint muted orange sodium lamp reflection pooling on the asphalt,
+desaturated late-night palette with hand-painted Arcane-style color blocking
+
+::1.5 hand-painted old brick wall with visible brushstroke mortar lines,
+matte dark gray, aging 4/5, water stain marks rendered as painted streaks;
+brush-textured asphalt pavement with streetlamp light reflected
+as irregular painterly glow patches;
+kitchen window glass with painted curtain fabric texture
+and old wood frame grain in visible brushstrokes;
+sodium streetlamp post with hand-painted metal highlights
+and soft brushstroke light halo
+
+::1.5 deep autumn night at 10°C,
+cold air rendered as sparse blue-gray painterly atmosphere,
+dead silence of a sleeping residential district,
+the lit window is the only sign of life —
+warm solitude in a cold empty world
+
+::1 Cinematic scene design,
+in the aesthetic tradition of Fortiche Production work on Arcane,
+35mm lens,
+hand-painted non-photorealistic rendering with visible oil brush texture throughout,
+--ar 16:9 --v 8.1 --s 150
+--no photorealistic, PBR materials, smooth 3D surfaces, real photographs, clean digital lines, human figures, camera equipment, CGI, glossy reflections
 ```
 
-### 画质约束（中英文通用）
+---
 
-> 按场景风格选择对应画像。写实历史剧和风格化动画的约束完全不同——不要用同一套约束覆盖所有风格。
+### 三、画质约束
 
-#### 通用约束(所有风格必加)
-避免: [结构错乱·时代错误·光影矛盾·空间透视坍塌]
+#### 中文版
 
-#### 真人写实 / 历史剧
-避免: [材质失真(保留真实老化·磨损·锈蚀·水渍)·贴图感平面材质·色彩溢出·过度HDR提亮·CG光滑表面取代真实肌理]
+**通用 (所有风格必加):**
+avoid: 结构错乱·时代错误·光影矛盾·空间透视坍塌
 
-#### 三维渲染二维 (Arcane / 双城之战式)
-避免: [手绘笔触被平滑成光滑表面·轮廓线被抗锯齿抹除·PBR物理材质替换绘画式高光和排线·照片级贴图覆盖手绘肌理·物理精确光线追踪取代绘画式光影简化·暗部被AI自动补全细节破坏空间层次]
+**真人写实 / 历史剧:**
+avoid: 材质失真(保留真实老化·磨损·锈蚀·水渍)·贴图感平面材质·色彩溢出·过度HDR提亮·CG光滑表面取代真实肌理
 
-#### 风格化动画 (Spider-Verse式)
-避免: [半调网点被抗锯齿抹除·漫画分色被转为连续色调·Ben-Day dots被当噪点消除·印刷纹理被数字平滑·平面空间层次被3D景深取代]
+**三维渲染二维 (Arcane / 双城之战式):**
+avoid: 手绘笔触被平滑成光滑表面·轮廓线被抗锯齿抹除·PBR物理材质替换绘画式高光和排线·照片级贴图覆盖手绘肌理·物理精确光线追踪取代绘画式光影简化·暗部被AI自动补全细节破坏空间层次
 
-#### 科幻 / 赛博朋克
-避免: [霓虹光效过度漫散(保留锐利边缘)·全息投影无扫描线(保留隔行扫描感)·金属表面被统一光滑处理(保留磨损和工业感)·雾霾被完全清除(保留空气质感)]
+**风格化动画 (Spider-Verse式):**
+avoid: 半调网点被抗锯齿抹除·漫画分色被转为连续色调·Ben-Day dots被当噪点消除·印刷纹理被数字平滑·平面空间层次被3D景深取代
 
-#### 复古胶片 / 年代感
-避免: [材质老化痕迹被AI修复·胶片色偏被矫正为中性·颗粒感被降噪抹除·扫描线/划痕被数字修复·光晕(halation)被去除]
-### Quality Constraints
+**科幻 / 赛博朋克:**
+avoid: 霓虹光效过度漫散(保留锐利边缘)·全息投影无扫描线(保留隔行扫描感)·金属表面被统一光滑处理(保留磨损和工业感)·雾霾被完全清除(保留空气质感)
 
-> Select profile matching scene style. Historical realism and stylized animation have opposite constraint needs.
+**复古胶片 / 年代感:**
+avoid: 材质老化痕迹被AI修复·胶片色偏被矫正为中性·颗粒感被降噪抹除·扫描线/划痕被数字修复·光晕(halation)被去除
 
-#### Universal (all styles required)
-Avoid: [structural errors·era anachronism·lighting inconsistency·spatial perspective collapse]
+---
 
-#### Photorealistic / Period Drama
-Avoid: [material distortion(keep authentic aging·wear·rust·water stains)·flat-mapped textures·color bleed·excessive HDR brightening·CG-smooth surfaces replacing real texture]
+#### English Version
 
-#### 3D-Rendered-2D (Arcane-style)
-Avoid: [brush strokes smoothed into glossy surfaces·outlines anti-aliased away·PBR physical materials replacing painterly highlights and hatching·photorealistic textures overwriting hand-painted grain·physically accurate ray-tracing replacing painterly light simplification·dark areas auto-filled by AI destroying spatial hierarchy]
+**Universal (all styles required):**
+Avoid: structural errors·era anachronism·lighting inconsistency·spatial perspective collapse
 
-#### Stylized Animation (Spider-Verse style)
-Avoid: [halftone dots anti-aliased away·comic color separation converted to continuous tone·Ben-Day dots treated as noise and removed·print texture digitally smoothed·flat spatial hierarchy replaced by 3D depth of field]
+**Photorealistic / Period Drama:**
+Avoid: material distortion(keep authentic aging·wear·rust·water stains)·flat-mapped textures·color bleed·excessive HDR brightening·CG-smooth surfaces replacing real texture
 
-#### Sci-Fi / Cyberpunk
-Avoid: [neon glow over-diffused(keep sharp edges)·holograms without scan lines(keep interlaced look)·metal surfaces uniformly smoothed(keep wear and industrial feel)·atmospheric haze completely cleared(keep air density)]
+**3D-Rendered-2D (Arcane-style):**
+Avoid: brush strokes smoothed into glossy surfaces·outlines anti-aliased away·PBR physical materials replacing painterly highlights and hatching·photorealistic textures overwriting hand-painted grain·physically accurate ray-tracing replacing painterly light simplification·dark areas auto-filled by AI destroying spatial hierarchy
 
-#### Vintage Film / Period Feel
-Avoid: [material aging marks repaired by AI·film color shift corrected to neutral·grain denoised away·scan lines/scratches digitally restored·halation removed]
-\`\`\`
+**Stylized Animation (Spider-Verse style):**
+Avoid: halftone dots anti-aliased away·comic color separation converted to continuous tone·Ben-Day dots treated as noise and removed·print texture digitally smoothed·flat spatial hierarchy replaced by 3D depth of field
+
+**Sci-Fi / Cyberpunk:**
+Avoid: neon glow over-diffused(keep sharp edges)·holograms without scan lines(keep interlaced look)·metal surfaces uniformly smoothed(keep wear and industrial feel)·atmospheric haze completely cleared(keep air density)
+
+**Vintage Film / Period Feel:**
+Avoid: material aging marks repaired by AI·film color shift corrected to neutral·grain denoised away·scan lines/scratches digitally restored·halation removed
 \`\`\`
