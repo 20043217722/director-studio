@@ -60,22 +60,19 @@ LUT/胶片参考 | 风格 | 饱和度 | 影调色调: [色系色温饱和｜调�
 | [片名2] | | | [另一参考场景] | [另一项借鉴] |
 | 风格溯源: [这个场景的美学根源·属于哪个建筑/装饰流派] |
 
-### 生图提示词（中文·直喂可灵/即梦/Seedance场景模式）
+### 生图提示词（中文·ChatGPT Image 2.0）
 
 > **翻译哲学：** 参考 MJ 版的思路——把参数表翻译成"你看见的画面"。不写 HEX、不写色温K、不写角度°、不写方括号占位符。用自然语言描述视觉体验——就像你在给一个没看过现场的同事讲这个空间长什么样。
 
 **通用版（可直接粘贴）：**
 [空间类型的画面化描述——如"1920年代废弃工厂车间·挑高12m的钢桁架结构·破碎的天窗"]。[场景最具辨识度的空间特征——2-3个具体的物体/结构，如"左侧的锈蚀铁梯从地面螺旋升至二层平台，平台扶手已扭曲变形"]。[光影的视觉体验——如"黄昏的金光从破碎屋顶45°斜射进来，穿过悬在空中的粉尘粒子形成光柱，在地面的积水坑上投下长方形的亮区"]。[色彩感受——如"整个空间被暖琥珀和锈褐色浸泡，角落的阴影泛着冷灰蓝，被一只氧化成铜绿色的旧控制面板打断"]。[材质触感——如"粗糙的未抛光水泥地面布满裂纹和油渍，锈蚀的钢梁上油漆大片剥落露出暗红的锈层，墙面上的铜水管表面已长出灰绿色的铜锈包浆"]。[氛围情绪——如"深秋的下午·体感18°C·空气因悬浮粉尘而能见度降低·空间里有种被遗弃后沉重的寂静"]。[构图——景别·焦段·视角] | 情绪基调: [从空间情绪三层次提炼的1-2个关键词·如"压抑的沉默中透着残存的光"] | 影调色调: [色系色温饱和｜调性反差光质·光位]（中）·cinematic by [参考美术指导(导演·年份)]
 
-**可灵专用版（偏文学性/电影感描述）：**
-[与通用版相同结构，但措辞更偏向电影感叙事——多用"光线在...上雕刻出..."、"空气里有...的味道"、"时间在这个空间里留下了..."等具身体验式描述]
 
-**即梦专用版（主体清晰/空间明确）：**
-[空间类型+具体物体罗列先于氛围——如"这是一间1920年代废弃工厂·挑高12m·左侧是锈蚀铁梯·右侧是倒塌的木箱堆"——再跟光影+色彩+材质+氛围]
+**ChatGPT Image 2.0 专用版（英文·直接粘贴到ChatGPT对话框）：**
+[场景的完整自然语言英文描述——不分段、不加标记、不写技术参数。把空间类型·时代·风格·光影·色彩·材质·氛围·构图整合为一个流畅的英文段落。DALL-E对自然语言理解极强，不需要像MJ那样用::权重和--参数。用"你看到的画面"的语言描述——如"a photorealistic wide shot of a prison gate interior at 21:47, rain outside, rusted iron gate cracked open, gray concrete walls with water stains..."。在描述末尾自然地提到画幅比——如"wide 16:9 cinematic format"或"square composition"]
 
-**Seedance场景模式专用版（前景/中景/后景分述）：**
-前景: [距画面最近的物体·2-3个·材质·颜色·光影状态] | 中景: [空间的主体结构·2-3个·材质·颜色·光影焦点] | 后景: [空间边界·深度延伸·1-2个视觉终点] | 整体光影+氛围+情绪基调
-
+**ChatGPT Image 2.0 专用版（中文·更适合向ChatGPT描述中文场景）：**
+[场景的完整自然语言中文描述——与英文版相同的完整叙事结构，但用中文写。DALL-E能理解中文提示词，但摄影/电影术语保留英文更精确——如"cinematic composition"、"Kodak Vision3 film grain"、"Arri Alexa 65"。画幅比用中文描述——如"宽幅16:9电影画幅"或"方形构图"]
 ### 画质约束
 
 > 按场景风格选择对应画像。写实历史剧和风格化动画的约束完全不同——不要用同一套约束覆盖所有风格。
@@ -140,13 +137,13 @@ Spatial Emotion: [what does this space make you feel·why——1 sentence explan
 #### 单场景 MJ 提示词模板（紧凑·加权·可直接复制）
 
 \`\`\`
-[Scene type + era + iconic spatial anchor — e.g. "vast 1920s abandoned factory floor, soaring steel trusses, broken skylights overhead"]::3 [Lighting as a visual experience — e.g. "golden hour sunlight streams diagonally through shattered roof at 45-degree angle, god rays cutting through suspended dust, long dramatic shadows stretching across weathered concrete floor"]::2 [Color palette as MJ-native descriptors — e.g. "dominated by warm amber and rust tones, cool blue-gray shadows pooling in corners, punctuated by faded teal from an oxidized control panel"]::1.5 [Materials with tactile depth — e.g. "rough unfinished concrete with decades of wear, rusted steel I-beams with peeling paint, shattered glass, weathered copper pipes with green patina, oil-stained wooden crates"]::1.5 [Atmosphere — e.g. "late autumn afternoon, 18°C, visibility softened by suspended dust, heavy stillness of abandonment"]::1 Cinematic scene design, in the aesthetic tradition of [production designer]'s work on [film], [camera reference], [film stock], film grain, [Tone Tag], --ar 16:9 --style raw --v 6.1 --s 50 --no text, watermark, oversaturated, CGI, plastic textures, blurry
+[Scene type + era + iconic spatial anchor — e.g. "vast 1920s abandoned factory floor, soaring steel trusses, broken skylights overhead"]::3 [Lighting as a visual experience — e.g. "golden hour sunlight streams diagonally through shattered roof at 45-degree angle, god rays cutting through suspended dust, long dramatic shadows stretching across weathered concrete floor"]::2 [Color palette as MJ-native descriptors — e.g. "dominated by warm amber and rust tones, cool blue-gray shadows pooling in corners, punctuated by faded teal from an oxidized control panel"]::1.5 [Materials with tactile depth — e.g. "rough unfinished concrete with decades of wear, rusted steel I-beams with peeling paint, shattered glass, weathered copper pipes with green patina, oil-stained wooden crates"]::1.5 [Atmosphere — e.g. "late autumn afternoon, 18°C, visibility softened by suspended dust, heavy stillness of abandonment"]::1 Cinematic scene design, in the aesthetic tradition of [production designer]'s work on [film], [camera reference], [film stock], film grain, [Tone Tag], --ar 16:9 --style raw --v 8.1 --s 75 --no text, watermark, oversaturated, CGI, plastic textures, blurry
 \`\`\`
 
 #### 上镜示例（填好的场景设计提示词）
 
 \`\`\`
-Vast abandoned 1920s factory floor, soaring steel trusses with riveted joints, broken skylights overhead, deep space composition::3 golden hour sunlight streams diagonally through shattered roof panels at a low angle, god rays cutting through suspended dust particles, long dramatic shadows stretching across weathered concrete floor::2 dominated by warm amber and rust tones, cool blue-gray shadows pooling in corners, punctuated by faded teal from an oxidized control panel::1.5 rough unfinished concrete with decades of wear, rusted steel I-beams with peeling paint, shattered safety glass fragments, weathered copper pipes with green patina, oil-stained wooden crates::1.5 late autumn afternoon, 18°C, visibility softened by suspended dust particles, heavy stillness of abandonment::1 Cinematic scene design, in the aesthetic tradition of Dante Ferretti's work on Hugo, shot on Arri Alexa 65, Kodak Vision3 500T, film grain, atmospheric haze --ar 16:9 --style raw --v 6.1 --s 50 --no text, watermark, oversaturated, CGI, plastic textures, blurry
+Vast abandoned 1920s factory floor, soaring steel trusses with riveted joints, broken skylights overhead, deep space composition::3 golden hour sunlight streams diagonally through shattered roof panels at a low angle, god rays cutting through suspended dust particles, long dramatic shadows stretching across weathered concrete floor::2 dominated by warm amber and rust tones, cool blue-gray shadows pooling in corners, punctuated by faded teal from an oxidized control panel::1.5 rough unfinished concrete with decades of wear, rusted steel I-beams with peeling paint, shattered safety glass fragments, weathered copper pipes with green patina, oil-stained wooden crates::1.5 late autumn afternoon, 18°C, visibility softened by suspended dust particles, heavy stillness of abandonment::1 Cinematic scene design, in the aesthetic tradition of Dante Ferretti's work on Hugo, shot on Arri Alexa 65, Kodak Vision3 500T, film grain, atmospheric haze --ar 16:9 --style raw --v 8.1 --s 75 --no text, watermark, oversaturated, CGI, plastic textures, blurry
 \`\`\`
 
 #### 🏗️ MJ 场景提示词解剖
@@ -164,14 +161,17 @@ Vast abandoned 1920s factory floor, soaring steel trusses with riveted joints, b
 
 | 场景类型 | `--s` | `--c` | `--style raw` | 说明 |
 |----------|:---:|:---:|:---:|------|
-| 写实室内/室外 | 40-50 | 3-5 | ✅ 必开 | 真实材质和自然光 |
-| 历史建筑/年代 | 30-50 | 3-5 | ✅ 必开 | 年代准确性优先 |
-| 科幻/未来 | 60-100 | 10-20 | ✅ 必开 | 允许更多细节和想象 |
-| 奇幻/魔法 | 80-150 | 8-15 | ❌ 建议关 | MJ 默认美化适合奇幻 |
-| 恐怖/压抑 | 30-50 | 5-10 | ✅ 必开 | 保持粗粝真实感 |
-| 温馨/治愈 | 50-80 | 3-8 | ❌ 可选关 | 保留柔和质感 |
-| 赛博朋克/霓虹 | 70-120 | 15-25 | ✅ 半开 | 高细节密度需要更多 chaos |
-| 废土/末日 | 40-60 | 5-10 | ✅ 必开 | 材质真实感至关重要 |
+| 写实室内/室外 | 50-80 | 3-5 | ✅ 必开 | 真实材质和自然光 |
+| 历史建筑/年代 | 40-70 | 3-5 | ✅ 必开 | 年代准确性优先 |
+| 科幻/未来 | 100-250 | 10-20 | ✅ 必开 | 允许更多细节和想象 |
+| 奇幻/魔法 | 150-400 | 8-15 | ❌ 建议关 | MJ 默认美化适合奇幻 |
+| 恐怖/压抑 | 40-70 | 5-10 | ✅ 必开 | 保持粗粝真实感 |
+| 温馨/治愈 | 70-120 | 3-8 | ❌ 可选关 | 保留柔和质感 |
+| 赛博朋克/霓虹 | 120-300 | 15-25 | ✅ 半开 | 高细节密度需要更多 chaos |
+| 废土/末日 | 50-80 | 5-10 | ✅ 必开 | 材质真实感至关重要 |
+
+> **v8.1 参数说明：** `--s` 值较 v6.1 整体上调——v8.1 的风格化引擎在低值下过于保守。`--c` 参数在 v8.1 中仍可用，但部分版本中已重命名为 `--w`（weirdness），两者作用相同。`--style raw` 和 `::` 权重系统在 v8.1 中完全兼容。
+> **v8.1 新增特性：** `--p` 个性化参数（基于用户画像）可提高场景风格一致性。`--sref` 和 `--cref` 的稳定性较 v6.1 大幅提升，推荐在所有写实类场景中优先使用。
 
 > **MJ 场景提示词铁律 (v2.0)**
 > - **`::3 ::2 ::1.5 ::1.5 ::1` 权重阶梯:** 空间 > 光影 > 色彩=材质 > 氛围。MJ 按此优先级分配注意力。
