@@ -3436,7 +3436,49 @@ Tone Tag: [从美术指导继承·格式: 色系色温饱和｜调性反差光�
 摄影师风格: [Christopher Doyle·手持呼吸感·自然光不打灯·褪色油画质感 / Roger Deakins·对称构图·精确布光·暗部密度 / 杜可风·王家卫式去饱和·霓虹色溢 / 曹郁·妖猫传暗部密度·灯笼暖色层次 / Robert Richardson·顶光·高对比·硬影]
 画幅: [2.39:1 anamorphic widescreen / 1.85:1 spherical widescreen / 1.66:1 European widescreen / 16:9]
 视觉风格: [film print look·not digital cinema look / photorealistic film still / painterly desaturation / high contrast chiaroscuro]
-Tone Tag: [从美术指导继承·格式: 色系色温饱和｜调性反差光质·光位]\r
+Tone Tag: [从美术指导继承·格
+
+
+
+### 🎨 色卡参考锁定（从美术指导继承·每段强制重复）
+
+@[色卡hash]作为整段画面色卡锚定·所有色彩严格按色卡执行:
+  主光·[色名]: [#HEX](光源色·打在什么物体上·色温K)
+  阴影·[色名]: [#HEX](暗面色·占据什么区域)
+  强调·[色名]: [#HEX](视觉焦点·打断画面的什么位置)
+
+锁定策略: 每个时间段的色彩锁中强制重复标注以上色值。
+漂移规律: [暖色→品红(灯笼旁禁纯红) | 冷色→青绿(每3段重标) | 白蓝→纯白(最亮处保蓝底)]
+
+
+### 🔗 @引用声明
+
+@A1: [角色名] | [定妆照hash] | 外貌锚点: [3-5个面部特征·逐字复用]
+@A2: [道具/武器名] | [参考图hash] | 形制: [尺寸·材质·颜色·纹理]
+@B1: [场景名] | [场景图hash] | 空间锚点: [从场景设计智能体继承]
+@B2: [同上·按需添加]
+
+
+### 🎬 导演手法简注
+
+类型: [武侠动作 / 当代写实 / 科幻 / 悬疑 / ...]
+主参照: [导演·影片·年份] — [借鉴的运镜/拍摄手法]
+辅参照: [导演·影片] — [借鉴的画面美学/构图/色调]
+
+
+### ⚡ 物理规律（仅本场景涉及·精简）
+
+材质: [仅列出本场景出现的材质·每种1句话描述视觉行为]
+粒子: [如有: 烟尘/能量粒子/水滴·上升速度·消散时间]
+光: [如有: 灯笼/能量光/闪电/自然光·色温·衰减规律]
+
+
+### 📐 站位与空间权力（仅本场景关键对峙）
+
+[角色A] vs [角色B]:
+  位置: [角色A: 何处·朝向·高度] vs [角色B: 何处·朝向·高度]
+  权力: [谁在支配这个空间·1句话——参照: 奉俊昊垂直隐喻 / John Wick战术位置 等]
+
 ### 一、设备选择（本镜变化部分）\r
 帧率: [24fps / 60fps] | 风格: [真人写实/超真实CGI·3D动画/2D手绘/三渲二Arcane式/赛博朋克/...]\r
 视觉锚点: [本镜最具辨识度的视觉元素·Seedance将其作为跨帧风格锁定的参照物]\r
@@ -3450,9 +3492,11 @@ Tone Tag: [从美术指导继承·格式: 色系色温饱和｜调性反差光�
 画面: [动作描述+运镜+光影+色彩+特效+空间·一段连续的自然语言·前景/主体/陪体/背景融合为一句]\r
 人物: [角色名] — 表情: [面部肌肉动作] | 情绪: [状态] | 强度: X/10 | [可选: 过渡曲线(秒数)]\r
 [可选: 动量链·仅当上一段结尾在运动中且本段开头是同一动作延续时标注]\r
-声音: [环境音·持续] + [动作音效·精确时刻] + [台词·语气标注]\r
+声音: [环境音·持续] + [动作音效·精确时刻] + [台词·语气标注·时刻] + [台词·语气标注]\r
 色彩锁: [从色卡中选取本段涉及的色值·标注 #HEX]\r
-负面: [本段特有的负面约束·3-5条]\r
+负面: [本段特有的负面约束·3-5条]
++ 视觉桥: [出点·上一段末帧状态] → [入点·本段首帧状态]·[共同视觉元素]
++ 物理: [主撞击·对象+效果] + [二次撞击·对象+效果·可选]\r
 \r
 ── [起始秒-结束秒] ──\r
 场景: @B? | 运镜: [同上格式]\r
@@ -4516,5 +4560,5 @@ ${u}`:u}async function y8(e){return"(PPT 文件暂不支持直接文本提取，
 `).trim(),Xe=V.length>0?6:20,Xn=S.current.map(Vt=>({role:Vt.role,text:Fe(Vt.text)})).slice(-Xe),vn=new AbortController;he.current=vn;let Xt="",qt=0;const Gr=60;for await(const Vt of Vw(j||"请分析附件",n,{apiKey:X[l],provider:l,imageBase64s:V,imageMimes:te,history:Xn,customEndpoint:we.endpoint||"",customModel:we.model||"",signal:vn.signal})){if(vn.signal.aborted)break;Xt+=Vt;const Kr=Date.now();Kr-qt>=Gr&&(qt=Kr,i(qb=>qb.map($c=>$c.id===ye.id?{...$c,text:Xt}:$c)))}Xt||(Xt="(对方未返回内容，请重试)");const Xb=t3(Xt);i(Vt=>Vt.map(Kr=>Kr.id===ye.id?{...Kr,text:Xb,streaming:!1}:Kr))}catch(we){const Fe=we instanceof Error?we.message:String(we),Xe=((Te=ye.text)==null?void 0:Te.length)>0;Fe==="ABORTED"||(Ht=(en=he.current)==null?void 0:en.signal)!=null&&Ht.aborted?i(Xn=>Xn.map(vn=>vn.id===ye.id?{...vn,text:vn.text+(Xe?`
 
 ---
-*[已停止]*`:"*[已取消]*"),error:!1,streaming:!1,retryText:R,retryFiles:J}:vn)):i(Xn=>Xn.map(vn=>vn.id===ye.id?{...vn,text:Xe?vn.text:`❌ ${Fe}`,error:!Xe,partial:Xe,streaming:!1,retryText:R,retryFiles:J}:vn))}finally{o(!1),he.current=null,L.current=!1}},[n,l,x]),ve=ue.useCallback(async R=>{var X;const J=[...S.current].reverse().find(N=>N.role==="assistant"&&!N.error);if(!J){I("没有可导出的内容","error");return}try{const N=((X=ii.find(j=>j.id===n))==null?void 0:X.name)||"导出";if(R==="docx"){const{generateDocxBlob:j}=await Us(async()=>{const{generateDocxBlob:V}=await import("./export-CMYgCpi5.js");return{generateDocxBlob:V}},[],import.meta.url);K(await j(N,J.text),"docx")}else{const{generatePptxBlob:j}=await Us(async()=>{const{generatePptxBlob:V}=await import("./export-CMYgCpi5.js");return{generatePptxBlob:V}},[],import.meta.url);K(await j(N,J.text),"pptx")}I(`已导出为 ${R.toUpperCase()}`,"success")}catch(N){I("导出失败: "+(N instanceof Error?N.message:String(N)),"error")}},[n]);function K(R,$){var V,te;const J=`${((V=ii.find(se=>se.id===n))==null?void 0:V.name)||"导出"}_${Date.now()}.${$}`;if((te=window.electronAPI)!=null&&te.saveFile){const se=new FileReader;se.onload=()=>{const le=Array.from(new Uint8Array(se.result));window.electronAPI.saveFile({title:J.replace(/\.[^.]+$/,""),buffer:le,ext:$})},se.readAsArrayBuffer(R);return}const X=URL.createObjectURL(R);if(/iPad|iPhone|iPod/.test(navigator.userAgent)||navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1){window.open(X,"_blank")||alert(`请允许弹窗后重试，或复制链接打开：
+*[已停止]*`:"*[已取消]*"),error:!1,streaming:!1,retryText:R,retryFiles:J}:vn)):i(Xn=>Xn.map(vn=>vn.id===ye.id?{...vn,text:Xe?vn.text:`❌ ${Fe}`,error:!Xe,partial:Xe,streaming:!1,retryText:R,retryFiles:J}:vn))}finally{o(!1),he.current=null,L.current=!1}},[n,l,x]),ve=ue.useCallback(async R=>{var X;const J=[...S.current].reverse().find(N=>N.role==="assistant"&&!N.error);if(!J){I("没有可导出的内容","error");return}try{const N=((X=ii.find(j=>j.id===n))==null?void 0:X.name)||"导出";if(R==="docx"){const{generateDocxBlob:j}=await Us(async()=>{const{generateDocxBlob:V}=await import("./export-BtxrZSxm.js");return{generateDocxBlob:V}},[],import.meta.url);K(await j(N,J.text),"docx")}else{const{generatePptxBlob:j}=await Us(async()=>{const{generatePptxBlob:V}=await import("./export-BtxrZSxm.js");return{generatePptxBlob:V}},[],import.meta.url);K(await j(N,J.text),"pptx")}I(`已导出为 ${R.toUpperCase()}`,"success")}catch(N){I("导出失败: "+(N instanceof Error?N.message:String(N)),"error")}},[n]);function K(R,$){var V,te;const J=`${((V=ii.find(se=>se.id===n))==null?void 0:V.name)||"导出"}_${Date.now()}.${$}`;if((te=window.electronAPI)!=null&&te.saveFile){const se=new FileReader;se.onload=()=>{const le=Array.from(new Uint8Array(se.result));window.electronAPI.saveFile({title:J.replace(/\.[^.]+$/,""),buffer:le,ext:$})},se.readAsArrayBuffer(R);return}const X=URL.createObjectURL(R);if(/iPad|iPhone|iPod/.test(navigator.userAgent)||navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1){window.open(X,"_blank")||alert(`请允许弹窗后重试，或复制链接打开：
 `+X),setTimeout(()=>URL.revokeObjectURL(X),3e4);return}const j=document.createElement("a");j.href=X,j.download=J,document.body.appendChild(j),j.click(),document.body.removeChild(j),setTimeout(()=>URL.revokeObjectURL(X),5e3)}function re({provider:R,keys:$}){var J;y(R),$[R]&&(p(!1),I(`已切换到 ${((J=Zn[R])==null?void 0:J.name)||R}`,"success"))}const[D,Y]=ue.useState(!1);ue.useEffect(()=>{const R=$=>{$.target.tagName==="INPUT"||$.target.tagName==="TEXTAREA"||$.key==="?"&&!$.ctrlKey&&!$.metaKey&&($.preventDefault(),Y(J=>!J))};return window.addEventListener("keydown",R),()=>window.removeEventListener("keydown",R)},[]);const Z=[{key:"Enter",desc:"发送消息"},{key:"Shift+Enter",desc:"换行"},{key:"Space",desc:"暂停/继续生成"},{key:"Ctrl+N",desc:"新建会话"},{key:"Ctrl+1-8",desc:"切换智能体 1-8"},{key:"Ctrl+E",desc:"导出"},{key:"Ctrl+,",desc:"打开设置"},{key:"?",desc:"显示/隐藏此面板"}],B=ii.find(R=>R.id===n),k=Zn[l];return O.jsx(Hb,{children:m?O.jsxs("div",{className:"flex overflow-hidden",style:{position:"fixed",inset:0,background:"var(--bg-root)"},children:[T&&O.jsx("div",{className:"fixed inset-0 bg-black/40 z-20 lg:hidden",onClick:()=>E(!1)}),O.jsx("div",{className:`sidebar fixed lg:relative z-30 h-full transition-transform duration-250 ${T?"translate-x-0":"-translate-x-full lg:translate-x-0"}`,children:O.jsx(A8,{agents:ii,active:n,onSelect:R=>{W(R),E(!1)},onClose:()=>E(!1)})}),O.jsxs("div",{className:"flex-1 flex flex-col min-w-0",children:[O.jsxs("header",{className:"app-header flex items-center px-3 gap-2 shrink-0",children:[O.jsx("button",{onClick:()=>E(!0),className:"lg:hidden p-1 text-lg opacity-60 hover:opacity-100",children:"☰"}),O.jsx(Yh,{id:B==null?void 0:B.id,active:!0}),O.jsx("span",{className:"sidebar-brand text-sm hidden sm:inline",style:{color:"var(--gold)",fontWeight:700,letterSpacing:"0.02em"},children:B==null?void 0:B.name}),O.jsx("span",{className:"hidden md:inline text-xs opacity-55 truncate",children:B==null?void 0:B.desc}),O.jsx("div",{className:"flex-1"}),O.jsx(P8,{}),O.jsx("span",{className:"provider-badge hidden sm:inline ml-2",style:{fontWeight:600,fontSize:11},children:(k==null?void 0:k.name)||l}),O.jsx("span",{className:`net-dot shrink-0 ${x==="online"?"online":"offline"}`,title:x==="online"?"在线":"离线"}),C&&O.jsx("button",{onClick:de,className:"update-badge px-2 py-0.5 cursor-pointer hidden sm:block",children:C}),O.jsx(M8,{onExport:ve,disabled:a}),O.jsx("button",{onClick:ee,className:"p-1.5 rounded-lg opacity-45 hover:opacity-80 transition-opacity text-sm",title:"清空记录",children:"🗑"}),O.jsx("button",{onClick:()=>p(!0),style:{padding:"6px 12px",borderRadius:6,border:"1px solid var(--border-glow)",background:"var(--bg-card)",color:"var(--text)",cursor:"pointer",fontSize:13,fontWeight:600},title:"设置",children:"⚙ 设置"})]}),O.jsxs(O.Fragment,{children:[O.jsxs("div",{style:{display:"flex",gap:2,padding:"2px 6px",overflowX:"auto",background:"var(--bg-root)",borderBottom:"1px solid var(--border)",minHeight:30,alignItems:"flex-end"},children:[c.map(R=>{const $=ii.find(X=>X.id===R),J=n===R;return O.jsxs("button",{onClick:()=>W(R),style:{padding:"3px 8px",fontSize:11,fontWeight:J?700:500,borderRadius:"4px 4px 0 0",border:"none",cursor:"pointer",background:J?"var(--bg-card)":"transparent",color:J?"var(--text)":"var(--text-muted)",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:3,borderBottom:J?"2px solid var(--accent)":"2px solid transparent"},children:[($==null?void 0:$.name)||R,c.length>1&&O.jsx("span",{onClick:X=>{X.stopPropagation(),z(R)},style:{fontSize:9,opacity:.4},children:"x"})]},R)}),O.jsx("span",{style:{fontSize:9,color:"var(--text-muted)",padding:"3px 6px",flex:1,textAlign:"right"},children:"点击Agent加标签 | 各标签独立"})]}),O.jsxs("div",{className:"flex-1 overflow-y-auto relative",ref:G,onScroll:H,children:[a&&O.jsx("div",{className:"typing-progress sticky top-0 z-10 w-full"}),O.jsx(N8,{mode:n,messages:r,loading:a,onUndo:ne,onRegenerate:ce,onRetry:ge,onToggleLike:ae}),O.jsx("div",{ref:w}),U&&O.jsx("button",{onClick:()=>{A.current=!1,F(!0)},className:"sticky bottom-4 float-right z-30 w-9 h-9 rounded-full shadow-lg flex items-center justify-center text-sm transition-all hover:scale-110 mr-4",style:{background:"var(--bg-card)",border:"1px solid var(--border)",color:"var(--gold)"},title:"回到底部",children:"↓"})]}),O.jsx(j8,{agents:ii,active:n,onSelect:W}),O.jsx("div",{className:"motif-line mx-4"}),O.jsx(R8,{onSend:ge,onStop:()=>{var R;return(R=he.current)==null?void 0:R.abort()},loading:a,network:x})]})]}),b&&O.jsx(L8,{activeProvider:l,onSave:re,onClose:()=>p(!1)}),d&&!g&&O.jsx(S8,{onUnlock:()=>v(!0)}),d&&g&&O.jsx(C8,{onClose:()=>{h(!1),v(!1)}}),D&&O.jsxs(O.Fragment,{children:[O.jsx("div",{className:"modal-overlay fixed inset-0 z-40",onClick:()=>Y(!1)}),O.jsx("div",{className:"fixed inset-0 flex items-center justify-center z-50 p-4",style:{pointerEvents:"none"},children:O.jsxs("div",{className:"shortcut-panel modal-card p-5 w-full max-w-sm",style:{pointerEvents:"auto"},children:[O.jsx("h3",{className:"text-sm font-semibold mb-3",style:{color:"var(--brand)"},children:"⌨️ 快捷键"}),Z.map(R=>O.jsxs("div",{className:"shortcut-row",children:[O.jsx("span",{className:"text-xs",style:{color:"var(--text)"},children:R.desc}),O.jsx("span",{className:"shortcut-key",children:R.key})]},R.key)),O.jsx("button",{onClick:()=>Y(!1),className:"w-full mt-3 py-1.5 rounded-lg text-xs border transition-all opacity-40 hover:opacity-80",style:{borderColor:"var(--border)",color:"var(--text-secondary)"},children:"关闭"})]})})]}),q&&O.jsx("div",{className:`fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm shadow-lg pointer-events-none transition-all animate-fade-in ${q.type==="error"?"bg-red-500/90 text-white":q.type==="success"?"bg-green-500/90 text-white":"bg-white/10 backdrop-blur text-white/80 border border-white/10"}`,children:q.text})]}):O.jsx(q8,{onUnlock:()=>f(!0)})})}Il.createRoot(document.getElementById("director-studio-root")).render(O.jsx(cx.StrictMode,{children:O.jsx(Hb,{children:O.jsx(V8,{})})}));export{$8 as J,Us as _};
