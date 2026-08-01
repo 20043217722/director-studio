@@ -205,7 +205,19 @@ Tone Tag: [从美术指导继承·格式: 色系色温饱和｜调性反差光�
 
 ## 视频运动提示词（中文版·Seedance 2.0 / 可灵 O3）
 
-> ⚠️ **输出时必须先写 [STYLE LOCK] 块，再写分镜内容。将上方「### [STYLE LOCK·全片统一]」章节的完整 STYLE LOCK 内容复制到输出代码块开头。**
+
+### [STYLE LOCK·全片统一]
+
+> **从上游继承或用户指定。全片所有镜头共享此锁，不逐镜重复。**
+
+摄影机: [ARRI Alexa 65 / Sony Venice 2 / RED V-RAPTOR XL / ARRI Alexa Mini LF]
+镜头: [Panavision anamorphic·变形宽银幕 / Zeiss Supreme Prime·球面 / Cooke S8/i·球面]
+胶片: [Kodak Vision3 500T / Kodak Vision3 250D / Sony S-Gamut3.Cine / ARRI Reveal]
+摄影师: [Christopher Doyle·手持呼吸感 / Roger Deakins·精确布光 / 杜可风·王家卫去饱和]
+画幅: [2.39:1 anamorphic widescreen / 1.85:1 spherical / 16:9]
+视觉风格: [film print look·not digital cinema look / photorealistic / painterly desaturation]
+Tone Tag: [从美术指导继承·格式: 色系色温饱和｜调性反差光质·光位]
+
 
 ### 一、设备选择（本镜变化部分）
 帧率: [24fps / 60fps] | 风格: [真人写实/超真实CGI·3D动画/2D手绘/三渲二Arcane式/赛博朋克/...]
