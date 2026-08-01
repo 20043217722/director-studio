@@ -112,14 +112,31 @@
 
 先输出中文版整个内容框，再输出英文版整个内容框：
 
+---
+
+### [STYLE LOCK·全片统一]
+
+> **从上游继承或用户指定。每镜共享此锁，不逐镜重复。**
+
+摄影机: [ARRI Alexa 65 / Sony Venice 2 / RED V-RAPTOR XL / ARRI Alexa Mini LF / Canon C700 FF]
+镜头: [Panavision anamorphic·变形宽银幕 / Zeiss Supreme Prime·球面 / Cooke S8/i·球面]
+胶片参考: [Kodak Vision3 500T / Kodak Vision3 250D / Sony S-Gamut3.Cine / ARRI Reveal]
+摄影师风格: [Christopher Doyle·手持呼吸感·褪色油画质感 / Roger Deakins·精确布光·暗部密度 / 杜可风·王家卫式去饱和 / Robert Richardson·顶光·高对比]
+画幅: [2.39:1 anamorphic widescreen / 1.85:1 spherical widescreen / 16:9]
+视觉风格: [film print look·not digital cinema look / photorealistic film still / painterly desaturation]
+Tone Tag: [从美术指导继承·格式: 色系色温饱和｜调性反差光质·光位]
+
+---
+
 \`\`\`
 ## 分镜画面提示词（中文版）
 
 ### 一、设备选择
-📷 摄影机: [从参考库选·必填型号] | T[T值] | 快门[角度°] | ISO[值] | 机位(距主体[m]·[平/俯/仰]·[角度]°) | 镜头[球面/变形·焦段mm·型号] | 滤镜[类型·强度] | 胶片质感([型号]·色彩科学)
+📷 摄影机: [从参考库选·必填型号] | T-stop [T值] | Shutter [角度°] | ISO [值] | 机位([距主体m]m·[eye-level/low-angle/high-angle]·[角度]°) | 镜头: [Spherical/Anamorphic·焦段mm·型号·球面/变形] | 滤镜: [类型·强度] | 胶片: [STYLE LOCK已锁定·此处仅标注本镜变化]
 
 ### 二、分镜画面（静态单帧定格）
-景别: [远/全/中/中近/近/特] | 构图: [黄金分割/三分法/对称/对角线/纵深/引导线/负空间] | 视觉重心: [画面中观众第一眼看哪里·为什么] | 构图参考: [对标影片/导演·借鉴的构图手法——1句话] |
+景别: [远/全/中/中近/近/特] | 构图: [黄金分割/三分法/对称/对角线/纵深/引导线/负空间] | 视觉重心: [画面中观众第一眼看哪里·为什么] | 构图参考: [对标影片/导演·借鉴的手法——1句话] |
+叙事锚点: [≤25字·这一格在故事里在说什么——不是描述画面·是描述"这一刻的意义"] |
  视角: [平/俯/仰/斜/过肩] | 景深: [浅/中/深]
 
 画面内容:- 前景: [距镜头最近的物体/人物·材质表面特征·虚化程度·占画面比例·对主体的遮挡范围]
@@ -130,13 +147,38 @@
 - 🔒 场景坐标锚: [从场景设计中提取3个可识别建筑/道具锚点·如"右侧铁栅栏窗·门框立柱·地面中央排水铁盖"·主体身体必须与至少2个锚点建立可测量的距离关系——此字段确保同一场景的所有镜头中·人物与空间的相对位置可复现]
 光影: [光源类型(自然/人工/混合)] | 色温[K] | 方向[°]·高度[°] | 光质: [硬/软/漫射/有纹理] | [情绪氛围描述]
 
-### 四、色彩基调
-色彩关系: [补色/邻近/三角/单色] |
-主色=色名=HEX(60%)·占据区域·情绪功能 | 辅色=色名=HEX(30%)·与主色的对比关系(补色/邻近/明暗)·情绪功能 | 强调=色名=HEX(10%)·触发位置·视觉焦点功能 | 胶片/LUT参考 | 饱和度 | 影调色调: [色系色温饱和
+### 三、色卡参考锁定（从美术指导继承·每镜强制重复）
+
+@[色卡hash]作为整段画面色卡锚定·所有色彩严格按色卡执行:
+  主光·暖色: [#HEX](光源色·打在什么物体上·色温K)
+  阴影·冷色: [#HEX](暗面色·占据什么区域)
+  强调·高亮: [#HEX](视觉焦点·打断画面的什么位置)
+  [按需添加3-5个关键色值·每个附带画面角色说明]
+
+锁定策略: 每镜色彩段中强制重复标注以上色值·不可偏离色板。
+漂移规律: [从Seedance经验继承·标注主要色值的漂移方向和防范策略]
+Tone Tag: [色系色温饱和｜调性反差光质·光位]（从美术指导继承·全镜统一）
+饱和度: [高饱/中饱/低饱/去饱] | 胶片/LUT参考: [Kodak Vision3 500T / 导演指定]
 
 ### 四、画质约束
 
 > 按画面风格选择对应画像。真人写实和风格化动画的约束完全不同——不要用真人写实的"避免塑料CG"去约束Arcane式的三维渲染二维。
+
+#### 按景别的负面约束（优先于风格约束）
+
+MCU/CU/ECU·近景/特写:
+  面部结构不变形·皮肤保留毛孔+疤痕+细纹+微汗·无塑料CG肤质·微表情克制不夸张
+  五官比例跨帧稳定·手指关节自然不粘连·发丝·睫毛细节不模糊
+
+WS/EWS·全景/远景:
+  空间结构不漂移·材质纹理真实无贴图感·光影方向与色温一致
+  色彩不溢出·不做自动HDR提亮·大气透视自然衰减(远处微雾·近处清晰)
+
+动作帧·静态定格:
+  运动残影保留(滞后≤0.2s·长度≤运动物体1.5倍)·碎片/粒子保留飞行轨迹
+  服装和发丝的运动惯性保留·不完全静止·保留微弱的物理残余动能
+
+#### 按风格的负面约束
 
 #### 通用约束(所有风格必加)
 避免: [面部变形·多余肢体·结构错乱·光影矛盾]
@@ -173,6 +215,22 @@ Shot on [camera] with [lens], [film stock], film grain. [Mood/atmosphere in one 
 ### 4. Image Quality Constraints
 
 > Select the profile matching your visual style. Photorealistic and stylized animation have opposite constraints.
+
+#### Per Shot-Size Constraints (priority over style)
+
+MCU/CU/ECU·Close-Up:
+  no face deformation·natural skin pores+scars+fine lines+sweat·no plastic CGI skin·micro-expressions subtle not cartoonish
+  facial proportions stable across frames·fingers distinct no blending·hair and eyelash detail sharp
+
+WS/EWS·Wide Shot:
+  spatial structure no drift·material textures authentic no flat-mapping·lighting direction and color temp consistent
+  no color bleed·no auto HDR boost·atmospheric perspective natural(far:hazy·near:sharp)
+
+Action Frame·Static Freeze:
+  motion ghosting preserved(lag≤0.2s·length≤1.5x subject)·debris/particle flight paths visible
+  clothing and hair inertia preserved·not fully static·subtle residual kinetic energy
+
+#### Per Style Constraints
 
 #### Universal (all styles required)
 Avoid: [deformed face·extra limbs·bad anatomy·lighting inconsistency]
