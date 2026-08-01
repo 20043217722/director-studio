@@ -143,10 +143,10 @@
 ### 四、画质约束
 
 #### 通用约束(所有风格必加)
-避免: [面部变形·多余肢体·结构错乱·光影矛盾]
+避免: [面部变形·多余肢体·结构错乱·光影矛盾·透视错误·手指粘连·解剖错误]
 
 #### 真人写实
-避免: [塑料CG皮肤·过度美颜·材质失真·色彩溢出·双色温被统一·材质像贴图]
+避免: [塑料CG肤质(保留毛孔·疤痕·细纹·微汗)·过度美颜·材质失真·贴图感平面·色彩溢出·过度HDR·CG光滑表面取代真实肌理·双色温被统一·自然材质(木纹·石材·织物)失去纹理]
 
 #### 三维渲染二维 (Arcane / 双城之战式)
 避免: [过度写实化(保留插画面相)·手绘笔触被平滑掉·轮廓线被抗锯齿抹除·物理精确光线追踪取代绘画式光影]
@@ -229,10 +229,10 @@ WS/EWS·全景/远景:
 #### 按风格的负面约束
 
 #### 通用约束(所有风格必加)
-避免: [面部变形·多余肢体·结构错乱·光影矛盾]
+避免: [面部变形·多余肢体·结构错乱·光影矛盾·透视错误·手指粘连·解剖错误]
 
 #### 真人写实
-避免: [塑料CG皮肤·过度美颜·材质失真·色彩溢出·双色温被统一·材质像贴图]
+避免: [塑料CG肤质(保留毛孔·疤痕·细纹·微汗)·过度美颜·材质失真·贴图感平面·色彩溢出·过度HDR·CG光滑表面取代真实肌理·双色温被统一·自然材质(木纹·石材·织物)失去纹理]
 
 #### 三维渲染二维 (Arcane / 双城之战式)
 避免: [过度写实化(保留插画面相)·手绘笔触被平滑掉·轮廓线被抗锯齿抹除·物理精确光线追踪取代绘画式光影·60fps过度流畅插值·PBR材质替换手绘质感]
@@ -270,10 +270,10 @@ WS/EWS·全景/远景:
 #### 按风格的负面约束
 
 #### 通用约束(所有风格必加)
-避免: [面部变形·多余肢体·结构错乱·光影矛盾]
+避免: [面部变形·多余肢体·结构错乱·光影矛盾·透视错误·手指粘连·解剖错误]
 
 #### 真人写实
-避免: [塑料CG皮肤·过度美颜·材质失真·色彩溢出·双色温被统一·材质像贴图]
+避免: [塑料CG肤质(保留毛孔·疤痕·细纹·微汗)·过度美颜·材质失真·贴图感平面·色彩溢出·过度HDR·CG光滑表面取代真实肌理·双色温被统一·自然材质(木纹·石材·织物)失去纹理]
 
 #### 三维渲染二维 (Arcane / 双城之战式)
 避免: [过度写实化(保留插画面相)·手绘笔触被平滑掉·轮廓线被抗锯齿抹除·物理精确光线追踪取代绘画式光影·60fps过度流畅插值·PBR材质替换手绘质感]
@@ -301,7 +301,7 @@ WS/EWS·全景/远景:
 
 [Compositional intention — where the eye goes first and why. Visual weight distribution. Reference film/composition technique: e.g. 'Deakins symmetrical framing in 1917' or 'Kurosawa deep-space staging'.]
 
-Shot on [camera] with [lens], [film stock], film grain. [Mood/atmosphere in one phrase]. --ar [ratio] --style raw --v 6.1 --s 50 --no text, watermark, plastic skin, CGI, oversaturated
+Shot on [camera] with [lens], [film stock], film grain. [Mood/atmosphere in one phrase]. --ar [ratio] --style raw --v 8.1 --s 50 --no text, watermark, plastic skin, CGI, oversaturated
 ### 4. Image Quality Constraints
 
 > Select the profile matching your visual style. Photorealistic and stylized animation have opposite constraints.
@@ -358,13 +358,13 @@ Avoid: [excessive digital stabilization(keep handheld breathing)·AI frame inter
 #### 单镜 MJ 提示词模板（紧凑·加权·可选参）
 
 \`\`\`
-[Shot size + main subject + key visual identity]::3 [Lighting as visual experience — NOT Kelvin/T-stop numbers]::2 [Color palette in MJ-native language — NOT HEX]::1.5 [Tone tag — e.g. 'CoolBlue LwSat | Mid HiCon Hard']::0.5 [Camera + lens + film stock — the pro cinema combo]::1 [Cinematographer/Director aesthetic reference]::1 [Atmosphere, mood, finishing texture]::1 --ar [ratio] --style raw --v 6.1 --s [stylize] --c [chaos] --no text, watermark, plastic skin, CGI, oversaturated, bad anatomy, blurry
+[Shot size + main subject + key visual identity]::3 [Lighting as visual experience — NOT Kelvin/T-stop numbers]::2 [Color palette in MJ-native language — NOT HEX]::1.5 [Tone tag — e.g. 'CoolBlue LwSat | Mid HiCon Hard']::0.5 [Camera + lens + film stock — the pro cinema combo]::1 [Cinematographer/Director aesthetic reference]::1 [Atmosphere, mood, finishing texture]::1 --ar [ratio] --style raw --v 8.1 --s [stylize] --c [chaos] --no text, watermark, plastic skin, CGI, oversaturated, bad anatomy, blurry
 \`\`\`
 
 #### 上镜示例（填好的提示词）
 
 \`\`\`
-Medium close-up, weathered middle-aged man with thick brows, strong jaw, diagonal scar above left eyebrow, gray-flecked crew cut, deep brown eyes, wearing faded gray-blue jacket, standing in heavy rain at prison gate, rule of thirds composition, shallow depth of field::3 warm tungsten light floods from upper right across his face, cool blue exterior skylight edges the other half, dramatic chiaroscuro split across his features, rain-streaked glass in foreground::2 desaturated blue-gray tones dominate, warm amber highlights on the face, single sharp note of rust red from the iron gate::1.5 shot on Arri Alexa 65, Panavision anamorphic lenses, Kodak Vision3 500T, film grain::1 Roger Deakins cinematography in Prisoners, oppressive tension, frozen moment between captivity and unknown freedom, atmospheric haze::1 --ar 16:9 --style raw --v 6.1 --s 50 --c 5 --no text, watermark, plastic skin, CGI, oversaturated, bad anatomy, blurry
+Medium close-up, weathered middle-aged man with thick brows, strong jaw, diagonal scar above left eyebrow, gray-flecked crew cut, deep brown eyes, wearing faded gray-blue jacket, standing in heavy rain at prison gate, rule of thirds composition, shallow depth of field::3 warm tungsten light floods from upper right across his face, cool blue exterior skylight edges the other half, dramatic chiaroscuro split across his features, rain-streaked glass in foreground::2 desaturated blue-gray tones dominate, warm amber highlights on the face, single sharp note of rust red from the iron gate::1.5 shot on Arri Alexa 65, Panavision anamorphic lenses, Kodak Vision3 500T, film grain::1 Roger Deakins cinematography in Prisoners, oppressive tension, frozen moment between captivity and unknown freedom, atmospheric haze::1 --ar 16:9 --style raw --v 8.1 --s 50 --c 5 --no text, watermark, plastic skin, CGI, oversaturated, bad anatomy, blurry
 \`\`\`
 
 #### 上镜提示词解剖（为什么这么写）
@@ -382,9 +382,9 @@ Medium close-up, weathered middle-aged man with thick brows, strong jaw, diagona
 
 | 类型/情绪 | `--s` | `--c` | `--style raw` | 说明 |
 |----------|:---:|:---:|:---:|------|
-| 写实剧情 / 社会派 | 40-50 | 3-5 | ✅ 必开 | 最接近真实摄影 |
+| 写实剧情 / 社会派 | 50-80 | 3-5 | ✅ 必开 | 最接近真实摄影 |
 | 黑色电影 / 惊悚 | 30-50 | 5-10 | ✅ 必开 | 高对比、硬阴影、低饱和 |
-| 科幻 / 赛博朋克 | 60-100 | 10-20 | ✅ 必开 | 允许 MJ 增加细节密度 |
+| 科幻 / 赛博朋克 | 100-250 | 10-20 | ✅ 必开 | 允许更多细节密度 |
 | 历史剧 / 年代戏 | 30-50 | 3-5 | ✅ 必开 | 保持材质真实感和年代准确性 |
 | 浪漫 / 唯美 | 50-80 | 5-8 | ❌ 可选关 | 保留 MJ 柔和的审美倾向 |
 | 奇幻 / 史诗 | 80-150 | 8-15 | ❌ 建议关 | MJ 默认美化适合奇幻 |
@@ -475,7 +475,7 @@ Medium close-up, weathered middle-aged man with thick brows, strong jaw, diagona
 
 ### 黑白手稿绘图指令
 Midjourney 提示词（每格）:
-[Shot description, 24-85mm range], rough pencil storyboard style, black and white only, quick gesture drawing, minimal detail, strong silhouette readability, crude anatomy construction, unfinished manuscript texture, early anime film preview aesthetic, cinematic composition, no color, --ar 16:9 --style raw --v 6.1 --s 20 --no color, text, watermark, polished, clean lines, digital rendering
+[Shot description, 24-85mm range], rough pencil storyboard style, black and white only, quick gesture drawing, minimal detail, strong silhouette readability, crude anatomy construction, unfinished manuscript texture, early anime film preview aesthetic, cinematic composition, no color, --ar 16:9 --style raw --v 8.1 --s 20 --no color, text, watermark, polished, clean lines, digital rendering
 \\\
 
 ### 上镜示例（1格）
@@ -613,7 +613,7 @@ Emphasis: [which info gets most prominent — e.g.: "Title largest·gold·center
 Negative Space: [deliberately empty areas — e.g.: "Right 2/3 vast dark void·space for audience imagination"]
 
 ### 8. Generation Prompt (direct feed)
-[Style] film poster, [composition], [character description+positioning], [color strategy], [typography], [lighting], [focal point], [negative space], cinematic poster design, --ar [ratio] --style raw --v 6.1 --s 50 --no text artifacts, deformed typography, oversaturated, plastic textures
+[Style] film poster, [composition], [character description+positioning], [color strategy], [typography], [lighting], [focal point], [negative space], cinematic poster design, --ar [ratio] --style raw --v 8.1 --s 50 --no text artifacts, deformed typography, oversaturated, plastic textures
 \`\`\`
 
 ---
@@ -705,58 +705,3 @@ Negative Space: [deliberately empty areas — e.g.: "Right 2/3 vast dark void·s
 避免: 面部变形·过度美颜·雨水物理不自然·路灯眩光过曝·服装颜色漂移
 \`\`\`
 
-### English Version
-
-\`\`\`
-## Shot Prompt (English Version)
-
-### Shot 1
-
-### 1. Camera & Gear
-📷 ARRI Alexa Mini LF | T2.0 | Shutter 180° | ISO 800 | Position(1.5m from He Zhun·eye-level·30° right) | Anamorphic·50mm·Panavision Primo | Black Pro-Mist 1/4 | Kodak Vision3 500T·ARRI Reveal | 2.35:1 | 4K
-
-### 2. Frame Composition (Static Still Frame)
-Shot size: MCU | Composition: Golden ratio(subject at left 1/3) | Angle: Eye-level | DOF: Medium
-
-Frame Content:
-- Foreground: Rain curtain·vertical water filaments·semi-transparent·blurred·right 15% of width
-- Subject: He Zhun·thick brows·strong jaw·1.5cm diagonal scar left eyebrow·gray-flecked crew cut·deep brown irises·spatial anchor: standing inside iron gate·back 30cm from right doorframe pillar·feet 40cm left-front of floor drain grate·left 1/3 of frame·facing right·faded gray-blue jacket=#5D6B7A·white shirt·weight on left foot·body axis tilted back 3°·expression: eyebrows raised mouth corners pulled down(frozen moment of surprise crossed with fear)·eyes fixed on release documents·H65%W20%
-- Behind Subject: Prison guard·0.5m behind right·half-profile right·eye level 15cm above subject(standing vs leaning back)·extending release papers·paper corner soaked and wrinkled from rain·eye lines meet on document·spatial power: standing above=dominant
-- Background: Inside Taimu Prison iron gate·21:47 at night·moderate rain·rusted iron gate opened just a crack·gray concrete walls=#8B8378 with water stains·puddled ground=#3A3A3A reflecting warm brown rust light=#8B7355
-- Spatial Depth: rain curtain(fg·0.3m from lens)→He Zhun(subject·1.5m)→guard(behind·2.0m)→iron gate/walls(bg·3.5m+)·four layers of depth via rain blur+atmospheric perspective
-- 🔒 Scene Anchor Set: [right iron-barred window·doorframe pillar·floor drain grate·rusted iron gate·gray concrete wall]
-
-Lighting: Tungsten bulb+exterior skylight | 2700K(warm)·4300K(cold) dual temp coexisting | Top-right 45°·height 30° | Oppressive tension of half face warm half face cold
-
-### 3. Color Palette
-Primary=Cool Blue-Gray=#2C3E50(60%)·Secondary=Warm Brown=#8B7355(30%)·Accent=Rust Red=#8B0000(10%) | Kodak Vision3 500T | Desaturated
-
-### 4. Image Quality Constraints
-Avoid: deformed face·plastic CGI skin·over-beautified·dual temp unified·iron door looks plastic·rain looks like white lines·color oversaturated
-
----
-
-### Shot 2
-
-### 1. Camera & Gear
-📷 Sony Venice 2 | T2.8 | Shutter 180° | ISO 2500 | Position(3m from He Zhun·low angle·front) | Spherical·35mm·Zeiss Supreme Prime | No filter | S-Gamut3.Cine | 2.35:1 | 4K
-
-### 2. Frame Composition (Static Still Frame)
-Shot size: WS | Composition: Center symmetry | Angle: Low angle | DOF: Deep
-
-Frame Content:
-- Foreground: None
-- Subject: He Zhun·same facial anchors·spatial anchor: standing outside prison gate·1.0m from outer doorframe·feet on cracked asphalt at wall-street boundary·center frame·full body standing·gray-blue jacket=#5D6B7A·weight evenly distributed·body axis tilted forward 5°(from head tilt)·head tilted up eyes closed·rain on face·facial muscles relaxed but mouth slightly open·arms hanging at sides·fingers slightly spread
-- Behind Subject: None
-- Background: Street outside prison·deep night·rain curtain·prison outer wall(gray concrete=#8B8378) occupies left half of background·right half is empty street stretching into distance·single distant warm yellow streetlight=#F5D5A0·gray sky·empty and deserted
-- Spatial Depth: He Zhun(subject·3m from lens·gravel detail at shoe-ground contact)→prison wall(mid-bg·6m)→empty street+streetlight(far bg·20m+)
-- 🔒 Scene Anchor Set: [prison iron gate exterior·wall-street boundary line·distant yellow streetlight]
-
-Lighting: Streetlight+ambient | 2700K | Backlit·low position | Solitude and relief in silhouette
-
-### 3. Color Palette
-Primary=Cool Blue-Gray=#2C3E50(60%)·Secondary=Warm Yellow=#F5D5A0(30%)·Accent=Deep Black=#1A1A1A(10%) | Sony S-Gamut3.Cine | Desaturated
-
-### 4. Image Quality Constraints
-Avoid: deformed face·over-beautified·rain physics unnatural·streetlight blowout·clothing color shift
-\`\`\`
