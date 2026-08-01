@@ -1,30 +1,25 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no"/>
-<meta name="theme-color" content="#0EA5E9"/>
-<meta name="description" content="AI电影导演创作工具"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-<meta name="apple-mobile-web-app-title" content="造梦空间--【AFS】"/>
-<link rel="icon" href="./icon-192.png"/>
-<link rel="manifest" href="./manifest.json"/>
-<link rel="apple-touch-icon" href="./icon-192.png"/>
-<title>造梦空间--【AFS】</title>
-<!-- BUILD_TIMESTAMP replaced at build -->
-  <script type="module" crossorigin src="./assets/index-IQ9tc_8d.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-9ha4EWcQ.css">
+  <meta charset="UTF-8">
+  <title>导演工作室 — 重新定向</title>
+  <script>
+    // GitHub Pages SPA fallback: capture attempted URL, redirect to root
+    (function() {
+      var repo = '/director-studio';
+      var path = location.pathname.replace(repo, '') || '/';
+      var search = location.search || '';
+      var hash = location.hash || '';
+      // Store the intended path so the app can restore it
+      try {
+        sessionStorage.setItem('spa-redirect', path + search + hash);
+      } catch(e) {}
+      // Redirect to the SPA root
+      location.replace(repo + '/' + search + hash);
+    })();
+  </script>
 </head>
-<body>
-<div id="director-studio-root"></div>
-<script>
-// Register service worker for offline support
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(function(){});
-}
-</script>
+<body style="background:#1C1B1F;color:#EBE8ED;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+  <p>重定向中… <a href="./" style="color:#C47482;">点此进入导演工作室</a></p>
 </body>
 </html>
-
