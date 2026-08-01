@@ -153,15 +153,13 @@
 
 > **从上游继承或用户指定。全片所有镜头共享此锁，不逐镜重复。**
 
-摄影机: [ARRI Alexa 65 / Sony Venice 2 / RED V-RAPTOR XL / ARRI Alexa Mini LF]
-镜头: [Panavision anamorphic·变形宽银幕 / Zeiss Supreme Prime·球面 / Cooke S8/i·球面]
-胶片: [Kodak Vision3 500T / Kodak Vision3 250D / Sony S-Gamut3.Cine / ARRI Reveal]
-摄影师: [Christopher Doyle·手持呼吸感 / Roger Deakins·精确布光 / 杜可风·王家卫去饱和]
-画幅: [2.39:1 anamorphic widescreen / 1.85:1 spherical / 16:9]
-视觉风格: [film print look·not digital cinema look / photorealistic / painterly desaturation]
-Tone Tag: [从美术指导继承·格式: 色系色温饱和｜调性反差光质·光位]
-
----
+摄影机: [ARRI Alexa 65 / Sony Venice 2 / RED V-RAPTOR XL / ARRI Alexa Mini LF / Canon C700 FF / Blackmagic URSA 12K]
+镜头: [Panavision anamorphic / Zeiss Supreme Prime·球面 / Cooke S8/i·球面 / ARRI Master Anamorphic·变形宽银幕]
+胶片参考: [Kodak Vision3 500T / Kodak Vision3 250D / Kodak Ektachrome 100D / Fujifilm Eterna Vivid 500T / Sony S-Gamut3.Cine / ARRI Reveal]
+摄影师风格: [Christopher Doyle·手持呼吸感·自然光不打灯·褪色油画质感 / Roger Deakins·对称构图·精确布光·暗部密度 / 杜可风·王家卫式去饱和·霓虹色溢 / 曹郁·妖猫传暗部密度·灯笼暖色层次 / Robert Richardson·顶光·高对比·硬影]
+画幅: [2.39:1 anamorphic widescreen / 1.85:1 spherical widescreen / 1.66:1 European widescreen / 16:9]
+视觉风格: [film print look·not digital cinema look / photorealistic film still / painterly desaturation / high contrast chiaroscuro]
+Tone Tag: [从美术指导继承·格式: 色系色温饱和｜调性反差光质·光位]---
 
 ### 🎨 色卡参考锁定（从美术指导继承·每镜强制重复）
 
@@ -210,15 +208,13 @@ Tone Tag: [从美术指导继承·格式: 色系色温饱和｜调性反差光�
 
 > **从上游继承或用户指定。全片所有镜头共享此锁，不逐镜重复。**
 
-摄影机: [ARRI Alexa 65 / Sony Venice 2 / RED V-RAPTOR XL / ARRI Alexa Mini LF]
-镜头: [Panavision anamorphic·变形宽银幕 / Zeiss Supreme Prime·球面 / Cooke S8/i·球面]
-胶片: [Kodak Vision3 500T / Kodak Vision3 250D / Sony S-Gamut3.Cine / ARRI Reveal]
-摄影师: [Christopher Doyle·手持呼吸感 / Roger Deakins·精确布光 / 杜可风·王家卫去饱和]
-画幅: [2.39:1 anamorphic widescreen / 1.85:1 spherical / 16:9]
-视觉风格: [film print look·not digital cinema look / photorealistic / painterly desaturation]
+摄影机: [ARRI Alexa 65 / Sony Venice 2 / RED V-RAPTOR XL / ARRI Alexa Mini LF / Canon C700 FF / Blackmagic URSA 12K]
+镜头: [Panavision anamorphic / Zeiss Supreme Prime·球面 / Cooke S8/i·球面 / ARRI Master Anamorphic·变形宽银幕]
+胶片参考: [Kodak Vision3 500T / Kodak Vision3 250D / Kodak Ektachrome 100D / Fujifilm Eterna Vivid 500T / Sony S-Gamut3.Cine / ARRI Reveal]
+摄影师风格: [Christopher Doyle·手持呼吸感·自然光不打灯·褪色油画质感 / Roger Deakins·对称构图·精确布光·暗部密度 / 杜可风·王家卫式去饱和·霓虹色溢 / 曹郁·妖猫传暗部密度·灯笼暖色层次 / Robert Richardson·顶光·高对比·硬影]
+画幅: [2.39:1 anamorphic widescreen / 1.85:1 spherical widescreen / 1.66:1 European widescreen / 16:9]
+视觉风格: [film print look·not digital cinema look / photorealistic film still / painterly desaturation / high contrast chiaroscuro]
 Tone Tag: [从美术指导继承·格式: 色系色温饱和｜调性反差光质·光位]
-
-
 ### 一、设备选择（本镜变化部分）
 帧率: [24fps / 60fps] | 风格: [真人写实/超真实CGI·3D动画/2D手绘/三渲二Arcane式/赛博朋克/...]
 视觉锚点: [本镜最具辨识度的视觉元素·Seedance将其作为跨帧风格锁定的参照物]
