@@ -164,69 +164,67 @@
 
 ### [STYLE LOCK·全片统一]
 
-> **从上游继承或用户指定。每镜共享此锁，不逐镜重复。**
-
-摄影机: [ARRI Alexa 65 / Sony Venice 2 / RED V-RAPTOR XL / ARRI Alexa Mini LF / Canon C700 FF]
-镜头: [Panavision anamorphic·变形宽银幕 / Zeiss Supreme Prime·球面 / Cooke S8/i·球面]
+摄影机: [ARRI Alexa Mini LF / ARRI Alexa 65 / Sony Venice 2 / RED V-RAPTOR XL / Canon C700 FF]
+镜头: [Panavision anamorphic·变形宽银幕(Spherical 50mm中焦·完美展现人物) / Zeiss Supreme Prime·球面 / Cooke S8/i·球面 / ARRI Master Anamorphic]
 胶片参考: [Kodak Vision3 500T / Kodak Vision3 250D / Sony S-Gamut3.Cine / ARRI Reveal]
-摄影师风格: [Christopher Doyle·手持呼吸感·褪色油画质感 / Roger Deakins·精确布光·暗部密度 / 杜可风·王家卫式去饱和 / Robert Richardson·顶光·高对比]
-画幅: [2.39:1 anamorphic widescreen / 1.85:1 spherical widescreen / 16:9]
-视觉风格: [film print look·not digital cinema look / photorealistic film still / painterly desaturation]
-Tone Tag: [从美术指导继承·格式: 色系色温饱和｜调性反差光质·光位]
+摄影师风格: [Roger Deakins·殿堂级对称布光·绝对庄严感 / Christopher Doyle·手持呼吸感·褪色油画质感 / 杜可风·王家卫式去饱和 / Robert Richardson·顶光·高对比]
+画幅: [2.35:1 anamorphic widescreen / 2.39:1 / 1.85:1 spherical / 16:9]
+视觉风格: [Film print look·电影级渲染 / photorealistic film still / painterly desaturation / 东方古典美学]
+Tone Tag: [从美术指导继承·格式: 色系色温饱和｜调性反差光质·光位——如"幽蓝灰影与神圣鎏金｜低反差·中心对称·背部漫射神光"]
 
 ---
 
-\`\`\`
-
-#### 分镜画面提示词（中文版·Style Lock）
 ### 一、设备选择
-📷 摄影机: [从参考库选·必填型号] | T-stop [T值] | Shutter [角度°] | ISO [值] | 机位([距主体m]m·[eye-level/low-angle/high-angle]·[角度]°) | 镜头: [Spherical/Anamorphic·焦段mm·型号·球面/变形] | 滤镜: [类型·强度] | 胶片: [STYLE LOCK已锁定·此处仅标注本镜变化]
+
+📷 [摄影机型号·必填] | T-stop [T值](景深策略——如T4.0浅景深·将人物从复杂背景中适度分离) | Shutter [角度°·如180°] | ISO [值·如800] | 机位([正面/侧面/背面]·[平视/微仰/俯视]·[距离]m·[构图策略——如"完全正对中心"]) | 镜头: [Spherical/Anamorphic·焦段mm·型号·策略说明——如"50mm中焦·完美展现人物正面威严"] | 滤镜: [前置柔光镜/Black Pro-Mist/无·强度] | 胶片: [STYLE LOCK已锁定·此处仅标注变化]
 
 ### 二、分镜画面（静态单帧定格）
-景别: [远/全/中/中近/近/特] | 构图: [黄金分割/三分法/对称/对角线/纵深/引导线/负空间] | 视觉重心: [画面中观众第一眼看哪里·为什么] | 构图参考: [对标影片/导演·借鉴的手法——1句话] |
-叙事锚点: [≤25字·这一格在故事里在说什么——不是描述画面·是描述"这一刻的意义"] |
- 视角: [平/俯/仰/斜/过肩] | 景深: [浅/中/深]
 
-画面内容:- 前景: [距镜头最近的物体/人物·材质表面特征·虚化程度·占画面比例·对主体的遮挡范围]
-- 主体: [角色名·3-5个外貌锚点·空间锚定(场景内具体位置·距场景关键建筑/道具的距离与方向·如"背靠右侧铁栅栏窗·距门框1.2m·脚踩在排水铁盖左侧30cm处")·画面站位(左1/3/中/右1/3)·占画面比例·服装色=HEX·面部神情·身体姿态·朝向·重心支撑腿·身体垂直轴线偏离角度]
-- 陪体: [后方人物/物体·距主体距离(m)·相对于主体的方位(正前方/右后方/左侧)·身体朝向·是否与主体视线交汇·在画面内的视平线高度对比(高于/平于/低于主体)·与主体的空间权力关系(俯视=支配/仰视=被支配/平视=平等/背对=决裂/并肩=同盟)]
-- 背景: [场景环境·地点·时间·天气·3个关键视觉元素·颜色=HEX·空间纵深描述]
-- 空间深度: [前景→主体→陪体→背景的层层递进·通过重叠/比例/大气透视体现纵深感·标注每层相对于镜头的距离]
-- 🔒 场景坐标锚: [从场景设计中提取3个可识别建筑/道具锚点·如"右侧铁栅栏窗·门框立柱·地面中央排水铁盖"·主体身体必须与至少2个锚点建立可测量的距离关系——此字段确保同一场景的所有镜头中·人物与空间的相对位置可复现]
-光影: [光源类型(自然/人工/混合)] | 色温[K] | 方向[°]·高度[°] | 光质: [硬/软/漫射/有纹理] | [情绪氛围描述]
+景别: [远/全/中/中近/近/特]·[构图策略——如"半身特写·展现人物面部神态与手持物"]
+构图: [黄金分割/三分法/对称/对角线/纵深/引导线/负空间]·[具体构图描述——如"绝对居中对称·两侧巨柱形成框架·人物立于正中·背后巨大光环形成神明现世构图"]
+视觉重心: [画面中观众第一眼看哪里·为什么——如"人物庄重清冷的面部神态·手持物的姿势·背后光源的神圣光芒"]
+构图参考: [对标影片/导演·艺术流派·借鉴的构图手法——如"东方佛教造像与皇家神仙画的审美·结合西方古典油画中光环(Halo)的光影处理"]
+叙事锚点: [≤25字·这一格在故事里在说什么——如"世间枷锁本是梦。神明直视前方·无惧无畏·他的存在本身就是对虚妄的否定"]
+视角: [平视/微仰/俯视/过肩/斜角] | 景深: [浅/中/深]·[策略说明]
 
-### 三、色卡参考锁定（从美术指导继承·每镜强制重复）
+画面内容:
 
-@[色卡hash]作为整段画面色卡锚定·所有色彩严格按色卡执行:
-  主光·暖色: [#HEX](光源色·打在什么物体上·色温K)
-  阴影·冷色: [#HEX](暗面色·占据什么区域)
-  强调·高亮: [#HEX](视觉焦点·打断画面的什么位置)
-  [按需添加3-5个关键色值·每个附带画面角色说明]
+· 前景: [距镜头最近的物体/人物·材质表面特征·虚化程度·占画面比例·对主体的遮挡范围]
+· 主体（人物）: [角色名·3-5个外貌锚点·空间锚定(场景内具体位置·距关键建筑/道具的距离与方向)·画面站位·占画面比例·服装色=HEX·面部神情·身体姿态·朝向·重心支撑腿·身体垂直轴线偏离角度]
+· 陪体: [后方人物/物体·距主体距离(m)·相对于主体的方位·身体朝向·是否与主体视线交汇·视平线高度对比(高于/平于/低于主体)·与主体的空间权力关系]
+· 背景（核心场景与环境）: [场景环境·地点·时间·天气·3-5个关键视觉元素·颜色=HEX·空间纵深描述·大气透视状态]
+· 环境（地面与光具/道具）: [地面材质·颜色·反射·光具/道具的位置·造型·光色·氛围贡献]
+· 空间深度: [前景→主体→陪体→背景→环境的层层递进·通过重叠/比例/大气透视体现纵深感·标注每层相对于镜头的距离(m)]
 
-锁定策略: 每镜色彩段中强制重复标注以上色值·不可偏离色板。
-漂移规律: [从Seedance经验继承·标注主要色值的漂移方向和防范策略]
-Tone Tag: [色系色温饱和｜调性反差光质·光位]（从美术指导继承·全镜统一）
-饱和度: [高饱/中饱/低饱/去饱] | 胶片/LUT参考: [Kodak Vision3 500T / 导演指定]
+场景坐标锚: [从场景设计中提取的3-5个可识别锚点·如"天宫大殿·无上神尊·持笏静立·背后巨大云纹金环·破梦之境"]
+
+光影: [光源类型(自然/人工/混合)·光源性质(主光/辅光/面光/背光/底光)] | 色温[K·暗部色温与高光色温分别标注] | 方向[如"人物正背后的面光源·两侧宫灯的底光"] | 光质: [硬/软/漫射/神圣柔光·如"光线非常柔和·均匀·神圣·人物正面被环境光柔和照亮·呈现圣像画般的光影质感"]
+
+### 三、色卡参考锁定
+
+@全片色卡 严格锁定色相漂移：
+
+主背光·[色名]: [#HEX] ([光线角色·打在什么物体上·色温感受])
+环境主色·[色名]: [#HEX] ([占据什么区域·调性贡献])
+服饰·[色名]: [#HEX] / [#HEX] ([材质暗示])
+地面·[色名]: [#HEX] ([反射特性])
+点缀·[色名]: [#HEX] ([视觉焦点功能])
+[按需添加3-5个关键色值·每个附带画面角色说明]
+
+锁定策略: [色彩关系的核心策略·如"强化深幽蓝灰与温暖鎏金的极致反差"·"背后的光必须是雕刻质感的金色·而非刺眼白光"·"人物肤色保持写实·不可涂白"]
+漂移规律: [暖色→品红(灯笼旁禁纯红) | 冷色→青绿(每3段重标) | 金色→纯黄(保留橙红底色)]
 
 ### 四、画质约束
 
-> 按画面风格选择对应画像。真人写实和风格化动画的约束完全不同——不要用真人写实的"避免塑料CG"去约束Arcane式的三维渲染二维。
-
-#### 按景别的负面约束（优先于风格约束）
+按景别的负面约束（优先于风格约束）:
 
 MCU/CU/ECU·近景/特写:
-  面部结构不变形·皮肤保留毛孔+疤痕+细纹+微汗·无塑料CG肤质·微表情克制不夸张
-  五官比例跨帧稳定·手指关节自然不粘连·发丝·睫毛细节不模糊
+  面部结构不变形·皮肤保留毛孔+细纹+微汗·无塑料CG肤质·微表情克制不夸张·五官比例跨帧稳定·手指关节自然不粘连·发丝睫毛细节不模糊·手持物不可变形·手势必须端庄
 
 WS/EWS·全景/远景:
-  空间结构不漂移·材质纹理真实无贴图感·光影方向与色温一致
-  色彩不溢出·不做自动HDR提亮·大气透视自然衰减(远处微雾·近处清晰)
+  空间结构不漂移·材质纹理真实无贴图感·光影方向与色温一致·色彩不溢出·不做自动HDR提亮·大气透视自然衰减(远处微雾·近处清晰)·雕花纹理不可丢失变成光秃表面·云纹雕刻必须立体非平面贴图
 
-动作帧·静态定格:
-  运动残影保留(滞后≤0.2s·长度≤运动物体1.5倍)·碎片/粒子保留飞行轨迹
-  服装和发丝的运动惯性保留·不完全静止·保留微弱的物理残余动能
-
-#### 按风格的负面约束
+[风格特定约束]: [如"东方神明古典内敛·不可侵犯的威严"·"严禁现代造型的灯具/服饰"·"光环须保留雕刻质感·不能变成扁平月晕"]
 
 #### 通用约束(所有风格必加)
 避免: [面部变形·多余肢体·结构错乱·光影矛盾·透视错误·手指粘连·解剖错误]
@@ -235,179 +233,16 @@ WS/EWS·全景/远景:
 避免: [塑料CG肤质(保留毛孔·疤痕·细纹·微汗)·过度美颜·材质失真·贴图感平面·色彩溢出·过度HDR·CG光滑表面取代真实肌理·双色温被统一·自然材质(木纹·石材·织物)失去纹理]
 
 #### 三维渲染二维 (Arcane / 双城之战式)
-避免: [过度写实化(保留插画面相)·手绘笔触被平滑掉·轮廓线被抗锯齿抹除·物理精确光线追踪取代绘画式光影·60fps过度流畅插值·PBR材质替换手绘质感]
+避免: [手绘笔触被平滑成光滑表面·轮廓线被抗锯齿抹除·PBR物理材质替换手绘高光和排线·照片级贴图覆盖手绘肌理·物理精确光线追踪取代绘画式光影·暗部被AI自动补全细节破坏空间层次]
 
 #### 风格化动画 (Spider-Verse / 蜘蛛侠式)
-避免: [半调网点被抗锯齿抹除·AI补帧到流畅(保留抽帧感)·CMYK分色被转为RGB全色谱·漫画夸张比例被AI向写实矫正·速度线被运动模糊替代]
+避免: [半调网点被抗锯齿抹除·漫画分色被转为连续色调·Ben-Day dots被当噪点消除·印刷纹理被数字平滑·平面空间层次被3D景深取代]
 
 #### 复古胶片 / 16mm
 避免: [胶片颗粒被数字降噪抹除·胶片光晕被去除·扫描线被修复·胶片色彩偏移被矫正到中性·抖动被数字稳定消除]
 
 #### 通用摄影质感约束(所有风格可选加)
 避免: [数字防抖过度(保留手持呼吸感)·AI补帧·自动慢动作插值·过度锐化·镜头像差被数字矫正]
-\`\`\`
-
-\`\`\`
-
-### 四、画质约束
-
-> 按画面风格选择对应画像。真人写实和风格化动画的约束完全不同——不要用真人写实的"避免塑料CG"去约束Arcane式的三维渲染二维。
-
-#### 按景别的负面约束（优先于风格约束）
-
-MCU/CU/ECU·近景/特写:
-  面部结构不变形·皮肤保留毛孔+疤痕+细纹+微汗·无塑料CG肤质·微表情克制不夸张
-  五官比例跨帧稳定·手指关节自然不粘连·发丝·睫毛细节不模糊
-
-WS/EWS·全景/远景:
-  空间结构不漂移·材质纹理真实无贴图感·光影方向与色温一致
-  色彩不溢出·不做自动HDR提亮·大气透视自然衰减(远处微雾·近处清晰)
-
-动作帧·静态定格:
-  运动残影保留(滞后≤0.2s·长度≤运动物体1.5倍)·碎片/粒子保留飞行轨迹
-  服装和发丝的运动惯性保留·不完全静止·保留微弱的物理残余动能
-
-#### 按风格的负面约束
-
-#### 通用约束(所有风格必加)
-避免: [面部变形·多余肢体·结构错乱·光影矛盾·透视错误·手指粘连·解剖错误]
-
-#### 真人写实
-避免: [塑料CG肤质(保留毛孔·疤痕·细纹·微汗)·过度美颜·材质失真·贴图感平面·色彩溢出·过度HDR·CG光滑表面取代真实肌理·双色温被统一·自然材质(木纹·石材·织物)失去纹理]
-
-#### 三维渲染二维 (Arcane / 双城之战式)
-避免: [过度写实化(保留插画面相)·手绘笔触被平滑掉·轮廓线被抗锯齿抹除·物理精确光线追踪取代绘画式光影·60fps过度流畅插值·PBR材质替换手绘质感]
-
-#### 风格化动画 (Spider-Verse / 蜘蛛侠式)
-避免: [半调网点被抗锯齿抹除·AI补帧到流畅(保留抽帧感)·CMYK分色被转为RGB全色谱·漫画夸张比例被AI向写实矫正·速度线被运动模糊替代]
-
-#### 复古胶片 / 16mm
-避免: [胶片颗粒被数字降噪抹除·胶片光晕被去除·扫描线被修复·胶片色彩偏移被矫正到中性·抖动被数字稳定消除]
-
-#### 通用摄影质感约束(所有风格可选加)
-避免: [数字防抖过度(保留手持呼吸感)·AI补帧·自动慢动作插值·过度锐化·镜头像差被数字矫正]
-\`\`\`
-
-\`\`\`
-
-
-## Shot Prompt (Midjourney)
-
-[Shot size] cinematic film still. [Describe what the camera sees — foreground, subject, background — in flowing natural prose. Include character position, expression, spatial relationships between characters.]
-
-[Lighting described as a visual experience — quality of light: hard/soft/diffused/textured (through blinds/leaves/water), direction, color temperature as mood words (warm/cool/golden), emotional atmosphere.]
-
-[Color palette as natural language — NOT hex codes. Color relationship: complementary/analogous/triadic/monochrome. Describe dominance, contrast, accent placement.]
-
-[Compositional intention — where the eye goes first and why. Visual weight distribution. Reference film/composition technique: e.g. 'Deakins symmetrical framing in 1917' or 'Kurosawa deep-space staging'.]
-
-Shot on [camera] with [lens], [film stock], film grain. [Mood/atmosphere in one phrase]. --ar [ratio] --style raw --v 8.1 --s 50 --no text, watermark, plastic skin, CGI, oversaturated
-### 4. Image Quality Constraints
-
-> Select the profile matching your visual style. Photorealistic and stylized animation have opposite constraints.
-
-#### Per Shot-Size Constraints (priority over style)
-
-MCU/CU/ECU·Close-Up:
-  no face deformation·natural skin pores+scars+fine lines+sweat·no plastic CGI skin·micro-expressions subtle not cartoonish
-  facial proportions stable across frames·fingers distinct no blending·hair and eyelash detail sharp
-
-WS/EWS·Wide Shot:
-  spatial structure no drift·material textures authentic no flat-mapping·lighting direction and color temp consistent
-  no color bleed·no auto HDR boost·atmospheric perspective natural(far:hazy·near:sharp)
-
-Action Frame·Static Freeze:
-  motion ghosting preserved(lag≤0.2s·length≤1.5x subject)·debris/particle flight paths visible
-  clothing and hair inertia preserved·not fully static·subtle residual kinetic energy
-
-#### Per Style Constraints
-
-#### Universal (all styles required)
-Avoid: [deformed face·extra limbs·bad anatomy·lighting inconsistency]
-
-#### Photorealistic
-Avoid: [plastic CGI skin·over-beautified·texture distortion·color bleed·dual color temp unified·flat-mapped textures]
-
-#### 3D-Rendered-2D (Arcane-style)
-Avoid: [over-realistic(keep illustrative proportions)·brush strokes smoothed away·outlines anti-aliased into oblivion·physically accurate ray-tracing replacing painterly lighting·60fps over-interpolation·PBR materials replacing hand-painted textures]
-
-#### Stylized Animation (Spider-Verse style)
-Avoid: [halftone dots anti-aliased away·AI frame interpolation(keep stepped animation)·CMYK color separation converted to RGB full gamut·comic proportions corrected toward realism by AI·speed lines replaced with motion blur]
-
-#### Vintage Film / 16mm
-Avoid: [film grain denoised away·film halation removed·scan lines repaired·film color shift corrected to neutral·camera shake digitally stabilized]
-
-#### Universal Cinematography (optional for all styles)
-Avoid: [excessive digital stabilization(keep handheld breathing)·AI frame interpolation·auto slow-motion insertion·over-sharpening·lens aberrations digitally corrected]
-\`\`\`
-
-
-### 🔖 状态快照（每镜完成后）
-
-每完成一个镜头的提示词输出，末尾附:
-
-`
->>> [检查点] 镜N 提示词完成 | 下一镜: 镜N+1 | [状态快照] 摄影指导 | 已完成镜1..N | 待完成镜N+1..M
-`
-
-如果输出中断，用户回复「继续」，从最后一个检查点续写，不重复已输出镜头。
-### 🎬 Midjourney Shot Prompt Engine
-
-> **MJ 不吃技术参数表——它吃视觉画面描述。** 下面是把摄影指导的专业参数翻译成 MJ 原生语法的标准模板。每镜一个独立提示词。
-
-#### 单镜 MJ 提示词模板（紧凑·加权·可选参）
-
-\`\`\`
-[Shot size + main subject + key visual identity]::3 [Lighting as visual experience — NOT Kelvin/T-stop numbers]::2 [Color palette in MJ-native language — NOT HEX]::1.5 [Tone tag — e.g. 'CoolBlue LwSat | Mid HiCon Hard']::0.5 [Camera + lens + film stock — the pro cinema combo]::1 [Cinematographer/Director aesthetic reference]::1 [Atmosphere, mood, finishing texture]::1 --ar [ratio] --style raw --v 8.1 --s [stylize] --c [chaos] --no text, watermark, plastic skin, CGI, oversaturated, bad anatomy, blurry
-\`\`\`
-
-#### 上镜示例（填好的提示词）
-
-\`\`\`
-Medium close-up, weathered middle-aged man with thick brows, strong jaw, diagonal scar above left eyebrow, gray-flecked crew cut, deep brown eyes, wearing faded gray-blue jacket, standing in heavy rain at prison gate, rule of thirds composition, shallow depth of field::3 warm tungsten light floods from upper right across his face, cool blue exterior skylight edges the other half, dramatic chiaroscuro split across his features, rain-streaked glass in foreground::2 desaturated blue-gray tones dominate, warm amber highlights on the face, single sharp note of rust red from the iron gate::1.5 shot on Arri Alexa 65, Panavision anamorphic lenses, Kodak Vision3 500T, film grain::1 Roger Deakins cinematography in Prisoners, oppressive tension, frozen moment between captivity and unknown freedom, atmospheric haze::1 --ar 16:9 --style raw --v 8.1 --s 50 --c 5 --no text, watermark, plastic skin, CGI, oversaturated, bad anatomy, blurry
-\`\`\`
-
-#### 上镜提示词解剖（为什么这么写）
-
-| 段 | 权重 | 写了什么 | 为什么 |
-|---|:---:|------|------|
-| 第1段 | `::3` | 景别 + 人物面锚 + 环境 + 构图 | **MJ 最重视开头**——主体和空间关系必须占最大权重 |
-| 第2段 | `::2` | 光影的视觉描述 | 光决定了画面的情绪和电影感，但不要让光盖过主体 |
-| 第3段 | `::1.5` | 色彩（自然语言，不用HEX） | 色彩是氛围的底色，MJ 理解 "desaturated blue-gray" 比 "#2C3E50" 强100倍 |
-| 第4段 | `::1` | 摄影机 + 镜头 + 胶片 | 给出具体的摄影硬件参考，MJ 会模仿其成像特征 |
-| 第5段 | `::1` | 电影摄影师/导演参考 | MJ 训练集里包含大量电影剧照，名字≈风格 |
-| 第6段 | `::1` | 氛围、情绪、质感 | 最后润色，给 MJ 填充画面细节 |
-
-#### 🎯 按情绪/类型的 MJ 参数速调
-
-| 类型/情绪 | `--s` | `--c` | `--style raw` | 说明 |
-|----------|:---:|:---:|:---:|------|
-| 写实剧情 / 社会派 | 50-80 | 3-5 | ✅ 必开 | 最接近真实摄影 |
-| 黑色电影 / 惊悚 | 30-50 | 5-10 | ✅ 必开 | 高对比、硬阴影、低饱和 |
-| 科幻 / 赛博朋克 | 100-250 | 10-20 | ✅ 必开 | 允许更多细节密度 |
-| 历史剧 / 年代戏 | 30-50 | 3-5 | ✅ 必开 | 保持材质真实感和年代准确性 |
-| 浪漫 / 唯美 | 50-80 | 5-8 | ❌ 可选关 | 保留 MJ 柔和的审美倾向 |
-| 奇幻 / 史诗 | 80-150 | 8-15 | ❌ 建议关 | MJ 默认美化适合奇幻 |
-| 实验 / 艺术 | 150-300 | 20-40 | ❌ 建议关 | 最大化 MJ 的创造性偏离 |
-| 动作 / 追逐 | 50-70 | 8-12 | ✅ 半开 | 保持动态张力但不要过度风格化 |
-
-#### 🔗 跨镜一致性（MJ 剧组工作流）
-
-1. **首镜:** 用上述模板出第一张关键帧，选最满意的一张
-2. **锁定风格:** 右键 Copy Link → 获得图片 URL → 后续所有镜头加 `--sref [URL] --sw 80`
-3. **锁定角色:** 上传人物定妆照 → 后续镜头加 `--cref [URL] --cw 70`
-4. **全片调参:** 同一部片子的所有镜头统一使用相同的 `--s --c --style raw` 参数组
-5. **批量变体:** 用排列括号同时测试参数: `{--s 40, --s 60, --s 80}` 一键看三种风格化程度
-
-> **MJ 摄影提示词铁律 (v2.0)**
-> - **`::3 ::2 ::1.5 ::1` 权重不可省略。** 没有权重的长提示词 = MJ 随机发挥。权重是你的方向盘。
-> - **`--no` 一行必带。** `text, watermark, plastic skin, CGI, oversaturated, bad anatomy, blurry` 是 MJ 质感的最后防线。
-> - **别写 2700K / 4300K。** 写 `warm tungsten` / `cool exterior skylight`。MJ 读名词不读数字。
-> - **别写 T2.0 / ISO 800 / 180°快门。** 写 `shallow depth of field` / `slight film grain` / `crisp details`。
-> - **首张出片后用 `--sref` 锁定风格。** 这是 MJ 的 "LUT 预设"——不用它就别指望全片统一。
-> - **多镜按镜号顺序在同一个 `\`\`\`` 块内排列，复制到 MJ 逐个生成。**
-
-
 ---
 
 多个分镜按序号排列：分镜1、分镜2...均在同一个代码块内，中文版一块，英文版一块。

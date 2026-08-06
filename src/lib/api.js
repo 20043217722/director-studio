@@ -1,4 +1,4 @@
-import agentPrompts from "./agentPrompts";
+﻿import agentPrompts from "./agentPrompts";
 // ========== 多模型 API 客户端 ==========
 import { getPreferenceInjection } from "./preferences";
 
