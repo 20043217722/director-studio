@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Director Studio — API Proxy Server v2
  * 支持 SSE 流式代理 + 请求体大小限制 + 超时保护
  */
@@ -22,7 +22,7 @@ if (fs.existsSync(envPath)) {
 // ===== Config =====
 const PORT = process.env.PORT || 3001
 const MAX_BODY_SIZE = 50 * 1024 * 1024  // 50MB (for image/video upload)
-const REQUEST_TIMEOUT = 120_000          // 120s timeout
+const REQUEST_TIMEOUT = 300_000          // 300s timeout
 const STREAMING_CONTENT_TYPES = ['text/event-stream', 'application/x-ndjson']
 
 // ===== Key Registry =====
@@ -91,8 +91,70 @@ function json(res, status, data) {
   res.end(JSON.stringify(data))
 }
 
-// ===== Server =====
-const server = http.createServer((req, res) => {
+
+// ===== Retry + Heartbeat + Error Helpers =====
+
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
+
+async function doRequestWithRetry(proxyProto, options, body, res, provider, maxRetries) {
+  let lastStatus = 0
+  maxRetries = maxRetries || 3
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (attempt > 0) {
+      const delay = Math.pow(2, attempt) * 1000
+      log('warn', `Retry ${attempt}/${maxRetries} after ${delay}ms (HTTP ${lastStatus})`)
+      await sleep(delay)
+    }
+    try {
+      const proxyRes = await new Promise((resolve, reject) => {
+        const req = proxyProto.request(options, resolve)
+        req.on('timeout', () => { req.destroy(); reject(new Error('TIMEOUT')) })
+        req.on('error', reject)
+        if (body) req.write(body)
+        req.end()
+      })
+      lastStatus = proxyRes.statusCode
+      if (lastStatus === 429 || lastStatus === 503) {
+        if (attempt < maxRetries) continue
+      }
+      return proxyRes
+    } catch (e) {
+      lastStatus = e.message === 'TIMEOUT' ? 504 : 502
+      if (attempt < maxRetries) continue
+      if (!res.headersSent) {
+        res.writeHead(lastStatus, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({
+          error: `请求失败(已重试${maxRetries}次): ${provider} ${lastStatus === 504 ? '超时' : '无法连接'}`,
+          status: lastStatus
+        }))
+      }
+      return null
+    }
+  }
+  return null
+}
+
+function setupHeartbeat(proxyRes, clientRes) {
+  let lastData = Date.now()
+  const STALL_TIMEOUT = 300_000
+
+  proxyRes.on('data', () => { lastData = Date.now() })
+
+  const timer = setInterval(() => {
+    if (Date.now() - lastData > STALL_TIMEOUT) {
+      log('error', 'Stream stalled (no data 300s), closing')
+      clearInterval(timer)
+      clientRes.end()
+    }
+  }, 30_000)
+
+  proxyRes.on('end', () => clearInterval(timer))
+  proxyRes.on('error', () => clearInterval(timer))
+  clientRes.on('close', () => clearInterval(timer))
+}
+
+// ===== Server =====const server = http.createServer((req, res) => {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
@@ -165,15 +227,16 @@ const server = http.createServer((req, res) => {
     }
 
     const proxyProto = target.protocol === 'https:' ? https : http
-    const proxyReq = proxyProto.request(options, (proxyRes) => {
+
+    doRequestWithRetry(proxyProto, options, body, res, provider).then(proxyRes => {
+      if (!proxyRes) return
+
       const status = proxyRes.statusCode
       const isStream = STREAMING_CONTENT_TYPES.some(t =>
-        (proxyRes.headers['content-type'] || '').includes(t)
-      )
+        (proxyRes.headers['content-type'] || '').includes(t))
 
       log('info', `← ${status}${isStream ? ' [stream]' : ''}`)
 
-      // Remove hop-by-hop headers
       const resHeaders = { ...proxyRes.headers }
       delete resHeaders['transfer-encoding']
       delete resHeaders['connection']
@@ -182,29 +245,14 @@ const server = http.createServer((req, res) => {
       res.writeHead(status, resHeaders)
 
       if (isStream) {
-        // Streaming: pipe raw chunks without buffering (SSE for chat)
+        setupHeartbeat(proxyRes, res)
         proxyRes.pipe(res)
       } else {
-        // Non-streaming: collect and send
         let resBody = ''
         proxyRes.on('data', (chunk) => { resBody += chunk })
         proxyRes.on('end', () => { res.end(resBody) })
       }
     })
-
-    proxyReq.on('timeout', () => {
-      log('error', 'Upstream timeout')
-      proxyReq.destroy()
-      if (!res.headersSent) json(res, 504, { error: 'Upstream timeout' })
-    })
-
-    proxyReq.on('error', (e) => {
-      log('error', `Proxy error: ${e.message}`)
-      if (!res.headersSent) json(res, 502, { error: `Proxy error: ${e.message}` })
-    })
-
-    if (body) proxyReq.write(body)
-    proxyReq.end()
   })
 })
 
