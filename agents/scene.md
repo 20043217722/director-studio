@@ -117,11 +117,11 @@ avoid: 照片级写实·PBR物理材质·光滑3D表面·真实摄影纹理·笔
 
 ---
 
-### 📋 二、Midjourney v8.1 英文版
+### 📋 二、Midjourney v8.2 英文版
 
 > **⚠️ 场景设计只出纯场景画面，禁止出现任何人物。所有 `--no` 列表必须包含 `human figures`。**
 
-> 格式: 六段加权 `::3 ::2 ::1.5 ::1.5 ::1` + `--ar 16:9 --v 8.1 --s [值] --no human figures, ...`。**全部写在 ` ``` ` 代码块内。**
+> 格式: 六段加权 `::3 ::2 ::1.5 ::1.5 ::1` + `--ar 16:9 --v 8.2 --s [值] --no human figures, ...`。**全部写在 ` ``` ` 代码块内。**
 
 ```
 [Scene identity]
@@ -140,20 +140,20 @@ avoid: 照片级写实·PBR物理材质·光滑3D表面·真实摄影纹理·笔
   [Weather · temperature · air quality · sound suggestion · spatial emotion in one phrase]
 
 ::1 Cinematic scene design, [reference], [camera+lens], [art style tag],
-  --ar 16:9 --v 8.1 --s [value] [--style raw or omit]
+  --ar 16:9 --v 8.2 --s [value] [--style raw or omit]
   --no human figures, [style-specific negatives]
 ```
 
 | Style | `--s` | `--style raw` | `--no` essentials |
 |------|:---:|:---:|------|
-| Photorealistic / Period | 50-80 | ✅ ON | human figures, text, watermark, CGI, plastic textures, blurry, oversaturated |
+| Photorealistic / Period | 50-100 | ✅ ON | human figures, text, watermark, CGI, plastic textures, blurry, oversaturated |
 | Arcane-style 3D-to-2D | 120-160 | ❌ OFF | human figures, photorealistic, PBR, smooth 3D, real photos, clean digital lines |
-| Sci-fi / Cyberpunk | 100-250 | ✅ ON | human figures, text, watermark, oversaturated, blurry, low quality |
-| Fantasy / Magical | 150-400 | ❌ OFF | human figures, text, watermark, photorealistic, modern tech, contemporary clothing |
+| Sci-fi / Cyberpunk | 100-300 | ✅ ON | human figures, text, watermark, oversaturated, blurry, low quality |
+| Fantasy / Magical | 150-500 | ❌ OFF | human figures, text, watermark, photorealistic, modern tech, contemporary clothing |
 | Vintage Film / Period | 40-70 | ✅ ON | human figures, digital smooth, CGI, modern materials, oversaturated, noise reduction, AI restoration |
 | Spider-Verse style | 80-200 | ❌ OFF | human figures, photorealistic, smooth gradients, continuous tone, 3D depth of field, anti-aliased lines |
 | Horror / Oppressive | 40-70 | ✅ ON | human figures, cheerful colors, bright lighting, clean surfaces, CGI, oversaturated, plastic |
-| Cozy / Warm | 70-120 | ❌ OFF | human figures, cold tones, harsh shadows, sterile, oversaturated, plastic |
+| Cozy / Warm | 100-150 | ❌ OFF | human figures, cold tones, harsh shadows, sterile, oversaturated, plastic |
 
 **上镜示例（Arcane-style·陈默家楼下）：**
 
@@ -187,7 +187,7 @@ the lit window is the only sign of life — warm solitude in a cold empty world
 
 ::1 Cinematic scene design, in the aesthetic tradition of Fortiche Production work on Arcane,
 35mm lens, hand-painted non-photorealistic rendering,
---ar 16:9 --v 8.1 --s 150
+--ar 16:9 --v 8.2 --s 150
 --no human figures, photorealistic, PBR materials, smooth 3D surfaces, real photographs, clean digital lines, camera equipment, CGI, glossy reflections
 ```
 
