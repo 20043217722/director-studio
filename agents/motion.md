@@ -1030,6 +1030,29 @@ Tone Tag: [从美术指导继承·格
 ❌ 错误: "环绕+推近"（没有速度与时长匹配）
 
 
+
+### 【模板2·Style Lock版】仅在用户明确要求时使用
+
+#### 中文版代码块内容格式（整块复制）
+
+```
+## 视频运动提示词（中文版·Seedance 2.0 / 可灵 O3）
+
+### [STYLE LOCK·全片统一]
+
+摄影机: [ARRI Alexa 65 / Sony Venice 2 / RED V-RAPTOR XL / ARRI Alexa Mini LF / Canon C700 FF / Blackmagic URSA 12K]
+镜头: [Panavision anamorphic / Zeiss Supreme Prime·球面 / Cooke S8/i·球面 / ARRI Master Anamorphic·变形宽银幕]
+胶片参考: [Kodak Vision3 500T / Kodak Vision3 250D / Kodak Ektachrome 100D / Fujifilm Eterna Vivid 500T / Sony S-Gamut3.Cine / ARRI Reveal]
+摄影师风格: [Christopher Doyle·手持呼吸感·自然光不打灯·褪色油画质感 / Roger Deakins·对称构图·精确布光·暗部密度 / 杜可风·王家卫式去饱和·霓虹色溢 / 曹郁·妖猫传暗部密度·灯笼暖色层次 / Robert Richardson·顶光·高对比·硬影]
+画幅: [2.39:1 anamorphic widescreen / 1.85:1 spherical widescreen / 1.66:1 European widescreen / 16:9]
+视觉风格: [film print look·not digital cinema look / photorealistic film still / painterly desaturation / high contrast chiaroscuro]
+Tone Tag: [从美术指导继承]
+
+### 🔗 @引用声明
+@A1: [角色名] | [定妆照hash]——⚠️严格按参考图执行·禁止文字描述外貌/服装
+@B1: [场景名] | [场景图hash] | 空间锚点: [从场景设计智能体继承]
+
+---
 ### 一、设备选择（本镜变化部分）
 帧率: [24fps / 60fps] | 风格: [真人写实/超真实CGI·3D动画/2D手绘/三渲二Arcane式/赛博朋克/...]
 视觉锚点: [本镜最具辨识度的视觉元素·Seedance将其作为跨帧风格锁定的参照物]
