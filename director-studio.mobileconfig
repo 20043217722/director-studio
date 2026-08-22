@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>FullScreen</key>
+			<true/>
+			<key>Icon</key>
+			<data>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</data>
+			<key>IsRemovable</key>
+			<true/>
+			<key>Label</key>
+			<string>导演工作室</string>
+			<key>PayloadDescription</key>
+			<string>AI 电影导演创作工具</string>
+			<key>PayloadDisplayName</key>
+			<string>导演工作室</string>
+			<key>PayloadIdentifier</key>
+			<string>com.director.studio.webclip</string>
+			<key>PayloadType</key>
+			<string>com.apple.webClip.managed</string>
+			<key>PayloadUUID</key>
+			<string>B2C3D4E5-F6A7-8901-BCDE-F12345678901</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>Precomposed</key>
+			<true/>
+			<key>URL</key>
+			<string>https://ruflo-ds-2026.loca.lt</string>
+		</dict>
+	</array>
+	<key>PayloadDescription</key>
+	<string>安装导演工作室到主屏幕</string>
+	<key>PayloadDisplayName</key>
+	<string>导演工作室</string>
+	<key>PayloadIdentifier</key>
+	<string>com.director.studio.profile</string>
+	<key>PayloadRemovalDisallowed</key>
+	<false/>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>A1B2C3D4-E5F6-7890-ABCD-EF1234567890</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+</dict>
+</plist>
